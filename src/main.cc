@@ -69,17 +69,16 @@ int main(int argc , char* argv[]){
 		int cpt_access = 0;
 
 		my_system->startWarmup();
-		my_system->stopWarmup();
 		
 		while(traceWrapper->readNext(element)){
 
 			my_system->handleAccess(element);
-			/*
+			
 			if(cpt_access == WARMUP_WINDOW)
 			{
 				cout << "\t\tFinished the warmup phase" << endl;			
 				my_system->stopWarmup();
-			}*/
+			}
 			
 			cpt_access++;
 		}

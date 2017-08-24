@@ -167,9 +167,9 @@ Hierarchy::handleAccess(Access element)
 	uint64_t addr = element.m_address;
 	uint64_t block_addr = bitRemove(addr , 0 , m_start_index+1);
 	int id_thread = (int) element.m_idthread;
-		
-	assert( (element.m_idthread < m_nbCores) && \
-	 "More threads detected than cores, not sure how the mapping threads/cores is done\n");
+	int id_core = convertThreadIDtoCore(id_thread);
+	
+	assert(id_core < (int)m_nbCores);	
 	
 	DirectoryEntry* entry = m_directory->getEntry(block_addr);
 	if(entry == NULL){
@@ -179,23 +179,23 @@ Hierarchy::handleAccess(Access element)
 		
 	DirectoryState dir_state = m_directory->getEntry(block_addr)->coherence_state;
 	
-	entry->print();
+//	entry->print();
 	
 	if(dir_state == NOT_PRESENT)
 	{
-		m_directory->setTrackerToEntry(block_addr, id_thread);			
+		m_directory->setTrackerToEntry(block_addr, id_core);			
 		m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);
 
 		m_LLC->handleAccess(element);
-		m_private_caches[id_thread]->handleAccess(element);		
+		m_private_caches[id_core]->handleAccess(element);		
 	}
 	else if(dir_state == CLEAN_LLC || dir_state == DIRTY_LLC)
 	{
 			m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);
-			m_directory->setTrackerToEntry(block_addr, id_thread);			
+			m_directory->setTrackerToEntry(block_addr, id_core);			
 	
 			m_LLC->handleAccess(element);
-			m_private_caches[id_thread]->handleAccess(element);
+			m_private_caches[id_core]->handleAccess(element);
 	}
 	else if( dir_state == MODIFIED_L1 || dir_state == EXCLUSIVE_L1)
 	{
@@ -203,24 +203,24 @@ Hierarchy::handleAccess(Access element)
 		assert(nodes.size() == 1);
 		int node = *(nodes.begin());
 
-		if(node != id_thread)
+		if(node != id_core)
 		{
 			m_private_caches[node]->sendInvalidation(block_addr, element.isInstFetch() );
 			//If it is a write, deallocate it from one core to allocate it to the other
 			if(element.isWrite()){
 				m_private_caches[node]->deallocate(block_addr);
-				m_directory->setTrackerToEntry(block_addr, id_thread);
+				m_directory->setTrackerToEntry(block_addr, id_core);
 				m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);
 
 			}
 			else
-			{	//If it is a read, add id_thread to the tracker list 
-				m_directory->addTrackerToEntry(block_addr, id_thread);
+			{	//If it is a read, add id_core to the tracker list 
+				m_directory->addTrackerToEntry(block_addr, id_core);
 				m_directory->setCoherenceState(block_addr, SHARED_L1);
 
 			}
 			m_LLC->handleAccess(element);
-			m_private_caches[id_thread]->handleAccess(element);
+			m_private_caches[id_core]->handleAccess(element);
 		
 		}
 		else{
@@ -228,7 +228,7 @@ Hierarchy::handleAccess(Access element)
 			if(element.isWrite() && dir_state == EXCLUSIVE_L1)
 				m_directory->setCoherenceState(block_addr, MODIFIED_L1);
 
-			m_private_caches[id_thread]->handleAccess(element);
+			m_private_caches[id_core]->handleAccess(element);
 		
 		}
 	}
@@ -242,18 +242,18 @@ Hierarchy::handleAccess(Access element)
 				m_private_caches[node]->deallocate(block_addr);
 
 			m_directory->resetTrackersToEntry(block_addr);
-			m_directory->setTrackerToEntry(block_addr, id_thread);
+			m_directory->setTrackerToEntry(block_addr, id_core);
 			m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);
 			
 			//We write the new version to the LLC 
 			m_LLC->handleAccess(element);
-			m_private_caches[id_thread]->handleAccess(element);
+			m_private_caches[id_core]->handleAccess(element);
 		}
 		else
 		{
-			// We add id_thread to tracker list
-			m_directory->addTrackerToEntry(block_addr, id_thread);				
-			m_private_caches[id_thread]->handleAccess(element);
+			// We add id_core to tracker list
+			m_directory->addTrackerToEntry(block_addr, id_core);				
+			m_private_caches[id_core]->handleAccess(element);
 		}
 	}
 
@@ -295,6 +295,13 @@ Hierarchy::L1sdeallocate(uint64_t addr)
 		m_directory->setCoherenceState(addr , NOT_PRESENT);
 	}		
 }
+
+int
+Hierarchy::convertThreadIDtoCore(int id_thread)
+{
+	return id_thread % m_nbCores;
+}
+
 
 
 vector<ConfigCache>

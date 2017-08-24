@@ -30,7 +30,7 @@ class Hierarchy
 		void printConfig(std::ostream& out);
 		void finishSimu();
 		void openNewTimeFrame();
-				
+		int convertThreadIDtoCore(int id_thread);			
 		void startWarmup();
 		void stopWarmup();
 		

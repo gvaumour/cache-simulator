@@ -1,10 +1,10 @@
 EXEC = ./obj-intel64/roeval
 EXEC_RELEASE = ./obj-intel64/roeval_release
 
-#FLAGS_DEBUGS =
-#ifdef TEST
+FLAGS_DEBUGS =
+ifdef TEST
 	FLAGS_DEBUGS = -DTEST -g
-#endif 
+endif 
 
 CPP   = g++
 FLAGS = -Wall -O3 -std=c++11 -I./src/ $(FLAGS_DEBUGS)

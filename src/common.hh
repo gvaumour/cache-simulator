@@ -54,11 +54,13 @@ bool isPow2(int x);
 std::string convert_hex(int n);
 const char * StripPath(const char * path);
 
+
 extern uint64_t cpt_time;
 extern int start_debug;
 
 extern const char* memCmd_str[];
 extern const char* allocDecision_str[];
 extern const char* directory_state_str[];
+
 
 #endif 

@@ -117,7 +117,7 @@ Directory::removeTracker(uint64_t addr, int node)
 	if(it != entry->nodeTrackers.end())
 		entry->nodeTrackers.erase(it);
 
-	//the cl is no longer in a L1 cache
+	//if the cl is no longer in a L1 cache
 	if(entry->nodeTrackers.empty())
 		entry->coherence_state = CLEAN_LLC;
 }

@@ -90,8 +90,8 @@ hexToInt(string adresse_hex){
 		return n;
 }
 
-
-bool readInputArgs(int argc , char* argv[] , int& sizeCache , int& assoc , int& blocksize, std::string& filename, std::string& policy)
+bool
+readInputArgs(int argc , char* argv[] , int& sizeCache , int& assoc , int& blocksize, std::string& filename, std::string& policy)
 {
 	
 	if(argc == 1){
