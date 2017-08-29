@@ -24,7 +24,7 @@ class Level{
 		bool lookup(Access element);
 		void deallocate(uint64_t addr);
 		void signalDeallocate(uint64_t addr);
-		void signalWB(uint64_t addr, bool isDirty);
+		void signalWB(uint64_t addr, bool isDirty, bool isKept);
 
 		void sendInvalidation(uint64_t addr, bool toInstCache);
 

@@ -210,7 +210,7 @@ HybridCache::handleAccess(Access element)
 			bool inNVM = (des == ALLOCATE_IN_NVM) ? true : false; 
 			int id_assoc = -1;
 			
-			id_assoc = m_predictor->evictPolicy(id_set, inNVM);			
+			id_assoc = m_predictor->evictPolicy(id_set, inNVM);	
 			
 			if(inNVM){//New line allocated in NVM
 				replaced_entry = m_tableNVM[id_set][id_assoc];
@@ -221,27 +221,30 @@ HybridCache::handleAccess(Access element)
 				
 			//Deallocate the cache line in the lower levels (inclusive system)
 			if(replaced_entry->isValid){
-				//DPRINTF("CACHE::Invalidation of the cache line : %#lx , id_assoc %d\n" , replaced_entry->address, id_assoc);		
+				DPRINTF("CACHE::Invalidation of the cache line : %#lx , id_assoc %d\n" , replaced_entry->address, id_assoc);		
 		
 				//Inform the higher level of the deallocation
 				m_system->signalDeallocate(replaced_entry->address); 
 				
 				//WB this cache line to the lower cache 
-				signalWB(replaced_entry->address);	
+				signalWB(replaced_entry->address, false);	
 				
 				if(!m_isWarmup)
 					stats_evict++;
 			}
 
 
-			deallocate(replaced_entry);	
+			deallocate(replaced_entry);
 			allocate(address , id_set , id_assoc, inNVM, element.m_pc);
 			m_predictor->insertionPolicy(id_set , id_assoc , inNVM, element);
 
 			if(inNVM){
 				DPRINTF("CACHE::It is a Miss ! Block[%#lx] is allocated in the NVM cache : Set=%d, Way=%d\n", block_addr , id_set, id_assoc);
 				if(!m_isWarmup)
+				{
 					stats_missNVM[stats_index]++;
+					stats_hitsNVM[stats_index]++;
+				}
 
 				if(element.isWrite())
 					m_tableNVM[id_set][id_assoc]->isDirty = true;			
@@ -251,8 +254,10 @@ HybridCache::handleAccess(Access element)
 			}
 			else{
 				DPRINTF("CACHE::It is a Miss ! Block[%#lx] is allocated in the SRAM cache : Set=%d, Way=%d\n",block_addr, id_set, id_assoc);
-				if(!m_isWarmup)
+				if(!m_isWarmup){				
 					stats_missSRAM[stats_index]++;			
+					stats_hitsSRAM[stats_index]++;			
+				}
 			
 				if(element.isWrite())
 					m_tableSRAM[id_set][id_assoc]->isDirty = true;
@@ -518,13 +523,13 @@ HybridCache::addressToCacheSet(uint64_t address)
 }
 
 void
-HybridCache::signalWB(uint64_t addr)
+HybridCache::signalWB(uint64_t addr, bool isKept)
 {
 	CacheEntry* entry = getEntry(addr);
 	assert(entry != NULL);
 	
-	DPRINTF("CACHE::Invalidation of the block [%#lx]" , entry->address);
-	m_system->signalWB(entry->address , entry->isDirty);	
+	DPRINTF("CACHE::Invalidation of the block [%#lx]\n" , entry->address);
+	m_system->signalWB(entry->address , entry->isDirty, isKept);	
 }
 
 void HybridCache::startWarmup()
@@ -615,18 +620,18 @@ HybridCache::printResults(std::ostream& out)
 		uint64_t total_missNVM =  stats_missNVM[0] + stats_missNVM[1];
 		uint64_t total_miss = total_missNVM + total_missSRAM;
 		
-		uint64_t total_hitSRAM =  stats_hitsSRAM[0] + stats_hitsSRAM[1];
-		uint64_t total_hitNVM =  stats_hitsNVM[0] + stats_hitsNVM[1];
-		uint64_t total_hits = total_hitNVM + total_hitSRAM;
+		uint64_t total_accessSRAM =  stats_hitsSRAM[0] + stats_hitsSRAM[1];
+		uint64_t total_accessNVM =  stats_hitsNVM[0] + stats_hitsNVM[1];
+		uint64_t total_access = total_accessSRAM + total_accessNVM;
 
 
 		if(total_miss != 0){
 		
 			out << "Results : " << endl;
-			out << "\t- Total access : "<< total_hits+ total_miss << endl;
-			out << "\t- Total Hits : " << total_hits << endl;
+			out << "\t- Total access : "<< total_access << endl;
+			out << "\t- Total Hits : " << total_access - total_miss << endl;
 			out << "\t- Total miss : " << total_miss << endl;		
-			out << "\t- Miss Rate : " << (double)(total_miss)*100 / (double)(total_hits+total_miss) << "%"<< endl;
+			out << "\t- Miss Rate : " << (double)(total_miss)*100 / (double)(total_access) << "%"<< endl;
 			out << "\t- Clean Write Back : " << stats_cleanWBNVM + stats_cleanWBSRAM << endl;
 			out << "\t- Dirty Write Back : " << stats_dirtyWBNVM + stats_dirtyWBSRAM << endl;
 			out << "\t- Eviction : " << stats_evict << endl;

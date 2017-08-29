@@ -7,8 +7,8 @@ ifdef TEST
 endif 
 
 CPP   = g++
-FLAGS = -Wall -O3 -std=c++11 -I./src/ $(FLAGS_DEBUGS)
-LDFLAGS= -lz -Wall -O3 $(FLAGS_DEBUGS)
+FLAGS = -Wall -O0 -std=c++11 -I./src/ $(FLAGS_DEBUGS)
+LDFLAGS= -lz -Wall -O0 $(FLAGS_DEBUGS)
 
 SRC= $(wildcard src/*.cc)
 OBJ= $(subst src/, obj-intel64/,  $(SRC:.cc=.o))
@@ -24,6 +24,8 @@ obj-intel64/testRAPPredictor.o :  src/testRAPPredictor.cc src/testRAPPredictor.h
 
 $(EXEC_RELEASE) : $(EXEC)	
 	cp $(EXEC) $(EXEC_RELEASE)
+
+release: $(EXEC_RELEASE)
 	
 clean:
 	rm -f $(EXEC) *~ src/*~ obj-intel64/*.o 

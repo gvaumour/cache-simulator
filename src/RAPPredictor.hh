@@ -15,24 +15,59 @@
 #define RAP_OUTPUT_FILE1 "rap_predictor1.out"
 #define RAP_TEST_OUTPUT_DATASETS "rap_test_dataset.out"
 
-#define SRAM_READ 271.678E-12
-#define SRAM_WRITE 257.436E-12
-#define NVM_WRITE 652.278E-12
-#define NVM_READ 236.828E-12
-#define DRAM_READ 4.10241E-9
-#define DRAM_WRITE 4.08893E-9
-
 #define RAP_TABLE_ASSOC 128
 #define RAP_TABLE_SET 128
 
 #define RAP_SRAM_ASSOC 4
 #define RAP_NVM_ASSOC 12 
 
-#define INDEX_READ 0
-#define INDEX_WRITE 1
+#define READ_ACCESS 0
+#define WRITE_ACCESS 1
 
 class Predictor;
 class HybridCache;
+
+class EnergyParameters
+{
+	public: 
+		EnergyParameters() {
+
+			costSRAM = std::vector<double>(2 ,0);
+			costSRAM[READ_ACCESS] = 271.678E-12;
+			costSRAM[WRITE_ACCESS] = 257.436E-12;
+
+			costNVM = std::vector<double>(2 ,0);
+			costNVM[READ_ACCESS] = 236.828E-12;
+			costNVM[WRITE_ACCESS] = 652.278E-12;
+
+			costDRAM = std::vector<double>(2 ,0);
+			costDRAM[READ_ACCESS] = 4.08893E-9;
+			costDRAM[WRITE_ACCESS] = 4.10241E-9;
+
+		};
+
+		std::vector<double> costNVM; 
+		std::vector<double> costSRAM;
+		std::vector<double> costDRAM;
+};
+
+
+class Window_entry
+{
+	public: 
+		Window_entry()
+		{
+			rd = RD_NOT_ACCURATE;
+			doneInNVM = false;
+			isWrite = false;
+			isBypass = false;
+		}
+		
+		RD_TYPE rd;
+		bool doneInNVM;	
+		bool isWrite;
+		bool isBypass;
+};
 
 
 class RAPEntry
@@ -41,21 +76,17 @@ class RAPEntry
 		RAPEntry() { initEntry( Access()); isValid = false; };
 		
 		void initEntry(Access element) {
-		 	lastWrite = 0;
 		 	m_pc = -1;
 		 	
-		 	
 		 	des = ALLOCATE_PREEMPTIVELY;
+			state_rw = RW_NOT_ACCURATE;
+			state_rd = RD_NOT_ACCURATE;
 		 					
 		 	policyInfo = 0;
 			cptBypassLearning = 0;
-			rd_history.clear();
-			rw_history.clear();
 			nbAccess = 0;
 			isValid = true;
 			
-			state_rw = RW_NOT_ACCURATE;
-			state_rd = RD_NOT_ACCURATE;
 			
 			nbKeepCurrentState = 0;
 			nbKeepState = 0;
@@ -63,31 +94,39 @@ class RAPEntry
 			cptWindow = 0;
 			
 			dead_counter = 0;
+			/*
+			rd_history.clear();
+			rw_history.clear();
+			*/
 		 };
-
-		int lastWrite;
+		void resetWindow()
+		{
+			window.clear();
+			cptWindow = 0;
+		}
+		
+		bool isValid;
 		
 		/* PC of the dataset */
 		uint64_t m_pc; 
 		
 		allocDecision des;
+		
+		/* Do migration when des != cl location */
+		bool doMigration;
 
 		/* Replacement info bits */ 
 		int policyInfo;
 
 		/* Those parameters are static, they do not change during exec */ 
-		int index,assoc;
+		int set,assoc;
 
 		int cptBypassLearning;
 		
-		std::vector<int> rd_history;
-		std::vector<bool> rw_history;
-		
-		int nbAccess;
+		std::vector<Window_entry> window;
 		int cptWindow;
 		
-		bool isValid;
-		
+		int nbAccess;
 		int nbKeepState;
 		int nbSwitchState;
 		int nbKeepCurrentState;
@@ -96,39 +135,23 @@ class RAPEntry
 		RD_TYPE state_rd;
 
 		std::vector<HistoEntry> stats_history;
-//		std::set<CacheEntry*> dataset_cls;
-		
 		
 		int dead_counter;
 };
 
 
-class RAPReplacementPolicy{
-	
-	public : 
-		RAPReplacementPolicy(int nbAssoc , int nbSet , std::vector<std::vector<RAPEntry*> >& rap_entries ) : m_rap_entries(rap_entries),\
-											m_nb_set(nbSet) , m_assoc(nbAssoc) {};
-		virtual void updatePolicy(uint64_t set, uint64_t index) = 0;
-		virtual void insertionPolicy(uint64_t set, uint64_t index) = 0;
-		virtual int evictPolicy(int set) = 0;
-		
-	protected : 
-		std::vector<std::vector<RAPEntry*> >& m_rap_entries;
-		int m_cpt;
-		unsigned m_nb_set;
-		unsigned m_assoc;
-};
-
-
-class RAPLRUPolicy : public RAPReplacementPolicy {
+class RAPReplacementPolicy {
 
 	public :
-		RAPLRUPolicy(int nbAssoc , int nbSet , std::vector<std::vector<RAPEntry*> >& rap_entries);
-		void updatePolicy(uint64_t set, uint64_t index);
-		void insertionPolicy(uint64_t set, uint64_t index) { updatePolicy(set,index);}
+		RAPReplacementPolicy(int nbAssoc , int nbSet , std::vector<std::vector<RAPEntry*> >& rap_entries);
+		void updatePolicy(uint64_t set, uint64_t assoc);
+		void insertionPolicy(uint64_t set, uint64_t assoc) { updatePolicy(set,assoc);}
 		int evictPolicy(int set);
 	private : 
+		std::vector<std::vector<RAPEntry*> >& m_rap_entries;
 		uint64_t m_cpt;
+		unsigned m_nb_set;
+		unsigned m_assoc;
 		
 };
 
@@ -141,29 +164,32 @@ class RAPPredictor : public Predictor {
 		~RAPPredictor();
 			
 		allocDecision allocateInNVM(uint64_t set, Access element);
-		void updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element , bool isWBrequest );
-		void insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access element);
+		void updatePolicy(uint64_t set, uint64_t assoc, bool inNVM, Access element , bool isWBrequest );
+		void insertionPolicy(uint64_t set, uint64_t assoc, bool inNVM, Access element);
+		void updateWindow(RAPEntry* rap_current, Window_entry entry);
 		int evictPolicy(int set, bool inNVM);
 		void evictRecording( int id_set , int id_assoc , bool inNVM) { Predictor::evictRecording(id_set, id_assoc, inNVM);};
+		
 		void printStats(std::ostream& out);
 		void printConfig(std::ostream& out);
 		void openNewTimeFrame();
 		void finishSimu();
+		void dumpDataset(RAPEntry* entry);		
+		
+		CacheEntry* getEntry(int set, int assoc, bool inNVM);
 		RAPEntry* lookup(uint64_t pc);
 		uint64_t indexFunction(uint64_t pc);
+		void endWindows(RAPEntry* rap_current);
 
-		int computeRd(uint64_t set, uint64_t index, bool inNVM);
+		RD_TYPE computeRd(uint64_t set, uint64_t index, bool inNVM);
 		RD_TYPE convertRD(int rd);
-		RD_TYPE evaluateRd(std::vector<int> reuse_distances);
+		
 		
 		void determineStatus(RAPEntry* entry);
 		allocDecision convertState(RAPEntry* rap_current);
-		void dumpDataset(RAPEntry* entry);		
-
-		void updateWindow(RAPEntry* rap_current);
 		
-		void checkLazyMigration(RAPEntry* rap_current , CacheEntry* current ,uint64_t set,bool inNVM , uint64_t index);
-
+		void checkMigration(RAPEntry* rap_current, CacheEntry* current, int set, bool inNVM, int assoc);
+		
 	protected : 
 		uint64_t m_cpt;
 		int learningTHcpt;

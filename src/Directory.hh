@@ -9,7 +9,7 @@
 
 #include "Cache.hh"
 #include "common.hh"
-#define DIRECTORY_ASSOC 128
+#define DIRECTORY_ASSOC 8192
 #define DIRECTORY_NB_SETS 2048
 
 
@@ -25,6 +25,7 @@ class DirectoryEntry
 		void initEntry()
 		{
 			block_addr = 0;
+			isInst = false;
 			coherence_state = NOT_PRESENT;
 			nodeTrackers.clear();
 		};
@@ -45,7 +46,8 @@ class DirectoryEntry
 		uint64_t block_addr;
 		DirectoryState coherence_state;
 		bool isValid;
-	
+		bool isInst;
+		
 		int policyInfo;
 		
 };
@@ -77,11 +79,13 @@ class Directory
 		void setTrackerToEntry(uint64_t addr , int node);
 		void resetTrackersToEntry(uint64_t addr);
 		void removeTracker(uint64_t addr, int node);
+		void removeEntry(uint64_t addr);
+
 		std::set<int> getTrackers(uint64_t addr);
 		void setCoherenceState(uint64_t addr, DirectoryState dir_state);
 
 		DirectoryEntry* getEntry(uint64_t addr);
-		DirectoryEntry* addEntry(uint64_t addr);
+		DirectoryEntry* addEntry(uint64_t addr, bool isInst);
 		
 		uint64_t indexFunction(uint64_t addr);
 		bool lookup(uint64_t addr);

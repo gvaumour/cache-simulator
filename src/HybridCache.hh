@@ -69,7 +69,7 @@ class HybridCache {
 		void allocate(uint64_t address , int id_set , int id_assoc , bool inNVM, uint64_t pc);		
 		CacheEntry* getEntry(uint64_t addr);
 		void handleWB(uint64_t addr, bool isDirty);
-		void signalWB(uint64_t block_addr);
+		void signalWB(uint64_t block_addr, bool isKept);
 		
 		void triggerMigration(int set, int id_assocSRAM, int id_assocNVM , bool fromNVM);
 		void updateStatsDeallocate(CacheEntry* current);

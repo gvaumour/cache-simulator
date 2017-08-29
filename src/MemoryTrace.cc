@@ -57,6 +57,13 @@ CompressedTrace::readNext(Access& element)
 	split_line = split(line , ' ');
 
 	string addr = split_line[0];
+
+	if(addr[0] != '#' || addr[1] != '!')
+	{
+		cout << "Line passed - Wrong Format" << endl;
+		return true;
+	}
+	
 	addr.erase( remove(addr.begin(), addr.end(), '#'), addr.end());
 	addr.erase( remove(addr.begin(), addr.end(), '!'), addr.end());
 
@@ -118,6 +125,13 @@ TextTrace::readNext(Access& element)
 	split_line = split(line , ' ');
 
 	string addr = split_line[0];
+
+	if(addr[0] != '#' || addr[1] != '!')
+	{
+		cout << "Line passed - Wrong Format" << endl;
+		return false;
+	}
+
 	addr.erase( remove(addr.begin(), addr.end(), '#'), addr.end());
 	addr.erase( remove(addr.begin(), addr.end(), '!'), addr.end());
 

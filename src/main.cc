@@ -54,10 +54,14 @@ int main(int argc , char* argv[]){
 	sigaction(SIGINT, &sigIntHandler, NULL);
 	
 
-	my_system = new Hierarchy("testRAP" , 4);
+	my_system = new Hierarchy("RAP" , 4);
  
  
 	cout << "Launching simulation with " << memory_traces.size() << "file(s)" << endl;
+	cout << "Traces considered:" << endl;
+	for(auto memory_trace : memory_traces)
+		cout << "\t - " << memory_trace << endl;
+	
 	for(auto memory_trace : memory_traces)
 	{
 		cout << "\tRunning Trace: " << memory_trace << " ... " <<  endl;
@@ -69,6 +73,7 @@ int main(int argc , char* argv[]){
 		int cpt_access = 0;
 
 		my_system->startWarmup();
+		my_system->stopWarmup();
 		
 		while(traceWrapper->readNext(element)){
 
@@ -82,10 +87,10 @@ int main(int argc , char* argv[]){
 			
 			cpt_access++;
 		}
-		
 		traceWrapper->close();
 		free(traceWrapper);
-	}		
+	}	
+	my_system->finishSimu();	
 	printResults();
 	
 	delete(my_system);
@@ -107,7 +112,9 @@ void my_handler(int s){
 /** Writing all the output+config files */ 
 void printResults()
 {
-
+	if(!my_system)
+		return;
+		
 	ofstream configFile;
 	configFile.open(CONFIG_FILE);
 	my_system->printConfig(configFile);

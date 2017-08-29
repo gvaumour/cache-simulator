@@ -13,14 +13,20 @@ using namespace std;
 void
 DirectoryEntry::print()
 {
-	cout << "DIRECTORYENTRY::Addr=0x" << std::hex << 	block_addr << \
-	dec << ", State=" << directory_state_str[coherence_state];
-	cout << ", Tracker=";
 
-	for(auto p : nodeTrackers)		
-		cout << p << ",";			
-	cout << std::endl;
-
+	#ifdef TEST
+	
+		string type = isInst ? "INST" : "DATA";
+		
+		cout << "DIRECTORYENTRY::Addr=0x" << std::hex << block_addr;
+		cout << std::dec << ", State=" << directory_state_str[coherence_state];
+		cout << ", Type=" << type; 
+		cout << ", Tracker=";
+	
+		for(auto p : nodeTrackers)		
+			cout << p << ",";			
+		cout << std::endl;
+	#endif
 }
 
 Directory::Directory()
@@ -54,7 +60,7 @@ Directory::~Directory()
 
 
 DirectoryEntry*
-Directory::addEntry(uint64_t addr)
+Directory::addEntry(uint64_t addr , bool isInst)
 {
 	if(getEntry(addr) != NULL)
 		return getEntry(addr);	
@@ -63,9 +69,16 @@ Directory::addEntry(uint64_t addr)
 	int assoc_victim = m_policy->evictPolicy(id_set);
 	
 	DirectoryEntry* entry = m_table[id_set][assoc_victim];
+	if(entry->isValid)
+	{
+		DPRINTF("DIRECTORY::Eviction of dir entry, Block_addr[%#lx] \n", entry->block_addr);
+		entry->print();	
+	}
+	
 	entry->initEntry();
 	entry->block_addr = addr;
 	entry->isValid = true;
+	entry->isInst = isInst;
 	
 	m_policy->insertionPolicy(entry);
 	return entry;
@@ -113,6 +126,8 @@ Directory::removeTracker(uint64_t addr, int node)
 	DirectoryEntry* entry = getEntry(addr);
 	assert(entry != NULL);
 
+	DPRINTF("DIRECTORY::removeTracker Addr %#lx, Node %d\n", addr, node );	
+
 	set<int>::iterator it = entry->nodeTrackers.find(node);
 	if(it != entry->nodeTrackers.end())
 		entry->nodeTrackers.erase(it);
@@ -128,10 +143,8 @@ Directory::setCoherenceState(uint64_t addr, DirectoryState dir_state)
 
 	DirectoryEntry* entry = getEntry(addr);
 	assert(entry != NULL);
-
-//	entry->print();
-
 	entry->coherence_state = dir_state;
+	entry->print();
 	m_policy->updatePolicy(entry);
 }
 
@@ -155,11 +168,21 @@ Directory::getEntry(uint64_t addr)
 	int id_set = indexFunction(addr);
 	for(auto entry : m_table[id_set])
 	{
-		if(entry->block_addr == addr)
+		if(entry->block_addr == addr && entry->isValid)
 			return entry;
 	}
 	return NULL;
 }
+
+void
+Directory::removeEntry(uint64_t addr)
+{
+	DirectoryEntry* entry = getEntry(addr);
+	assert(entry != NULL);
+	
+	entry->isValid = false;
+}
+
 
 void 
 Directory::addTrackerToEntry(uint64_t addr, int node)
@@ -184,7 +207,7 @@ Directory::printConfig()
 void
 Directory::printStats()
 {
-	cout << "Directory Statistique" << endl;
+	cout << "Directory Stats" << endl;
 	cout << "********************" << endl;
 }
 

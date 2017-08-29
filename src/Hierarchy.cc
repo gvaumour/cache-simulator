@@ -129,7 +129,7 @@ Hierarchy::print(std::ostream& out)
 }
 
 void
-Hierarchy::signalWB(uint64_t addr, bool isDirty , int idcore)
+Hierarchy::signalWB(uint64_t addr, bool isDirty , bool isKept, int idcore)
 {
 
 	if(idcore == -1)
@@ -139,11 +139,13 @@ Hierarchy::signalWB(uint64_t addr, bool isDirty , int idcore)
 			stats_dirtyWB_MainMem++;		
 		else
 			stats_cleanWB_MainMem++;
+			
+		m_directory->removeEntry(addr);
 	}			
 	else{
 		//Remove the idcore from the tracker list and update the state
-		m_directory->removeTracker(addr , idcore);
-		
+		if(!isKept)
+			m_directory->removeTracker(addr , idcore);
 		m_LLC->handleWB(addr , isDirty);	
 	}
 }
@@ -173,13 +175,13 @@ Hierarchy::handleAccess(Access element)
 	
 	DirectoryEntry* entry = m_directory->getEntry(block_addr);
 	if(entry == NULL){
-		entry = m_directory->addEntry(block_addr);
+		entry = m_directory->addEntry(block_addr, element.isInstFetch());
 	}
 	assert(entry != NULL);
 		
 	DirectoryState dir_state = m_directory->getEntry(block_addr)->coherence_state;
 	
-//	entry->print();
+	entry->print();
 	
 	if(dir_state == NOT_PRESENT)
 	{
@@ -281,13 +283,19 @@ Hierarchy::openNewTimeFrame()
 void
 Hierarchy::L1sdeallocate(uint64_t addr)
 {
-	DPRINTF("Hierarchy::Deallocation of the block[%#lx] from LLC, invalidation of L1s\n" , addr);
 	
 	//Invalidation of a cache line in LLC, need to invalidate all trackers in L1s
 	DirectoryEntry* entry = m_directory->getEntry(addr);
 	if( entry->isInL1() )
 	{
+		DPRINTF("Hierarchy::Deallocation of the block[%#lx] from LLC, invalidation of L1s\n" , addr);
+		entry->print();
+		
 		set<int> nodes = m_directory->getTrackers(addr);
+
+		for(auto node : nodes)
+			m_private_caches[node]->sendInvalidation(addr, entry->isInst);
+
 		for(auto node : nodes)
 			m_private_caches[node]->deallocate(addr);
 		

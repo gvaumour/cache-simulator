@@ -89,16 +89,16 @@ Level::finishSimu()
 void Level::sendInvalidation(uint64_t addr, bool toInstCache)
 {
 	if(toInstCache && !m_isUnified)
-		m_icache->signalWB(addr);
+		m_icache->signalWB(addr, true);
 	else
-		m_dcache->signalWB(addr);
+		m_dcache->signalWB(addr, true);
 }
 
 
 void 
-Level::signalWB(uint64_t addr,  bool isDirty)
+Level::signalWB(uint64_t addr,  bool isDirty, bool isKept)
 {
-	m_system->signalWB(addr, isDirty, m_IDcore);
+	m_system->signalWB(addr, isDirty, isKept, m_IDcore);
 }
 void 
 Level::handleWB(uint64_t addr, bool isDirty)
