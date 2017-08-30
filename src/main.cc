@@ -73,7 +73,6 @@ int main(int argc , char* argv[]){
 		int cpt_access = 0;
 
 		my_system->startWarmup();
-		my_system->stopWarmup();
 		
 		while(traceWrapper->readNext(element)){
 

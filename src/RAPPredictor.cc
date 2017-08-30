@@ -98,7 +98,7 @@ RAPPredictor::allocateInNVM(uint64_t set, Access element)
 		}
 		/******************/ 	
 
-		rap_current->initEntry(element);
+		rap_current->initEntry();
 		rap_current->m_pc = element.m_pc;
 	}
 	else
@@ -125,11 +125,11 @@ RAPPredictor::allocateInNVM(uint64_t set, Access element)
 			return ALLOCATE_IN_NVM;		
 		}
 		else
-		{
+		{	/*
 			Window_entry entry;
 			entry.isBypass = true;
 			entry.isWrite = element.isWrite();
-			updateWindow(rap_current, entry );
+			updateWindow(rap_current, entry );*/
 			return BYPASS_CACHE;
 		}
 	}
@@ -312,12 +312,13 @@ RAPPredictor::insertionPolicy(uint64_t set, uint64_t assoc, bool inNVM, Access e
 		else 
 			entry.rd = RD_NOT_ACCURATE;
 		
-		entry.isWrite = element.isWrite();
-		updateWindow(rap_current, entry);
-	
 		/* Set the flag of learning cache line when bypassing */
-//		if(rap_current->des == BYPASS_CACHE)
-//			current->isLearning = true;
+		if(rap_current->des == BYPASS_CACHE)
+			current->isLearning = true;
+
+		entry.isWrite = element.isWrite();
+		updateWindow(rap_current, entry);	
+
 		m_rap_policy->insertionPolicy(rap_current->set, rap_current->assoc);
 	}
 	
@@ -459,38 +460,57 @@ RAPPredictor::evictPolicy(int set, bool inNVM)
 	//We didn't create an entry for this dataset, probably a good reason =) (instruction mainly) 
 	if(rap_current != NULL)
 	{
-	
-		// A learning cache line on dead dataset goes here
-		if(current->nbWrite == 0 && current->nbWrite == 0)
-			rap_current->dead_counter--;
-		else
-			rap_current->dead_counter++;
-	
-		if(rap_current->dead_counter > RAP_DEAD_COUNTER_SATURATION)
-			rap_current->dead_counter = RAP_DEAD_COUNTER_SATURATION;
-		else if(rap_current->dead_counter < -RAP_DEAD_COUNTER_SATURATION)
-			rap_current->dead_counter = -RAP_DEAD_COUNTER_SATURATION;
-
-		if(rap_current->dead_counter == -RAP_DEAD_COUNTER_SATURATION && ENABLE_BYPASS)
+		if(rap_current->des != BYPASS_CACHE)
 		{
-			/* Switch the state of the dataset to dead */ 
-			rap_current->des = BYPASS_CACHE;			
 
-			// Reset the window 
-			RW_TYPE old_rw = rap_current->state_rw;
-			RD_TYPE old_rd = rap_current->state_rd;
-
-			rap_current->state_rd = RD_NOT_ACCURATE;
-			rap_current->state_rw = DEAD;
+			// A learning cache line on dead dataset goes here
+			if(current->nbWrite == 0 && current->nbWrite == 0)
+				rap_current->dead_counter--;
+			else
+				rap_current->dead_counter++;
 		
-			rap_current->resetWindow();
-			rap_current->dead_counter = 0;
+			if(rap_current->dead_counter > RAP_DEAD_COUNTER_SATURATION)
+				rap_current->dead_counter = RAP_DEAD_COUNTER_SATURATION;
+			else if(rap_current->dead_counter < -RAP_DEAD_COUNTER_SATURATION)
+				rap_current->dead_counter = -RAP_DEAD_COUNTER_SATURATION;
 
-			// Monitor state switching 
-			if(!m_isWarmup)
-				stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
+			if(rap_current->dead_counter == -RAP_DEAD_COUNTER_SATURATION && ENABLE_BYPASS)
+			{
+				/* Switch the state of the dataset to dead */ 
+				rap_current->des = BYPASS_CACHE;			
+
+				// Reset the window 
+				RW_TYPE old_rw = rap_current->state_rw;
+				RD_TYPE old_rd = rap_current->state_rd;
+
+				rap_current->state_rd = RD_NOT_ACCURATE;
+				rap_current->state_rw = DEAD;
 			
+				rap_current->resetWindow();
+				rap_current->dead_counter = 0;
+
+				// Monitor state switching 
+				if(!m_isWarmup)
+					stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
+			}	
 		}
+		else
+		{
+			//On dead mode, if a learning cache line is evicted, goes back to living mode
+			if(current->isLearning && (current->nbWrite > 0 || current->nbRead > 0))
+			{
+				RW_TYPE old_rw = rap_current->state_rw;
+				RD_TYPE old_rd = rap_current->state_rd;
+			
+				rap_current->initEntry();
+
+				// Monitor state switching 
+				if(!m_isWarmup)
+					stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
+
+			}
+		}
+	
 	}
 	
 	evictRecording(set , assoc_victim , inNVM);	
@@ -545,10 +565,10 @@ RAPPredictor::determineStatus(RAPEntry* entry)
 		entry->state_rw = RW;
 	
 	/***************************************/
-	if(entry->des == BYPASS_CACHE)
-	{
+	//if(entry->des == BYPASS_CACHE)
+	//{
 		/* If there are reuses on a dead datasets, we learn again */ 
-		if( (cptLong + cptBypass) != RAP_WINDOW_SIZE )
+	/*	if( (cptLong + cptBypass) != RAP_WINDOW_SIZE )
 		{
 			entry->des = ALLOCATE_PREEMPTIVELY;
 			entry->state_rd = RD_NOT_ACCURATE;
@@ -556,12 +576,12 @@ RAPPredictor::determineStatus(RAPEntry* entry)
 		}
 	}
 	else
-	{
+	{*/
 		if(energySRAM > energyNVM)
 			entry->des = ALLOCATE_IN_SRAM;
 		else
 			entry->des = ALLOCATE_IN_NVM; 
-	}
+	//}
 }
 
 allocDecision

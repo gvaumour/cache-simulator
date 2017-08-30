@@ -14,7 +14,7 @@ Hierarchy::Hierarchy()
 {
 	DPRINTF("Hierarchy:: null constructor\n");
 
-	Hierarchy("testRAP" , 1);
+	Hierarchy("RAP" , 1);
 }
 
 Hierarchy::Hierarchy(const Hierarchy& a)
@@ -119,7 +119,7 @@ Hierarchy::printConfig(ostream& out)
 	}
 	out << "***************" << endl;
 	out << "Last Level Cache : " << endl;
-	m_LLC->printResults(out);
+	m_LLC->printConfig(out);
 }
 
 void

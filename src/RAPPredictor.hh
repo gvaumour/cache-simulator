@@ -73,9 +73,9 @@ class Window_entry
 class RAPEntry
 {
 	public: 
-		RAPEntry() { initEntry( Access()); isValid = false; };
+		RAPEntry() { initEntry(); isValid = false; };
 		
-		void initEntry(Access element) {
+		void initEntry() {
 		 	m_pc = -1;
 		 	
 		 	des = ALLOCATE_PREEMPTIVELY;
@@ -86,7 +86,7 @@ class RAPEntry
 			cptBypassLearning = 0;
 			nbAccess = 0;
 			isValid = true;
-			
+			doMigration = false;
 			
 			nbKeepCurrentState = 0;
 			nbKeepState = 0;
