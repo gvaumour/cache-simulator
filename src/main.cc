@@ -38,26 +38,46 @@ int start_debug;
 Hierarchy* my_system;
 
 int main(int argc , char* argv[]){
+	
+	vector<string> args; 
+
+	string policy = "RAP";
+	int nbCores =1;
+	
+	for(int i = 1; i < argc-1 ; i+= 2)
+	{
+		if(string(argv[i]) == "-p")
+			policy = string(argv[i+1]);
+		else if(string(argv[i]) == "-n")
+			nbCores = atoi(argv[i+1]);
+		else 
+		{
+			args.push_back(string(argv[i]));
+			args.push_back(string(argv[i+1]));
+		}
+	}
+	if( (argc%2) == 0)
+		args.push_back(argv[argc-1]);
 
 	vector<string> memory_traces;
-	for(int i = 1 ; i < argc ; i++)
-		memory_traces.push_back(string(argv[i]));		
+	for(unsigned i = 0 ; i < args.size() ; i++)
+		memory_traces.push_back(args[i]);		
 	
 	if(argc == 1)
 		memory_traces.push_back(DEFAULT_TRACE);
-
 	
+	
+	/* The Control C signal handler setup */ 
 	struct sigaction sigIntHandler;
 	sigIntHandler.sa_handler = my_handler;
 	sigemptyset(&sigIntHandler.sa_mask);
 	sigIntHandler.sa_flags = 0;
 	sigaction(SIGINT, &sigIntHandler, NULL);
-	
+	/***********************************/ 	
 
-	my_system = new Hierarchy("RAP" , 4);
+	my_system = new Hierarchy(policy , nbCores);
  
- 
-	cout << "Launching simulation with " << memory_traces.size() << "file(s)" << endl;
+	cout << "Launching simulation with " << memory_traces.size() << "file(s), the " << policy << " policy and with " << nbCores << " cores" << endl;
 	cout << "Traces considered:" << endl;
 	for(auto memory_trace : memory_traces)
 		cout << "\t - " << memory_trace << endl;
@@ -71,7 +91,6 @@ int main(int argc , char* argv[]){
 		
 		Access element;
 		int cpt_access = 0;
-
 		my_system->startWarmup();
 		
 		while(traceWrapper->readNext(element)){
