@@ -196,7 +196,7 @@ Directory::removeEntry(uint64_t addr)
 	assert(entry != NULL);
 	DPRINTF("DIRECTORY::removeEntry Addr %#lx\n" , addr);
 	int id_set = indexFunction(addr);
-	for(int i = 0 ; i < m_table[id_set].size(); i++)
+	for(unsigned i = 0 ; i < m_table[id_set].size(); i++)
 	{
 		if(addr == m_table[id_set][i]->block_addr && m_table[id_set][i]->isValid){
 			m_table[id_set].erase(m_table[id_set].begin() + i);

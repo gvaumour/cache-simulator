@@ -14,6 +14,7 @@
 #define RAP_OUTPUT_FILE "rap_predictor.out"
 #define RAP_OUTPUT_FILE1 "rap_predictor1.out"
 #define RAP_TEST_OUTPUT_DATASETS "rap_test_dataset.out"
+#define RAP_MIGRATION_STATS "rap_migration_stats.out"
 
 #ifndef ENABLE_LAZY_MIGRATION
 	#define ENABLE_LAZY_MIGRATION true
@@ -186,7 +187,7 @@ class testRAPPredictor : public Predictor {
 		std::vector< std::vector<int> > stats_ClassErrors;
 
 		/* Lazy Migration opt */ 
-		std::vector<int> stats_nbMigrationsFromNVM;
+		std::vector< std::vector<int> > stats_nbMigrationsFromNVM;
 };
 
 

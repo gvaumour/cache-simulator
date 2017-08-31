@@ -53,7 +53,7 @@ testRAPPredictor::testRAPPredictor(int nbAssoc , int nbSet, int nbNVMways, DataA
 	dataset_file.close();
 
 
-	stats_nbMigrationsFromNVM = vector<int>(2,0);
+	stats_nbMigrationsFromNVM.push_back(vector<int>(2,0));
 //	stats_switchDecision.clear();
 //	stats_switchDecision.push_back(vector<vector<int>>(3 , vector<int>(3,0)));	
 	
@@ -274,7 +274,7 @@ testRAPPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* cur
 
 		m_cache->triggerMigration(set, index , id_assoc , false);
 		if(!m_isWarmup)
-			stats_nbMigrationsFromNVM[inNVM]++;
+			stats_nbMigrationsFromNVM.back()[0]++;
 	}
 	else if( rap_current->des == ALLOCATE_IN_SRAM && inNVM == true)
 	{
@@ -294,7 +294,7 @@ testRAPPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* cur
 		/* Record the write error migration */ 
 		Predictor::migrationRecording();
 		if(!m_isWarmup)
-			stats_nbMigrationsFromNVM[inNVM]++;
+			stats_nbMigrationsFromNVM.back()[1]++;
 
 	}
 //	cout <<" FINISH Lazy Migration "<< endl;
@@ -381,8 +381,19 @@ testRAPPredictor::printStats(std::ostream& out)
 	
 	if(ENABLE_LAZY_MIGRATION)
 	{
-		double migrationNVM = (double) stats_nbMigrationsFromNVM[0];
-		double migrationSRAM = (double) stats_nbMigrationsFromNVM[1];
+		double migrationNVM=0, migrationSRAM = 0;
+
+		ofstream file_migration_stats(RAP_MIGRATION_STATS);
+		
+		for(unsigned i = 0 ; i < stats_nbMigrationsFromNVM.size() ; i++)
+		{
+			migrationNVM += stats_nbMigrationsFromNVM[i][1];
+			migrationSRAM += stats_nbMigrationsFromNVM[i][0];			
+			
+			file_migration_stats << stats_nbMigrationsFromNVM[i][1] << "\t" << stats_nbMigrationsFromNVM[i][0] << endl;	
+		}
+		file_migration_stats.close();
+	
 		double total = migrationNVM+migrationSRAM;
 
 		if(total > 0){
@@ -691,6 +702,7 @@ testRAPPredictor::openNewTimeFrame()
 		return;
 
 //	stats_switchDecision.push_back(vector<vector<int> >(NUM_ALLOC_DECISION,vector<int>(NUM_ALLOC_DECISION,0)));
+	stats_nbMigrationsFromNVM.push_back(vector<int>(2,0));
 
 	Predictor::openNewTimeFrame();
 }

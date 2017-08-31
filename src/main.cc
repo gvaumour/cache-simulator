@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "MemoryTrace.hh"
 #include "common.hh"
 
-#define MERGING_RESULTS false
+#define MERGING_RESULTS true
 
 using namespace std;
 
@@ -81,7 +81,7 @@ int main(int argc , char* argv[]){
 
 	my_system = new Hierarchy(policy , nbCores);
  
-	cout << "Launching simulation with " << memory_traces.size() << "file(s), the " << policy << " policy and with " << nbCores << " cores" << endl;
+	cout << "Launching simulation with " << memory_traces.size() << " file(s), the " << policy << " policy and with " << nbCores << " cores" << endl;
 	cout << "Traces considered:" << endl;
 	for(auto memory_trace : memory_traces)
 		cout << "\t - " << memory_trace << endl;
@@ -110,6 +110,7 @@ int main(int argc , char* argv[]){
 				my_system->stopWarmup();
 			}
 			
+			cpt_time++;
 			cpt_access++;
 		}
 		traceWrapper->close();
