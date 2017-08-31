@@ -32,10 +32,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "MemoryTrace.hh"
 #include "common.hh"
 
+#define MERGING_RESULTS false
+
 using namespace std;
 
 int start_debug;
 Hierarchy* my_system;
+
 
 int main(int argc , char* argv[]){
 	
@@ -43,6 +46,7 @@ int main(int argc , char* argv[]){
 
 	string policy = "RAP";
 	int nbCores =1;
+	bool mergingResults = MERGING_RESULTS;
 	
 	for(int i = 1; i < argc-1 ; i+= 2)
 	{
@@ -82,6 +86,7 @@ int main(int argc , char* argv[]){
 	for(auto memory_trace : memory_traces)
 		cout << "\t - " << memory_trace << endl;
 	
+	int id_trace = 0;
 	for(auto memory_trace : memory_traces)
 	{
 		cout << "\tRunning Trace: " << memory_trace << " ... " <<  endl;
@@ -92,10 +97,12 @@ int main(int argc , char* argv[]){
 		Access element;
 		int cpt_access = 0;
 		my_system->startWarmup();
+		my_system->stopWarmup();
 		
 		while(traceWrapper->readNext(element)){
 
 			my_system->handleAccess(element);
+			DPRINTF("TIME::%ld\n",cpt_access);
 			
 			if(cpt_access == WARMUP_WINDOW)
 			{
@@ -107,9 +114,20 @@ int main(int argc , char* argv[]){
 		}
 		traceWrapper->close();
 		free(traceWrapper);
+		
+		if(!mergingResults)
+		{
+			my_system->finishSimu();	
+			printResults(mergingResults, id_trace);	
+		
+		}
+		id_trace++;
 	}	
-	my_system->finishSimu();	
-	printResults();
+	if(mergingResults)
+	{
+		my_system->finishSimu();	
+		printResults(mergingResults , id_trace);	
+	}
 	
 	delete(my_system);
 	return 0;
@@ -120,7 +138,7 @@ void my_handler(int s){
 	cout << endl;
 	cout << "Ctrl+C event caught, printing results and exiting" << endl;
 	
-	printResults();
+	printResults(false , 0);
 		
 	exit(1); 
 
@@ -128,18 +146,21 @@ void my_handler(int s){
 
 
 /** Writing all the output+config files */ 
-void printResults()
+void printResults(bool mergingResults, int id_trace)
 {
 	if(!my_system)
 		return;
 		
+		
+	string suffixe = mergingResults ? "_"+to_string(id_trace) : ""; 
+	
 	ofstream configFile;
-	configFile.open(CONFIG_FILE);
+	configFile.open("config" + suffixe + ".ini");
 	my_system->printConfig(configFile);
 	configFile.close();
 	
 	ofstream output_file;
-	output_file.open(OUTPUT_FILE);
+	output_file.open("results"+ suffixe + ".out");
 	my_system->printResults(output_file);
 	output_file.close();
 }

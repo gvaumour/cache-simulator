@@ -90,6 +90,21 @@ hexToInt(string adresse_hex){
 		return n;
 }
 
+static char * mydummy_var;
+
+uint64_t
+hexToInt1(const char* adresse_hex){
+	uint64_t n = strtoul( adresse_hex, &mydummy_var, 16 ); 
+
+	if ( *mydummy_var != 0 ) {  
+		cout << "not a number" << endl;
+		return 0;
+	}    
+	else   
+		return n;
+}
+
+
 bool
 readInputArgs(int argc , char* argv[] , int& sizeCache , int& assoc , int& blocksize, std::string& filename, std::string& policy)
 {

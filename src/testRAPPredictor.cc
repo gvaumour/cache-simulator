@@ -11,6 +11,8 @@ static const char* str_RW_status[] = {"DEAD" , "WO", "RO" , "RW", "RW_NOTACC"};
 static const char* str_RD_status[] = {"RD_SHORT" , "RD_MEDIUM", "RD_NOTACC", "UNKOWN"};
 
 
+ofstream myFile;
+
 /** testRAPPredictor Implementation ***********/ 
 testRAPPredictor::testRAPPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) : \
 	Predictor(nbAssoc, nbSet, nbNVMways, SRAMtable, NVMtable, cache) {
@@ -55,12 +57,15 @@ testRAPPredictor::testRAPPredictor(int nbAssoc , int nbSet, int nbNVMways, DataA
 //	stats_switchDecision.clear();
 //	stats_switchDecision.push_back(vector<vector<int>>(3 , vector<int>(3,0)));	
 	
+	myFile.open("dead_block_dump.out");
 }
 
 
 		
 testRAPPredictor::~testRAPPredictor()
 {
+	myFile.close();
+	
 	for(auto sets : m_RAPtable)
 		for(auto entry : sets)
 			delete entry;
@@ -471,7 +476,7 @@ testRAPPredictor::evictPolicy(int set, bool inNVM)
 	//We didn't create an entry for this dataset, probably a good reason =) (instruction mainly) 
 	if(rap_current != NULL)
 	{
-	
+		
 		if(rap_current->des == BYPASS_CACHE)
 		{
 			// A learning cache line on dead dataset goes here

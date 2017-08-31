@@ -50,7 +50,7 @@ class HybridCache {
 
 
 	public : 
-		HybridCache(int size , int assoc , int blocksize , int nbNVMways, std::string policy, Level* system);
+		HybridCache(int id, bool isInstructionCache, int size , int assoc , int blocksize , int nbNVMways, std::string policy, Level* system);
 		HybridCache(const HybridCache& a);
 		~HybridCache();
 
@@ -90,8 +90,13 @@ class HybridCache {
 		Level* getSystem() const { return m_system;}
 		void setSystem(Level* sys) { m_system = sys;}		
 		void setPrintState(bool printStats) { m_printStats = printStats;};
+		int getID() const {return m_ID;};
+		bool isInstCache() const {return m_isInstructionCache;};
 		
 	private :
+	
+		int m_ID;
+		bool m_isInstructionCache;
 		
 		std::vector<std::vector<CacheEntry*> > m_tableNVM;
 		std::vector<std::vector<CacheEntry*> > m_tableSRAM;
@@ -144,7 +149,8 @@ class HybridCache {
 		uint64_t stats_nbAlmostROaccess;
 		std::map<uint64_t,uint64_t> stats_histo_ratioRW;
 				
-		/********/ 
+		/********/
+		void entete_debug();
 
 };
 

@@ -49,6 +49,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 std::vector<std::string> split(std::string s, char delimiter);
 uint64_t bitRemove(uint64_t address , unsigned int small, unsigned int big);
 uint64_t hexToInt(std::string adresse_hex);
+uint64_t hexToInt1(const char* adresse_hex);
+
 bool readInputArgs(int argc , char* argv[] , int& sizeCache , int& assoc , int& blocksize, std::string& filename, std::string& policy);
 bool isPow2(int x);
 std::string convert_hex(int n);

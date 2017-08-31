@@ -24,14 +24,14 @@ Level::Level(int id_core, std::vector<ConfigCache> configs, Hierarchy* system) :
 	m_isUnified = true;
 	m_printStats = configs[0].m_printStats;
 	
-	m_dcache = new HybridCache(configs[0].m_size, configs[0].m_assoc , \
+	m_dcache = new HybridCache(m_IDcore, false, configs[0].m_size, configs[0].m_assoc , \
 					configs[0].m_blocksize, configs[0].m_nbNVMways, configs[0].m_policy, this);
 	
 	m_dcache->setPrintState(m_printStats);
 	m_icache = NULL;	
 	if(configs.size() == 2){
 		m_isUnified = false;
-		m_icache = new HybridCache(configs[1].m_size, configs[1].m_assoc , \
+		m_icache = new HybridCache(m_IDcore, true, configs[1].m_size, configs[1].m_assoc , \
 					configs[1].m_blocksize, configs[1].m_nbNVMways, configs[1].m_policy, this);
 		m_icache->setPrintState(m_printStats);
 	}

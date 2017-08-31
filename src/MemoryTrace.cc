@@ -22,6 +22,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <zlib.h>
 #include <fstream> 
 #include <algorithm>
+#include<string.h>
+
 
 #include "MemoryTrace.hh"
 #include "common.hh"
@@ -40,43 +42,35 @@ MemoryTrace::MemoryTrace(string trace) : m_trace(trace), m_isOpen(false)
 }
 
 
+static char mybuffer_dummy[TRACE_BUFFER_SIZE];
+static int readNext_operation;
+static string readNext_addr;
 
 bool 
 CompressedTrace::readNext(Access& element)
 {
-	assert(m_isOpen);
-	
-	char dummy[TRACE_BUFFER_SIZE];
-	string line;
-	vector<string> split_line;			
+	assert(m_isOpen);	
 
-	if(!gzread(m_compressedTrace, dummy, TRACE_BUFFER_SIZE))
+	if(!gzread(m_compressedTrace, mybuffer_dummy, TRACE_BUFFER_SIZE))
 		return false;
+	
+	readNext_addr = string(strtok(mybuffer_dummy, " "));
 
-	line = dummy;
-	split_line = split(line , ' ');
-
-	string addr = split_line[0];
-
-	if(addr[0] != '#' || addr[1] != '!')
+	if(readNext_addr[0] != '#' || readNext_addr[1] != '!')
 	{
 		cout << "Line passed - Wrong Format" << endl;
 		return true;
 	}
+	readNext_addr.erase( readNext_addr.begin(), readNext_addr.begin()+2);
 	
-	addr.erase( remove(addr.begin(), addr.end(), '#'), addr.end());
-	addr.erase( remove(addr.begin(), addr.end(), '!'), addr.end());
-
-//	cout << "Addr: " << addr << endl;
-	
-	element.m_address = hexToInt(addr);
-	int operation = atoi(split_line[1].c_str());		
-	element.m_size = atoi(split_line[2].c_str());		
-	element.m_idthread = atoi(split_line[3].c_str());
-	element.m_pc = hexToInt(split_line[4]);
+	element.m_address = hexToInt1(readNext_addr.c_str());
+	readNext_operation = atoi(strtok(NULL, " ") );		
+	element.m_size = atoi(strtok(NULL, " ")); 		
+	element.m_idthread = atoi( strtok(NULL, " ") );
+	element.m_pc = hexToInt1(strtok(NULL, " "));
 
 
-	switch(operation){
+	switch(readNext_operation){
 		case 0 : element.m_type = MemCmd::INST_READ;break;
 		case 1 : element.m_type = MemCmd::DATA_READ;break;
 		case 2 : element.m_type = MemCmd::DATA_WRITE;break;

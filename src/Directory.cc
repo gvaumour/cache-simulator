@@ -3,6 +3,7 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <math.h> //For log2 function
 
 #include "Directory.hh"
 #include "common.hh"
@@ -38,14 +39,17 @@ Directory::Directory()
 
 	m_table.resize(m_nb_set);
 	for(int i = 0  ; i < m_nb_set ; i++){
-		m_table[i].resize(m_assoc);
+//		m_table[i].resize(m_assoc);
+		m_table[i].clear();
+		/*
 		for(int j = 0 ; j < m_assoc ; j++){
 			m_table[i][j] = new DirectoryEntry();
-		}
+		}*/
 	}
 		
 	m_policy = new DirectoryReplacementPolicy(m_assoc , m_nb_set , m_table);
-	
+	m_start_index = log2(BLOCK_SIZE)-1;
+	m_end_index = log2(BLOCK_SIZE) + log2(m_nb_set);
 }
 
 Directory::~Directory()
@@ -66,21 +70,32 @@ Directory::addEntry(uint64_t addr , bool isInst)
 		return getEntry(addr);	
 	
 	uint64_t id_set = indexFunction(addr);
-	int assoc_victim = m_policy->evictPolicy(id_set);
+//	int assoc_victim = m_policy->evictPolicy(id_set);
+		
+	DirectoryEntry* entry = new DirectoryEntry();
 	
-	DirectoryEntry* entry = m_table[id_set][assoc_victim];
-	if(entry->isValid)
+	/*if(entry->isValid)
 	{
+	
+//		cout << "ID SET =" << id_set << endl;
 		DPRINTF("DIRECTORY::Eviction of dir entry, Block_addr[%#lx] \n", entry->block_addr);
-		entry->print();	
-	}
+		cout << "Assoc victim =" << assoc_victim << endl;
+//		entry->print();	
+//		for(int i  = 0 ; i < m_table[id_set].size(); i++)
+//		{
+//			cout << "\t Way " << i << endl;
+//			m_table[id_set][i]->print();
+//		}
+	}*/
 	
 	entry->initEntry();
 	entry->block_addr = addr;
 	entry->isValid = true;
 	entry->isInst = isInst;
-	
 	m_policy->insertionPolicy(entry);
+
+	m_table[id_set].push_back(entry);
+
 	return entry;
 }
 
@@ -106,7 +121,7 @@ Directory::setTrackerToEntry(uint64_t addr , int node)
 	entry->nodeTrackers.clear();
 	entry->nodeTrackers.insert(node);
 
-	m_policy->updatePolicy(entry);
+//	m_policy->updatePolicy(entry);
 }
 
 
@@ -145,7 +160,7 @@ Directory::setCoherenceState(uint64_t addr, DirectoryState dir_state)
 	assert(entry != NULL);
 	entry->coherence_state = dir_state;
 	entry->print();
-	m_policy->updatePolicy(entry);
+//	m_policy->updatePolicy(entry);
 }
 
 
@@ -158,7 +173,7 @@ Directory::resetTrackersToEntry(uint64_t addr)
 	assert(entry != NULL);
 
 	entry->resetTrackers();	
-	m_policy->updatePolicy(entry);
+//	m_policy->updatePolicy(entry);
 }
 
 
@@ -179,8 +194,15 @@ Directory::removeEntry(uint64_t addr)
 {
 	DirectoryEntry* entry = getEntry(addr);
 	assert(entry != NULL);
-	
-	entry->isValid = false;
+	DPRINTF("DIRECTORY::removeEntry Addr %#lx\n" , addr);
+	int id_set = indexFunction(addr);
+	for(int i = 0 ; i < m_table[id_set].size(); i++)
+	{
+		if(addr == m_table[id_set][i]->block_addr && m_table[id_set][i]->isValid){
+			m_table[id_set].erase(m_table[id_set].begin() + i);
+			break;
+		}
+	}
 }
 
 
@@ -192,7 +214,7 @@ Directory::addTrackerToEntry(uint64_t addr, int node)
 	DirectoryEntry* entry = getEntry(addr);
 	assert(entry != NULL);	
 	entry->nodeTrackers.insert(node);
-	m_policy->updatePolicy(entry);
+//	m_policy->updatePolicy(entry);
 }
 
 void
@@ -213,10 +235,25 @@ Directory::printStats()
 
 
 uint64_t 
-Directory::indexFunction(uint64_t addr)
+Directory::indexFunction(uint64_t block_addr)
 {
-	return addr % m_nb_set;
+	uint64_t a =block_addr;
+	a = bitRemove(a , m_end_index,64);	
+	a = a >> (m_start_index+1);
+	assert(a < (unsigned int)m_nb_set);
+	
+	return (int)a;
 }
+
+void
+Directory::updateEntry(uint64_t addr)
+{
+	DirectoryEntry* entry = getEntry(addr);
+	assert(entry != NULL);	
+	m_policy->updatePolicy(entry);
+	
+}
+
 
 
 /******** Implementation of the replacement policy of the Directory */ 
@@ -238,20 +275,21 @@ DirectoryReplacementPolicy::updatePolicy(DirectoryEntry* entry)
 int 
 DirectoryReplacementPolicy::evictPolicy(int set)
 {
+	/*
 	int smallest_time = m_directory_entries[set][0]->policyInfo , smallest_index = 0;
 
-	for(unsigned i = 0 ; i < m_assoc ; i++){
+	for(unsigned i = 0 ; i < m_directory_entries[set].size() ; i++){
 		if(!m_directory_entries[set][i]->isValid) 
 			return i;
 	}
 	
-	for(unsigned i = 0 ; i < m_assoc ; i++){
+	for(unsigned i = 0 ; i < m_directory_entries[set].size() ; i++){
 		if(m_directory_entries[set][i]->policyInfo < smallest_time){
 			smallest_time =  m_directory_entries[set][i]->policyInfo;
 			smallest_index = i;
 		}
-	}
-	return smallest_index;
+	}*/
+	return 0;
 }
 
 

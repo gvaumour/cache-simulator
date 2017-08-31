@@ -146,7 +146,8 @@ Hierarchy::signalWB(uint64_t addr, bool isDirty , bool isKept, int idcore)
 		//Remove the idcore from the tracker list and update the state
 		if(!isKept)
 			m_directory->removeTracker(addr , idcore);
-		m_LLC->handleWB(addr , isDirty);	
+		m_LLC->handleWB(addr , isDirty);
+		m_directory->updateEntry(addr);
 	}
 }
 
@@ -186,18 +187,21 @@ Hierarchy::handleAccess(Access element)
 	if(dir_state == NOT_PRESENT)
 	{
 		m_directory->setTrackerToEntry(block_addr, id_core);			
-		m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);
 
-		m_LLC->handleAccess(element);
 		m_private_caches[id_core]->handleAccess(element);		
+		m_LLC->handleAccess(element);
+		m_directory->updateEntry(block_addr);
+
+		m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);
 	}
 	else if(dir_state == CLEAN_LLC || dir_state == DIRTY_LLC)
 	{
 			m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);
 			m_directory->setTrackerToEntry(block_addr, id_core);			
 	
-			m_LLC->handleAccess(element);
 			m_private_caches[id_core]->handleAccess(element);
+			m_LLC->handleAccess(element);
+			m_directory->updateEntry(block_addr);
 	}
 	else if( dir_state == MODIFIED_L1 || dir_state == EXCLUSIVE_L1)
 	{
@@ -222,6 +226,7 @@ Hierarchy::handleAccess(Access element)
 
 			}
 			m_LLC->handleAccess(element);
+			m_directory->updateEntry(block_addr);
 			m_private_caches[id_core]->handleAccess(element);
 		
 		}
@@ -249,6 +254,7 @@ Hierarchy::handleAccess(Access element)
 			
 			//We write the new version to the LLC 
 			m_LLC->handleAccess(element);
+			m_directory->updateEntry(block_addr);
 			m_private_caches[id_core]->handleAccess(element);
 		}
 		else
@@ -300,7 +306,7 @@ Hierarchy::L1sdeallocate(uint64_t addr)
 			m_private_caches[node]->deallocate(addr);
 		
 		m_directory->resetTrackersToEntry(addr);
-		m_directory->setCoherenceState(addr , NOT_PRESENT);
+		m_directory->setCoherenceState(addr , CLEAN_LLC);
 	}		
 }
 

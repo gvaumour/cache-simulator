@@ -9,7 +9,7 @@
 
 #include "Cache.hh"
 #include "common.hh"
-#define DIRECTORY_ASSOC 8192
+#define DIRECTORY_ASSOC 64
 #define DIRECTORY_NB_SETS 2048
 
 
@@ -80,6 +80,7 @@ class Directory
 		void resetTrackersToEntry(uint64_t addr);
 		void removeTracker(uint64_t addr, int node);
 		void removeEntry(uint64_t addr);
+		void updateEntry(uint64_t addr);
 
 		std::set<int> getTrackers(uint64_t addr);
 		void setCoherenceState(uint64_t addr, DirectoryState dir_state);
@@ -100,6 +101,9 @@ class Directory
 	
 		int m_nb_set;
 		int m_assoc;
+		
+		int m_end_index;
+		int m_start_index;
 };
 
 

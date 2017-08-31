@@ -42,7 +42,7 @@ using namespace std;
 
 
 
-HybridCache::HybridCache(int size , int assoc , int blocksize , int nbNVMways, string policy, Level* system){
+HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc , int blocksize , int nbNVMways, string policy, Level* system){
 
 	m_assoc = assoc;
 	m_cache_size = size;
@@ -51,7 +51,9 @@ HybridCache::HybridCache(int size , int assoc , int blocksize , int nbNVMways, s
 	m_nbNVMways = nbNVMways;	
 	m_nbSRAMways = m_assoc - m_nbNVMways;
 	m_system = system;
-
+	m_ID = id;
+	m_isInstructionCache = isInstructionCache;
+	
 	assert(isPow2(m_nb_set));
 	assert(isPow2(m_blocksize));
 
@@ -130,7 +132,8 @@ HybridCache::HybridCache(int size , int assoc , int blocksize , int nbNVMways, s
 
 }
 
-HybridCache::HybridCache(const HybridCache& a) : HybridCache(a.getSize(), a.getAssoc() , a.getBlockSize(), a.getNVMways(), a.getPolicy(), a.getSystem()) 
+HybridCache::HybridCache(const HybridCache& a) : HybridCache(a.getID(), a.isInstCache(),\
+		 a.getSize(), a.getAssoc() , a.getBlockSize(), a.getNVMways(), a.getPolicy(), a.getSystem()) 
 {
 }
 
@@ -163,7 +166,8 @@ HybridCache::finishSimu()
 bool
 HybridCache::lookup(Access element)
 {	
-	DPRINTF("CACHE::Lookup of addr %#lx\n" ,  element.m_address);
+	entete_debug();
+	DPRINTF("Lookup of addr %#lx\n" ,  element.m_address);
 	return getEntry(element.m_address) != NULL;
 }
 
@@ -200,7 +204,8 @@ HybridCache::handleAccess(Access element)
 		
 		if(des == BYPASS_CACHE )
 		{
-			DPRINTF("CACHE::Bypassing the cache for this \n");
+			entete_debug();
+			DPRINTF("Bypassing the cache for this \n");
 			if(!m_isWarmup)
 				stats_bypass++;
 		}
@@ -221,7 +226,8 @@ HybridCache::handleAccess(Access element)
 				
 			//Deallocate the cache line in the lower levels (inclusive system)
 			if(replaced_entry->isValid){
-				DPRINTF("CACHE::Invalidation of the cache line : %#lx , id_assoc %d\n" , replaced_entry->address, id_assoc);		
+				entete_debug();
+				DPRINTF("Invalidation of the cache line : %#lx , id_assoc %d\n" , replaced_entry->address, id_assoc);		
 		
 				//Inform the higher level of the deallocation
 				m_system->signalDeallocate(replaced_entry->address); 
@@ -239,7 +245,8 @@ HybridCache::handleAccess(Access element)
 			m_predictor->insertionPolicy(id_set , id_assoc , inNVM, element);
 
 			if(inNVM){
-				DPRINTF("CACHE::It is a Miss ! Block[%#lx] is allocated in the NVM cache : Set=%d, Way=%d\n", block_addr , id_set, id_assoc);
+				entete_debug();
+				DPRINTF("It is a Miss ! Block[%#lx] is allocated in the NVM cache : Set=%d, Way=%d\n", block_addr , id_set, id_assoc);
 				if(!m_isWarmup)
 				{
 					stats_missNVM[stats_index]++;
@@ -253,7 +260,8 @@ HybridCache::handleAccess(Access element)
 				m_tableNVM[id_set][id_assoc]->m_compilerHints = element.m_compilerHints;
 			}
 			else{
-				DPRINTF("CACHE::It is a Miss ! Block[%#lx] is allocated in the SRAM cache : Set=%d, Way=%d\n",block_addr, id_set, id_assoc);
+				entete_debug();
+				DPRINTF("It is a Miss ! Block[%#lx] is allocated in the SRAM cache : Set=%d, Way=%d\n",block_addr, id_set, id_assoc);
 				if(!m_isWarmup){				
 					stats_missSRAM[stats_index]++;			
 					stats_hitsSRAM[stats_index]++;			
@@ -272,10 +280,10 @@ HybridCache::handleAccess(Access element)
 		int id_assoc = -1;
 		map<uint64_t,HybridLocation>::iterator p = m_tag_index.find(current->address);
 		id_assoc = p->second.m_way;
-		string a = current->isNVM ? " IN NVM" : "IN SRAM";
+		string a = current->isNVM ? "in NVM" : "in SRAM";
 
-		DPRINTF("CACHE::It is a hit ! Block[%#lx] Found Set=%d, Way=%d\n" , block_addr, id_set, id_assoc);
-		DPRINTF("CACHE:: %s\n" , a.c_str());
+		entete_debug();
+		DPRINTF("It is a hit ! Block[%#lx] Found %s Set=%d, Way=%d\n" , block_addr, a.c_str(), id_set, id_assoc);
 		
 		m_predictor->updatePolicy(id_set , id_assoc, current->isNVM, element , false);
 				
@@ -358,7 +366,8 @@ HybridCache::updateStatsDeallocate(CacheEntry* current)
 void
 HybridCache::deallocate(uint64_t block_addr)
 {
-	DPRINTF("CACHE::DEALLOCATE %#lx\n", block_addr);
+	entete_debug();
+DPRINTF("DEALLOCATE %#lx\n", block_addr);
 	map<uint64_t,HybridLocation>::iterator it = m_tag_index.find(block_addr);	
 	
 	if(it != m_tag_index.end()){
@@ -462,7 +471,8 @@ HybridCache::allocate(uint64_t address , int id_set , int id_assoc, bool inNVM, 
 
 void HybridCache::triggerMigration(int set, int id_assocSRAM, int id_assocNVM , bool fromNVM)
 {
-	DPRINTF("CACHE::TriggerMigration set %d , id_assocSRAM %d , id_assocNVM %d\n" , set , id_assocSRAM , id_assocNVM);
+	entete_debug();
+	DPRINTF("TriggerMigration set %d , id_assocSRAM %d , id_assocNVM %d\n" , set , id_assocSRAM , id_assocNVM);
 	CacheEntry* sram_line = m_tableSRAM[set][id_assocSRAM];
 	CacheEntry* nvm_line = m_tableNVM[set][id_assocNVM];
 	
@@ -528,7 +538,8 @@ HybridCache::signalWB(uint64_t addr, bool isKept)
 	CacheEntry* entry = getEntry(addr);
 	assert(entry != NULL);
 	
-	DPRINTF("CACHE::Invalidation of the block [%#lx]\n" , entry->address);
+	entete_debug();
+	DPRINTF("Invalidation of the block [%#lx]\n" , entry->address);
 	m_system->signalWB(entry->address , entry->isDirty, isKept);	
 }
 
@@ -686,6 +697,18 @@ HybridCache::printResults(std::ostream& out)
 		}
 
 
+}
+
+void
+HybridCache::entete_debug()
+{
+	DPRINTF("CACHE[%d]-", m_ID);
+	if(m_isInstructionCache){
+		DPRINTF("I:");	
+	}
+	else{	
+		DPRINTF("D:");
+	}
 }
 
 //ostream&

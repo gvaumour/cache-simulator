@@ -7,7 +7,7 @@
 
 #include "Hierarchy.hh"
 
-void printResults();
+void printResults(bool mergingResults, int id_trace);
 void my_handler(int s);
 
 
