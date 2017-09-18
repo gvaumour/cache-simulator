@@ -7,7 +7,7 @@ ifdef TEST
 endif 
 
 CPP   = g++
-FLAGS = -Wall -O0 -std=c++11 -I./src/ $(FLAGS_DEBUGS)
+FLAGS = -Wall -O3	 -std=c++11 -I./src/ $(FLAGS_DEBUGS)
 LDFLAGS= -lz -Wall -O0 $(FLAGS_DEBUGS)
 
 SRC= $(wildcard src/*.cc)

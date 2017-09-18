@@ -48,7 +48,6 @@ class testRAPEntry
 		 	cpts =  std::vector<int>(NUM_RW_TYPE,0);
 		 	lastWrite = 0;
 		 	m_pc = -1;
-		 	
 		 	des = ALLOCATE_PREEMPTIVELY;
 		 					
 		 	policyInfo = 0;
@@ -71,6 +70,7 @@ class testRAPEntry
 		/* Saturation counters for the classes of cl*/ 
 		std::vector<int> cpts;
 
+		int id;
 		int lastWrite;
 		
 		/* PC of the dataset */
@@ -168,6 +168,9 @@ class testRAPPredictor : public Predictor {
 		
 		void checkLazyMigration(testRAPEntry* rap_current , CacheEntry* current ,uint64_t set,bool inNVM , uint64_t index);
 
+		void reportAccess(testRAPEntry* rap_current, Access element, CacheEntry* current, bool inNVM);
+
+
 	protected : 
 		uint64_t m_cpt;
 		int learningTHcpt;
@@ -188,6 +191,10 @@ class testRAPPredictor : public Predictor {
 
 		/* Lazy Migration opt */ 
 		std::vector< std::vector<int> > stats_nbMigrationsFromNVM;
+
+		uint64_t stats_error_wrongallocation, stats_error_learning, stats_error_wrongpolicy;
+		uint64_t stats_error_SRAMwrongallocation, stats_error_SRAMlearning, stats_error_SRAMwrongpolicy;
+		
 };
 
 

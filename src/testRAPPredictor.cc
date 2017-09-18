@@ -11,7 +11,10 @@ static const char* str_RW_status[] = {"DEAD" , "WO", "RO" , "RW", "RW_NOTACC"};
 static const char* str_RD_status[] = {"RD_SHORT" , "RD_MEDIUM", "RD_NOTACC", "UNKOWN"};
 
 
-ofstream myFile;
+//ofstream myFile;
+
+ofstream dataset_file;
+int id_DATASET = 0;
 
 /** testRAPPredictor Implementation ***********/ 
 testRAPPredictor::testRAPPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) : \
@@ -49,22 +52,32 @@ testRAPPredictor::testRAPPredictor(int nbAssoc , int nbSet, int nbNVMways, DataA
 	stats_ClassErrors = vector< vector<int> >(NUM_RW_TYPE*NUM_RD_TYPE, vector<int>(NUM_RD_TYPE*NUM_RW_TYPE, 0));	
 	
 	/* Reseting the dataset_file */ 
-	ofstream dataset_file(RAP_TEST_OUTPUT_DATASETS);
-	dataset_file.close();
+//	ofstream dataset_file(RAP_TEST_OUTPUT_DATASETS);
+//	dataset_file.close();
 
 
 	stats_nbMigrationsFromNVM.push_back(vector<int>(2,0));
 //	stats_switchDecision.clear();
 //	stats_switchDecision.push_back(vector<vector<int>>(3 , vector<int>(3,0)));	
 	
-	myFile.open("dead_block_dump.out");
+//	myFile.open("dead_block_dump.out");
+	dataset_file.open(RAP_TEST_OUTPUT_DATASETS);
+
+	stats_error_wrongallocation = 0;
+	stats_error_learning = 0;
+	stats_error_wrongpolicy = 0;	
+
+	stats_error_SRAMwrongallocation = 0;
+	stats_error_SRAMlearning = 0;
+	stats_error_SRAMwrongpolicy = 0;
+
 }
 
 
 		
 testRAPPredictor::~testRAPPredictor()
 {
-	myFile.close();
+//	myFile.close();
 	
 	for(auto sets : m_RAPtable)
 		for(auto entry : sets)
@@ -103,9 +116,10 @@ testRAPPredictor::allocateInNVM(uint64_t set, Access element)
 				stats_nbSwitchDst.push_back((double)rap_current->nbSwitchState / \
 					 (double)(rap_current->nbKeepState+rap_current->nbSwitchState) );		
 		}
-		/******************/ 	
+		/******************/
 
 		rap_current->initEntry(element);
+		rap_current->id = id_DATASET++;
 		rap_current->m_pc = element.m_pc;
 	}
 	else
@@ -165,6 +179,7 @@ testRAPPredictor::finishSimu()
 			}
 		}
 	}
+	dataset_file.close();
 }
 
 
@@ -197,7 +212,7 @@ testRAPPredictor::computeRd(uint64_t set, uint64_t  index , bool inNVM)
 
 void
 testRAPPredictor::dumpDataset(testRAPEntry* entry)
-{
+{	/*
 	if(entry->stats_history.size() < 2)
 		return;
 
@@ -213,7 +228,7 @@ testRAPPredictor::dumpDataset(testRAPEntry* entry)
 	{
 		dataset_file << "\t\t" << str_RW_status[p.state_rw]<< "\t" << str_RD_status[p.state_rd] << "\t" << p.nbKeepState << endl;
 	}
-	dataset_file.close();
+	dataset_file.close();*/
 }
 
 
@@ -249,11 +264,71 @@ testRAPPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access 
 			{ 
 				checkLazyMigration(rap_current , current , set , inNVM , index);
 			}
+			reportAccess(rap_current , element, current, inNVM);
+			
+			
 		}	
 	}
 	
 	m_cpt++;
 	Predictor::updatePolicy(set , index , inNVM , element , isWBrequest);
+}
+
+
+void
+testRAPPredictor::reportAccess(testRAPEntry* rap_current, Access element, CacheEntry* current, bool inNVM)
+{
+
+	string cl_location = inNVM ? "NVM" : "SRAM";
+	
+	dataset_file << std::hex << "Dataset n°" << rap_current->id << ": [" << \
+	str_RW_status[rap_current->state_rw] << ","  << str_RD_status[rap_current->state_rd] << "], Cl is 0x" << \
+	current->address << " allocated in " << cl_location << endl;
+
+	if(inNVM && element.isWrite())
+	{
+		dataset_file << "NVM Error : ";
+		if(rap_current->des == ALLOCATE_IN_NVM)
+		{
+			stats_error_wrongpolicy++;
+			dataset_file << " Policy Error" << endl;		
+		}
+		else if(rap_current->des == ALLOCATE_PREEMPTIVELY)
+		{
+			stats_error_learning++;
+			dataset_file << " Learning Error" << endl;
+		}
+		else if(rap_current->des == ALLOCATE_IN_SRAM && inNVM)
+		{
+			dataset_file << "Wrongly allocated cl" << endl;
+			stats_error_wrongallocation++;	
+		}
+		dataset_file << endl;
+	}
+	
+	if(element.isSRAMerror)
+	{
+		dataset_file << "SRAM Error : ";
+		
+		if(rap_current->des == ALLOCATE_IN_SRAM)
+		{
+			stats_error_SRAMwrongpolicy++;
+			dataset_file << "Wrong policy" << endl;
+		}
+		else if(rap_current->des == ALLOCATE_PREEMPTIVELY)
+		{
+			stats_error_SRAMlearning++;
+			dataset_file << " Learning Error" << endl;
+		}
+		else if(rap_current->des == ALLOCATE_IN_NVM && !inNVM)
+		{
+			stats_error_SRAMwrongallocation++;
+			dataset_file << "Wrongly allocated cl" << endl;
+		}		
+		
+		dataset_file << endl;		
+	}
+
 }
 
 
@@ -311,12 +386,14 @@ testRAPPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 		
 	current->policyInfo = m_cpt;
 	
+	
 	testRAPEntry* rap_current;
 	if( (rap_current= lookup(current->m_pc) ) != NULL )
 	{
 		/* Set the flag of learning cache line when bypassing */
 		if(rap_current->des == BYPASS_CACHE)
 			current->isLearning = true;
+		reportAccess(rap_current, element, current, inNVM);
 	}
 	
 	m_cpt++;
@@ -367,9 +444,18 @@ testRAPPredictor::printStats(std::ostream& out)
 	*/
 
 	out << "\tRAP Table:" << endl;
-	out << "\t\t NB Hits: " << stats_RAP_hits << endl;
-	out << "\t\t NB Miss: " << stats_RAP_miss << endl;
-	out << "\t\t Miss Ratio: " << stats_RAP_miss*100.0/(double)(stats_RAP_hits+stats_RAP_miss)<< "%" << endl;
+	out << "\t\t NB Hits\t" << stats_RAP_hits << endl;
+	out << "\t\t NB Miss\t" << stats_RAP_miss << endl;
+	out << "\t\t Miss Ratio\t" << stats_RAP_miss*100.0/(double)(stats_RAP_hits+stats_RAP_miss)<< "%" << endl;
+	out << "\tSource of Error, NVM error" << endl;
+	out << "\t\tWrong Policy\t" << stats_error_wrongpolicy << endl;
+	out << "\t\tWrong Allocation\t" << stats_error_wrongallocation << endl;
+	out << "\t\tLearning\t" << stats_error_learning << endl;		
+	out << "\tSource of Error, SRAM error" << endl;
+	out << "\t\tWrong Policy\t" << stats_error_SRAMwrongpolicy << endl;
+	out << "\t\tWrong Allocation\t" << stats_error_SRAMwrongallocation << endl;
+	out << "\t\tLearning\t" << stats_error_SRAMlearning << endl;		
+	
 	
 	if(stats_nbSwitchDst.size() > 0)
 	{

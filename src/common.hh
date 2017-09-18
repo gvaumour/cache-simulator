@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define OUTPUT_FILE "results.out"
 #define LOG_FILE "log.out"
 
-#define PREDICTOR_TIME_FRAME 1E6
+#define PREDICTOR_TIME_FRAME 1E4
 
 #define ONE_MB 1048576
 #define TWO_MB 2*ONE_MB
