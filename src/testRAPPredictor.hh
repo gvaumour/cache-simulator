@@ -169,7 +169,7 @@ class testRAPPredictor : public Predictor {
 
 		void updateWindow(testRAPEntry* rap_current);
 		
-		void checkLazyMigration(testRAPEntry* rap_current , CacheEntry* current ,uint64_t set,bool inNVM , uint64_t index);
+		CacheEntry* checkLazyMigration(testRAPEntry* rap_current , CacheEntry* current ,uint64_t set,bool inNVM , uint64_t index);
 
 		void reportAccess(testRAPEntry* rap_current, Access element, CacheEntry* current, bool inNVM);
 

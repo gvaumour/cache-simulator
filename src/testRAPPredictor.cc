@@ -262,9 +262,9 @@ testRAPPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access 
 			
 			if(ENABLE_LAZY_MIGRATION)
 			{ 
-				checkLazyMigration(rap_current , current , set , inNVM , index);
+				current = checkLazyMigration(rap_current , current , set , inNVM , index);
 			}
-			reportAccess(rap_current , element, current, inNVM);
+			reportAccess(rap_current , element, current, current->isNVM);
 			
 			
 		}	
@@ -337,7 +337,7 @@ testRAPPredictor::reportAccess(testRAPEntry* rap_current, Access element, CacheE
 }
 
 
-void
+CacheEntry*
 testRAPPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* current ,uint64_t set,bool inNVM, uint64_t index)
 {
 	if(rap_current->des == ALLOCATE_IN_NVM && inNVM == false)
@@ -352,10 +352,14 @@ testRAPPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* cur
 		replaced_entry->nbWrite++;
 		current->nbRead++;
 		
+		/* Record the write error migration */ 
+		Predictor::migrationRecording();
 		
 		m_cache->triggerMigration(set, index , id_assoc , false);
 		if(!m_isWarmup)
 			stats_nbMigrationsFromNVM.back()[FROMSRAM]++;
+
+		current = replaced_entry;		
 	}
 	else if( rap_current->des == ALLOCATE_IN_SRAM && inNVM == true)
 	{
@@ -372,13 +376,13 @@ testRAPPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* cur
 	
 		m_cache->triggerMigration(set, id_assoc , index , true);
 		
-		/* Record the write error migration */ 
-		Predictor::migrationRecording();
 		if(!m_isWarmup)
 			stats_nbMigrationsFromNVM.back()[FROMNVM]++;
 
+		current = replaced_entry;		
 	}
 //	cout <<" FINISH Lazy Migration "<< endl;
+	return current;
 }
 
 void
@@ -742,12 +746,14 @@ testRAPPredictor::printStats(std::ostream& out)
 	out << "\t\tWrong Policy\t" << stats_error_wrongpolicy << endl;
 	out << "\t\tWrong Allocation\t" << stats_error_wrongallocation << endl;
 	out << "\t\tLearning\t" << stats_error_learning << endl;		
+
+	if(ENABLE_LAZY_MIGRATION)
+		out << "\t\tMigration Error\t" << migrationNVM << endl;		
+
 	out << "\tSource of Error, SRAM error" << endl;
 	out << "\t\tWrong Policy\t" << stats_error_SRAMwrongpolicy << endl;
 	out << "\t\tWrong Allocation\t" << stats_error_SRAMwrongallocation << endl;
 	out << "\t\tLearning\t" << stats_error_SRAMlearning << endl;		
-	if(ENABLE_LAZY_MIGRATION)
-		out << "\t\tMigration Error\t" << migrationNVM << endl;		
 	
 	
 	
