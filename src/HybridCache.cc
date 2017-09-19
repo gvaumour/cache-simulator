@@ -123,7 +123,8 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 	stats_nbWOlines = 0 ;
 	stats_nbWOaccess = 0;
 	stats_bypass = 0;
-	stats_nbUselessMigration = 0;
+	stats_nbDeadMigration = 0;
+	stats_nbPingMigration = 0;
 	
 	stats_histo_ratioRW.clear();
 	
@@ -343,7 +344,7 @@ HybridCache::updateStatsDeallocate(CacheEntry* current)
 	stats_histo_ratioRW[current->nbWrite]++;
 	
 	if(current->justMigrate)
-		stats_nbUselessMigration++;
+		stats_nbDeadMigration++;
 	
 	if(current->nbWrite == 0 && current->nbRead > 0){
 		stats_nbROlines++;
@@ -490,6 +491,9 @@ void HybridCache::triggerMigration(int set, int id_assocSRAM, int id_assocNVM , 
 	
 	if(fromNVM)
 	{
+		if(nvm_line->justMigrate)
+			stats_nbPingMigration++;
+	
 		//From NVM to SRAM 
 		//NVM cl erase the SRAM cl 
 		deallocate(sram_line);
@@ -510,6 +514,10 @@ void HybridCache::triggerMigration(int set, int id_assocSRAM, int id_assocNVM , 
 	}
 	else
 	{
+	
+		if(sram_line->justMigrate)
+			stats_nbPingMigration++;
+
 		//From SRAM to NVM 
 		//SRAM cl erase the NVM cl 
 		deallocate(nvm_line);
@@ -663,7 +671,8 @@ HybridCache::printResults(std::ostream& out)
 				out << "\t- Bypass : " << stats_bypass << endl;
 			
 			if(isPolicyDynamic(m_policy))
-				out << "\tUseless Migration : " << stats_nbUselessMigration << endl;
+				out << "\tDead Migration : " << stats_nbDeadMigration << endl;
+				out << "\tPing Migration : " << stats_nbPingMigration << endl;
 	
 			out << endl;
 			if(m_nbNVMways > 0){
