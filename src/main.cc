@@ -81,7 +81,7 @@ int main(int argc , char* argv[]){
 
 	my_system = new Hierarchy(policy , nbCores);
  
-	cout << "Launching simulation with " << memory_traces.size() << " file(s), the " << policy << " policy and with " << nbCores << " cores" << endl;
+	cout << "Launching simulation with " << memory_traces.size() << " file(s), the " << policy << " policy and with " << nbCores << " core(s)" << endl;
 	cout << "Traces considered:" << endl;
 	for(auto memory_trace : memory_traces)
 		cout << "\t - " << memory_trace << endl;

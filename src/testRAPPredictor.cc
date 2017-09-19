@@ -303,6 +303,10 @@ testRAPPredictor::reportAccess(testRAPEntry* rap_current, Access element, CacheE
 			dataset_file << "Wrongly allocated cl" << endl;
 			stats_error_wrongallocation++;	
 		}
+		else
+		{
+			dataset_file << " Des: " << allocDecision_str[rap_current->des] << "UNKNOW Error";
+		}
 		dataset_file << endl;
 	}
 	
@@ -346,15 +350,16 @@ testRAPPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* cur
 		/** Migration incurs one read and one extra write */ 
 		replaced_entry->nbWrite++;
 		current->nbRead++;
-
+		
+		
 		m_cache->triggerMigration(set, index , id_assoc , false);
 		if(!m_isWarmup)
-			stats_nbMigrationsFromNVM.back()[0]++;
+			stats_nbMigrationsFromNVM.back()[FROMSRAM]++;
 	}
 	else if( rap_current->des == ALLOCATE_IN_SRAM && inNVM == true)
 	{
 	
-		DPRINTF("testRAPPredictor:: Migration Triggered from NVM\n");
+		DPRINTF("testRAPPredictor::Migration Triggered from NVM\n");
 
 		int id_assoc = evictPolicy(set, false);
 		
@@ -369,7 +374,7 @@ testRAPPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* cur
 		/* Record the write error migration */ 
 		Predictor::migrationRecording();
 		if(!m_isWarmup)
-			stats_nbMigrationsFromNVM.back()[1]++;
+			stats_nbMigrationsFromNVM.back()[FROMNVM]++;
 
 	}
 //	cout <<" FINISH Lazy Migration "<< endl;
@@ -473,10 +478,10 @@ testRAPPredictor::printStats(std::ostream& out)
 		
 		for(unsigned i = 0 ; i < stats_nbMigrationsFromNVM.size() ; i++)
 		{
-			migrationNVM += stats_nbMigrationsFromNVM[i][1];
-			migrationSRAM += stats_nbMigrationsFromNVM[i][0];			
+			migrationNVM += stats_nbMigrationsFromNVM[i][FROMNVM];
+			migrationSRAM += stats_nbMigrationsFromNVM[i][FROMSRAM];			
 			
-			file_migration_stats << stats_nbMigrationsFromNVM[i][1] << "\t" << stats_nbMigrationsFromNVM[i][0] << endl;	
+			file_migration_stats << stats_nbMigrationsFromNVM[i][FROMNVM] << "\t" << stats_nbMigrationsFromNVM[i][FROMSRAM] << endl;	
 		}
 		file_migration_stats.close();
 	

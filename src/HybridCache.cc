@@ -123,6 +123,7 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 	stats_nbWOlines = 0 ;
 	stats_nbWOaccess = 0;
 	stats_bypass = 0;
+	stats_nbUselessMigration = 0;
 	
 	stats_histo_ratioRW.clear();
 	
@@ -286,7 +287,8 @@ HybridCache::handleAccess(Access element)
 		DPRINTF("It is a hit ! Block[%#lx] Found %s Set=%d, Way=%d\n" , block_addr, a.c_str(), id_set, id_assoc);
 		
 		m_predictor->updatePolicy(id_set , id_assoc, current->isNVM, element , false);
-				
+		
+		current->justMigrate = false;
 		if(element.isWrite()){
 			current->isDirty = true;
 			current->nbWrite++;
@@ -340,7 +342,9 @@ HybridCache::updateStatsDeallocate(CacheEntry* current)
 		
 	stats_histo_ratioRW[current->nbWrite]++;
 	
-		
+	if(current->justMigrate)
+		stats_nbUselessMigration++;
+	
 	if(current->nbWrite == 0 && current->nbRead > 0){
 		stats_nbROlines++;
 		stats_nbROaccess+= current->nbRead; 
@@ -404,28 +408,32 @@ HybridCache::handleWB(uint64_t block_addr, bool isDirty)
 	
 		HybridLocation loc = it->second;
 		bool inNVM = loc.m_inNVM;
+		int id_set = blockAddressToCacheSet(block_addr);
+
+		CacheEntry* current = NULL;
+		if(inNVM)
+			current = m_tableNVM[id_set][loc.m_way];
+		else
+			current = m_tableSRAM[id_set][loc.m_way];							
 	
+		current->justMigrate = false;
+
 		if(isDirty){
 			//Dirty WB updates the state of the cache line		 
 			Access element;
 			element.m_type = MemCmd::DIRTY_WRITEBACK;
-			int id_set = blockAddressToCacheSet(block_addr);
-			CacheEntry* current = NULL;
-
-			if(inNVM){
-				current = m_tableNVM[id_set][loc.m_way];
-				stats_dirtyWBNVM++;
-			}
-			else {
-				current = m_tableSRAM[id_set][loc.m_way];							
-				stats_dirtyWBSRAM++;
-			}
-			current->nbWrite++;
 			element.m_compilerHints = current->m_compilerHints;
+
+			current->nbWrite++;
 			
 			// The updatePolicy can provoke the migration so we update the nbWrite cpt before
 			m_predictor->updatePolicy(id_set , loc.m_way , loc.m_inNVM, element , true);		
 
+			if(inNVM)
+				stats_dirtyWBNVM++;
+			else
+				stats_dirtyWBSRAM++;
+	
 		}
 		else{
 			// Clean WB does not modify the state of the cache line 
@@ -479,43 +487,47 @@ void HybridCache::triggerMigration(int set, int id_assocSRAM, int id_assocNVM , 
 	if(!m_isWarmup)
 		stats_migration[fromNVM]++;
 			
-	uint64_t addrSRAM = sram_line->address;
-	uint64_t addrNVM = nvm_line->address;
 	
-	bool isValidSRAM = sram_line->isValid;
-	bool isValidNVM = nvm_line->isValid;
-
-	bool isDirtySRAM = sram_line->isDirty;
-	bool isDirtyNVM = nvm_line->isDirty;
-		
-	sram_line->address = addrNVM;
-	sram_line->isNVM = false;
-	sram_line->isDirty = isDirtyNVM;
-	sram_line->isValid = isValidNVM;
-
-	nvm_line->address = addrSRAM;
-	nvm_line->isNVM = true;
-	nvm_line->isDirty = isDirtySRAM;
-	nvm_line->isValid = isValidSRAM;
-
-	map<uint64_t,HybridLocation>::iterator p = m_tag_index.find(addrSRAM);
-	if(p != m_tag_index.end())
-	{		
-//		cout << "addrSRAM: " << addrSRAM << " , way: " << id_assocNVM << endl;
-		p->second.m_inNVM = true;
-		p->second.m_way = id_assocNVM;
-	}
-	
-	map<uint64_t,HybridLocation>::iterator p1 = m_tag_index.find(addrNVM);
-	if(p1 != m_tag_index.end())
+	if(fromNVM)
 	{
-//		cout << "addrNVM: " << addrNVM << " , way: " << id_assocSRAM << endl;
- 		p1->second.m_inNVM = false;
-		p1->second.m_way = id_assocSRAM;
-	
+		//From NVM to SRAM 
+		//NVM cl erase the SRAM cl 
+		deallocate(sram_line);
+		sram_line->copyCL(nvm_line);
+		sram_line->justMigrate = true;
+		sram_line->isNVM = false;
+		sram_line->policyInfo = cpt_time;	
+			
+		/* Update the tag */
+		map<uint64_t,HybridLocation>::iterator p1 = m_tag_index.find(nvm_line->address);
+		if(p1 != m_tag_index.end())
+		{
+	 		p1->second.m_inNVM = false;
+			p1->second.m_way = id_assocSRAM;
+		}
+		
+		nvm_line->initEntry();
 	}
-//	cout << "HybridCache::triggerMigration" << endl;
-//	cout << "SRAM line "
+	else
+	{
+		//From SRAM to NVM 
+		//SRAM cl erase the NVM cl 
+		deallocate(nvm_line);
+		nvm_line->copyCL(sram_line);
+		nvm_line->justMigrate = true;
+		nvm_line->isNVM = true;
+		nvm_line->policyInfo = cpt_time;	
+			
+		/* Update the tag */
+		map<uint64_t,HybridLocation>::iterator p1 = m_tag_index.find(sram_line->address);
+		if(p1 != m_tag_index.end())
+		{
+	 		p1->second.m_inNVM = true;
+			p1->second.m_way = id_assocNVM;
+		}
+		
+		sram_line->initEntry();
+	}
 }
 
 
@@ -646,11 +658,14 @@ HybridCache::printResults(std::ostream& out)
 			out << "\t- Clean Write Back : " << stats_cleanWBNVM + stats_cleanWBSRAM << endl;
 			out << "\t- Dirty Write Back : " << stats_dirtyWBNVM + stats_dirtyWBSRAM << endl;
 			out << "\t- Eviction : " << stats_evict << endl;
+	
 			if(stats_bypass > 0)
 				out << "\t- Bypass : " << stats_bypass << endl;
 			
+			if(isPolicyDynamic(m_policy))
+				out << "\tUseless Migration : " << stats_nbUselessMigration << endl;
+	
 			out << endl;
-			
 			if(m_nbNVMways > 0){
 			
 				m_predictor->printStats(out);
@@ -665,6 +680,8 @@ HybridCache::printResults(std::ostream& out)
 				out << "\t- NB Read : "<< stats_hitsSRAM[0] + stats_migration[true] << endl;
 				out << "\t- NB Write : "<< stats_hitsSRAM[1] + stats_dirtyWBSRAM + stats_migration[false]<< endl;	
 			}
+			
+			
 			//cout << "************************" << endl;
 			
 			if(m_printStats)

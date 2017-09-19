@@ -143,8 +143,22 @@ class CacheEntry{
 			nbRead = 0;
 			nbWrite = 0;
 			m_compilerHints = 0;
+			justMigrate = false;
 			value = 0;
 			coherence_state = COHERENCE_INVALID;
+		}
+		
+		void copyCL(CacheEntry* a)
+		{
+			address = a->address;
+			isDirty = a->isDirty;
+			nbWrite = a->nbWrite;
+			nbRead = a->nbRead;
+			lastWrite = a->lastWrite;
+			m_compilerHints = a->m_compilerHints;
+			isLearning = a->isLearning;
+			m_pc = a->m_pc;
+			coherence_state = a->coherence_state; 
 		}
 		bool isValid;
 		bool isDirty;
@@ -164,6 +178,8 @@ class CacheEntry{
 		int saturation_counter; 
 		//field used only by the RAP predictor
 		bool isLearning;
+
+		bool justMigrate;
 
 		CoherenceState coherence_state;
 };

@@ -35,6 +35,9 @@
 #define INDEX_READ 0
 #define INDEX_WRITE 1
 
+#define FROMNVM 0
+#define FROMSRAM 1
+
 class Predictor;
 class HybridCache;
 

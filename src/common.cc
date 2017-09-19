@@ -27,6 +27,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <sstream>
 
 #include "common.hh"
+
+
 using namespace std;
 
 
@@ -35,7 +37,7 @@ uint64_t cpt_time;
 const char* memCmd_str[] = { "INST_READ", "INST_PREFETCH", "DATA_READ", "DATA_WRITE", "DATA_PREFETCH", "CLEAN_WRITEBACK", \
 	"DIRTY_WRITEBACK", "SILENT_WRITEBACK", "INSERT", "EVICTION", "ACE"};
 
-const char* allocDecision_str[] = {"ALLOCATE_IN_SRAM", "ALLOCATE_IN_NVM" , "BYPASS_CACHE"};
+const char* allocDecision_str[] = {"ALLOCATE_IN_SRAM", "ALLOCATE_IN_NVM" , "BYPASS_CACHE", "ALLOCATE_PREEMPTIVELY"};
 
 
 const char* directory_state_str[] = {"SHARED_L1" , "MODIFIED_L1", "EXCLUSIVE_L1", "CLEAN_LLC", "DIRTY_LLC" , "NOT_PRESENT"};
@@ -153,13 +155,21 @@ convert_hex(int n)
 }
 
 
-const char * StripPath(const char * path)
+const char *
+StripPath(const char * path)
 {
     const char * file = strrchr(path,'/');
     if (file)
         return file+1;
     else
         return path;
+}
+
+
+bool 
+isPolicyDynamic(std::string policy)
+{
+	return policy == "Saturation" || policy == "testRAP" || policy == "RAP";
 }
 
 

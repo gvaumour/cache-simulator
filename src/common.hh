@@ -55,6 +55,7 @@ bool readInputArgs(int argc , char* argv[] , int& sizeCache , int& assoc , int& 
 bool isPow2(int x);
 std::string convert_hex(int n);
 const char * StripPath(const char * path);
+bool isPolicyDynamic(std::string policy);
 
 
 extern uint64_t cpt_time;

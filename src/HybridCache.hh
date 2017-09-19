@@ -148,6 +148,8 @@ class HybridCache {
 		uint64_t stats_nbAlmostROlines;
 		uint64_t stats_nbAlmostROaccess;
 		std::map<uint64_t,uint64_t> stats_histo_ratioRW;
+		
+		uint64_t stats_nbUselessMigration;
 				
 		/********/
 		void entete_debug();
