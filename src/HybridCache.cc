@@ -680,14 +680,14 @@ HybridCache::printResults(std::ostream& out)
 				m_predictor->printStats(out);
 				
 				out << "NVM ways" << endl;
-				out << "\t- NB Read : "<< stats_hitsNVM[0] + stats_migration[false]<< endl;
-				out << "\t- NB Write : "<< stats_hitsNVM[1] + stats_dirtyWBNVM + stats_migration[true] << endl;		
+				out << "\t- NB Read : "<< stats_hitsNVM[0] + stats_migration[true]<< endl;
+				out << "\t- NB Write : "<< stats_hitsNVM[1] + stats_dirtyWBNVM + stats_migration[false] << endl;		
 			}
 		
 			if(m_nbSRAMways > 0){
 				out << "SRAM ways" << endl;
-				out << "\t- NB Read : "<< stats_hitsSRAM[0] + stats_migration[true] << endl;
-				out << "\t- NB Write : "<< stats_hitsSRAM[1] + stats_dirtyWBSRAM + stats_migration[false]<< endl;	
+				out << "\t- NB Read : "<< stats_hitsSRAM[0] + stats_migration[false] << endl;
+				out << "\t- NB Write : "<< stats_hitsSRAM[1] + stats_dirtyWBSRAM + stats_migration[true]<< endl;	
 			}
 			
 			

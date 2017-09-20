@@ -748,7 +748,7 @@ testRAPPredictor::printStats(std::ostream& out)
 	out << "\t\tLearning\t" << stats_error_learning << endl;		
 
 	if(ENABLE_LAZY_MIGRATION)
-		out << "\t\tMigration Error\t" << migrationNVM << endl;		
+		out << "\t\tMigration Error\t" << migrationSRAM << endl;		
 
 	out << "\tSource of Error, SRAM error" << endl;
 	out << "\t\tWrong Policy\t" << stats_error_SRAMwrongpolicy << endl;
