@@ -51,9 +51,9 @@ testRAPPredictor::testRAPPredictor(int nbAssoc , int nbSet, int nbNVMways, DataA
 	stats_ClassErrors.clear();
 	stats_ClassErrors = vector< vector<int> >(NUM_RW_TYPE*NUM_RD_TYPE, vector<int>(NUM_RD_TYPE*NUM_RW_TYPE, 0));	
 	
-	/* Reseting the //dataset_file */ 
-//	ofstream //dataset_file(RAP_TEST_OUTPUT_DATASETS);
-//	//dataset_file.close();
+
+	if(simu_parameters.printDebug)
+		dataset_file.open(RAP_TEST_OUTPUT_DATASETS);
 
 
 	stats_nbMigrationsFromNVM.push_back(vector<int>(2,0));
@@ -61,7 +61,6 @@ testRAPPredictor::testRAPPredictor(int nbAssoc , int nbSet, int nbNVMways, DataA
 //	stats_switchDecision.push_back(vector<vector<int>>(3 , vector<int>(3,0)));	
 	
 //	myFile.open("dead_block_dump.out");
-	//dataset_file.open(RAP_TEST_OUTPUT_DATASETS);
 
 	stats_error_wrongallocation = 0;
 	stats_error_learning = 0;
@@ -82,6 +81,8 @@ testRAPPredictor::~testRAPPredictor()
 	for(auto sets : m_RAPtable)
 		for(auto entry : sets)
 			delete entry;
+	if(simu_parameters.printDebug)
+		dataset_file.close();
 }
 
 allocDecision
@@ -134,11 +135,20 @@ testRAPPredictor::allocateInNVM(uint64_t set, Access element)
 	if(rap_current->des == BYPASS_CACHE)
 	{
 		rap_current->cptBypassLearning++;
-//		updateWindow(rap_current);		
-//		rap_current->cptWindow++;
-		
-		if(rap_current->cptBypassLearning ==  RAP_LEARNING_THRESHOLD){
+		if(simu_parameters.printDebug)
+		{
+			dataset_file << "Dataset n°" << rap_current->id << ": BYPASS, Address: " << std::hex << \
+			element.m_address << std::dec << "; Threshold=" << rap_current->cptBypassLearning << endl;		
+		}
+			
+		if(rap_current->cptBypassLearning ==  simu_parameters.learningTH){
 			rap_current->cptBypassLearning = 0;
+
+			if(simu_parameters.printDebug)
+			{
+				dataset_file << "Dataset n°" << rap_current->id << ": Insert Learning Cl, " \
+				<< std::hex << element.m_address << std::dec  << endl;			
+			}
 			return ALLOCATE_IN_NVM;		
 		}
 	}
@@ -179,7 +189,6 @@ testRAPPredictor::finishSimu()
 			}
 		}
 	}
-	//dataset_file.close();
 }
 
 
@@ -260,11 +269,11 @@ testRAPPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access 
 			
 			updateWindow(rap_current);
 			
-			if(ENABLE_LAZY_MIGRATION)
+			if(simu_parameters.enableMigration)
 			{ 
 				current = checkLazyMigration(rap_current , current , set , inNVM , index);
 			}
-			reportAccess(rap_current , element, current, current->isNVM);
+			reportAccess(rap_current , element, current, current->isNVM, "UPDATE");
 			
 			
 		}	
@@ -276,64 +285,65 @@ testRAPPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access 
 
 
 void
-testRAPPredictor::reportAccess(testRAPEntry* rap_current, Access element, CacheEntry* current, bool inNVM)
+testRAPPredictor::reportAccess(testRAPEntry* rap_current, Access element, CacheEntry* current, bool inNVM, string entete)
 {
-
 	string cl_location = inNVM ? "NVM" : "SRAM";
 	
-	/*dataset_file << std::hex << "Dataset n°" << rap_current->id << ": [" << \
-	str_RW_status[rap_current->state_rw] << ","  << str_RD_status[rap_current->state_rd] << "], Cl is 0x" << \
-	current->address << " allocated in " << cl_location << endl;
-	*/
-	
-	if(inNVM && element.isWrite())
+	if(simu_parameters.printDebug)
 	{
-		//dataset_file << "NVM Error : ";
+		dataset_file << entete << ":Dataset n°" << rap_current->id << ": [" << \
+		str_RW_status[rap_current->state_rw] << ","  << str_RD_status[rap_current->state_rd] << "], Cl is 0x" << std::hex << \
+		current->address << std::dec << " allocated in " << cl_location << endl;	
+	}
+	
+	
+	if(inNVM && element.isWrite()){
 		if(rap_current->des == ALLOCATE_IN_NVM)
-		{
 			stats_error_wrongpolicy++;
-			//dataset_file << " Policy Error" << endl;		
-		}
 		else if(rap_current->des == ALLOCATE_PREEMPTIVELY)
-		{
 			stats_error_learning++;
-			//dataset_file << " Learning Error" << endl;
-		}
 		else if(rap_current->des == ALLOCATE_IN_SRAM && inNVM)
-		{
-			//dataset_file << "Wrongly allocated cl" << endl;
 			stats_error_wrongallocation++;	
-		}
-		else
-		{
-			//dataset_file << " Des: " << allocDecision_str[rap_current->des] << "UNKNOW Error";
-		}
-		//dataset_file << endl;
 	}
-	
-	if(element.isSRAMerror)
-	{
-		//dataset_file << "SRAM Error : ";
-		
+	if(element.isSRAMerror){
 		if(rap_current->des == ALLOCATE_IN_SRAM)
-		{
 			stats_error_SRAMwrongpolicy++;
-			//dataset_file << "Wrong policy" << endl;
-		}
 		else if(rap_current->des == ALLOCATE_PREEMPTIVELY)
-		{
 			stats_error_SRAMlearning++;
-			//dataset_file << " Learning Error" << endl;
-		}
 		else if(rap_current->des == ALLOCATE_IN_NVM && !inNVM)
-		{
 			stats_error_SRAMwrongallocation++;
-			//dataset_file << "Wrongly allocated cl" << endl;
-		}		
-		
-		//dataset_file << endl;		
 	}
-
+	if(simu_parameters.printDebug)
+	{
+		if(inNVM && element.isWrite())
+		{
+			dataset_file << "NVM Error : ";
+			if(rap_current->des == ALLOCATE_IN_NVM)
+				dataset_file << " Policy Error";		
+			else if(rap_current->des == ALLOCATE_PREEMPTIVELY)
+				stats_error_learning++;
+			else if(rap_current->des == ALLOCATE_IN_SRAM && inNVM)
+				dataset_file << "Wrongly allocated cl";
+			else
+				dataset_file << " Des: " << allocDecision_str[rap_current->des] << "UNKNOW Error";
+			dataset_file << endl;
+		}
+		
+		if(element.isSRAMerror)
+		{
+			dataset_file << "SRAM Error : ";
+		
+			if(rap_current->des == ALLOCATE_IN_SRAM)
+				dataset_file << "Wrong policy";
+			else if(rap_current->des == ALLOCATE_PREEMPTIVELY)
+				dataset_file << " Learning Error";
+			else if(rap_current->des == ALLOCATE_IN_NVM && !inNVM)
+				dataset_file << "Wrongly allocated cl";
+		
+			dataset_file << endl;		
+		}
+	
+	}
 }
 
 
@@ -403,7 +413,7 @@ testRAPPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 		/* Set the flag of learning cache line when bypassing */
 		if(rap_current->des == BYPASS_CACHE)
 			current->isLearning = true;
-		reportAccess(rap_current, element, current, inNVM);
+		reportAccess(rap_current, element, current, inNVM, "INSERTION");
 	}
 	
 	m_cpt++;
@@ -512,21 +522,26 @@ testRAPPredictor::evictPolicy(int set, bool inNVM)
 		else
 		{
 			// A learning cache line on dead dataset goes here
-			if(current->nbWrite == 0 && current->nbWrite == 0)
+			if(current->nbWrite == 0 && current->nbRead == 0)
 				rap_current->dead_counter--;
 			else
 				rap_current->dead_counter++;
 		
-			if(rap_current->dead_counter > RAP_DEAD_COUNTER_SATURATION)
-				rap_current->dead_counter = RAP_DEAD_COUNTER_SATURATION;
-			else if(rap_current->dead_counter < -RAP_DEAD_COUNTER_SATURATION)
-				rap_current->dead_counter = -RAP_DEAD_COUNTER_SATURATION;
+			if(rap_current->dead_counter > simu_parameters.deadSaturationCouter)
+				rap_current->dead_counter = simu_parameters.deadSaturationCouter;
+			else if(rap_current->dead_counter < -simu_parameters.deadSaturationCouter)
+				rap_current->dead_counter = -simu_parameters.deadSaturationCouter;
 
-			if(rap_current->dead_counter == -RAP_DEAD_COUNTER_SATURATION && ENABLE_BYPASS)
+
+			string a = (current->nbWrite == 0 && current->nbRead == 0) ? "DEAD" : "LIVELY";
+			dataset_file << "Dataset n°" << rap_current->id << ": Eviction of a " << a << " CL, Address :" << \
+				std::hex << current->address << std::dec << " DeadCounter=" << rap_current->dead_counter << endl;
+				
+			if(rap_current->dead_counter == -simu_parameters.deadSaturationCouter && simu_parameters.enableBP)
 			{
 				/* Switch the state of the dataset to dead */ 
 				rap_current->des = BYPASS_CACHE;			
-
+				dataset_file << "Dataset n°" << rap_current->id << ": Going into BYPASS mode " << endl;
 				// Reset the window 
 				RW_TYPE old_rw = rap_current->state_rw;
 				RD_TYPE old_rd = rap_current->state_rd;
@@ -684,14 +699,14 @@ testRAPPredictor::printConfig(std::ostream& out)
 	out << "\t\tRAP Table Parameters" << endl;
 	out << "\t\t\t- Assoc : " << m_RAP_assoc << endl;
 	out << "\t\t\t- NB Sets : " << m_RAP_sets << endl;
-	out << "\t\t Window size : " << RAP_WINDOW_SIZE << endl;
-	out << "\t\t Inacurracy Threshold : " << RAP_INACURACY_TH << endl;
+	out << "\t\t Window size : " << simu_parameters.window_size << endl;
+	out << "\t\t Inacurracy Threshold : " << simu_parameters.rap_innacuracy_th << endl;
 
-	string a =  ENABLE_BYPASS ? "TRUE" : "FALSE"; 
+	string a =  simu_parameters.enableBP ? "TRUE" : "FALSE"; 
 	out << "\t\t Bypass Enable : " << a << endl;
-	out << "\t\t Bypass DEAD COUNTER Saturation : " << RAP_DEAD_COUNTER_SATURATION << endl;
-	out << "\t\t Bypass Learning Threshold : " << RAP_LEARNING_THRESHOLD << endl;
-	a =  ENABLE_LAZY_MIGRATION ? "TRUE" : "FALSE"; 
+	out << "\t\t Bypass DEAD COUNTER Saturation : " << simu_parameters.deadSaturationCouter << endl;
+	out << "\t\t Bypass Learning Threshold : " << simu_parameters.learningTH << endl;
+	a =  simu_parameters.enableMigration ? "TRUE" : "FALSE"; 
 	out << "\t\t Lazy Migration Enable : " << a << endl;
 }
 
@@ -723,7 +738,7 @@ testRAPPredictor::printStats(std::ostream& out)
 
 	double migrationNVM=0, migrationSRAM = 0;
 
-	if(ENABLE_LAZY_MIGRATION)
+	if(simu_parameters.enableMigration)
 	{
 
 		ofstream file_migration_stats(RAP_MIGRATION_STATS);
@@ -747,7 +762,7 @@ testRAPPredictor::printStats(std::ostream& out)
 	out << "\t\tWrong Allocation\t" << stats_error_wrongallocation << endl;
 	out << "\t\tLearning\t" << stats_error_learning << endl;		
 
-	if(ENABLE_LAZY_MIGRATION)
+	if(simu_parameters.enableMigration)
 		out << "\t\tMigration Error\t" << migrationSRAM << endl;		
 
 	out << "\tSource of Error, SRAM error" << endl;

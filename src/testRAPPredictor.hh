@@ -9,7 +9,6 @@
 #include "common.hh"
 #include "HybridCache.hh"
 #include "Cache.hh"
-#include "../RAP_config.hh"
 
 #define RAP_OUTPUT_FILE "rap_predictor.out"
 #define RAP_OUTPUT_FILE1 "rap_predictor1.out"
@@ -171,7 +170,7 @@ class testRAPPredictor : public Predictor {
 		
 		CacheEntry* checkLazyMigration(testRAPEntry* rap_current , CacheEntry* current ,uint64_t set,bool inNVM , uint64_t index);
 
-		void reportAccess(testRAPEntry* rap_current, Access element, CacheEntry* current, bool inNVM);
+		void reportAccess(testRAPEntry* rap_current, Access element, CacheEntry* current, bool inNVM, std::string entete);
 
 
 	protected : 

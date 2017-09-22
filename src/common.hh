@@ -40,11 +40,37 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define FOUR_MB 2*TWO_MB
 
 
+#define RAP_DEAD_COUNTER_SATURATION  3
+#define RAP_LEARNING_THRESHOLD  20
+#define RAP_WINDOW_SIZE  20
+#define RAP_INACURACY_TH  0.7
+
+
+
 #define BLOCK_SIZE 64
 
 /**
 	Hold utilitary functions 
 */
+
+struct SimuParameters
+{
+	bool enableBP;
+	bool enableMigration;
+	
+	bool printDebug;
+	
+	int deadSaturationCouter;
+	int window_size;
+	int learningTH;
+	
+	float rap_innacuracy_th;
+	
+	std::vector<std::string> memory_traces;
+	int nbCores;
+	std::string policy;
+
+};
 
 std::vector<std::string> split(std::string s, char delimiter);
 uint64_t bitRemove(uint64_t address , unsigned int small, unsigned int big);
@@ -65,5 +91,6 @@ extern const char* memCmd_str[];
 extern const char* allocDecision_str[];
 extern const char* directory_state_str[];
 
+extern SimuParameters simu_parameters;
 
 #endif 

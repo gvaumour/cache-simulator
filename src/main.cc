@@ -44,24 +44,52 @@ int main(int argc , char* argv[]){
 	
 	vector<string> args; 
 
-	string policy = "RAP";
-	int nbCores =1;
 	bool mergingResults = MERGING_RESULTS;
 	
-	for(int i = 1; i < argc-1 ; i+= 2)
+	simu_parameters.nbCores = 1;
+	simu_parameters.policy = "testRAP";
+
+	simu_parameters.deadSaturationCouter = RAP_DEAD_COUNTER_SATURATION;
+	simu_parameters.rap_innacuracy_th = RAP_INACURACY_TH;
+	simu_parameters.window_size = RAP_WINDOW_SIZE;
+	simu_parameters.learningTH = RAP_LEARNING_THRESHOLD;
+	simu_parameters.enableBP = false;
+	simu_parameters.enableMigration = false;
+	
+	simu_parameters.printDebug = false;
+	
+	for(int i = 1; i < argc ; i++)
 	{
 		if(string(argv[i]) == "-p")
-			policy = string(argv[i+1]);
-		else if(string(argv[i]) == "-n")
-			nbCores = atoi(argv[i+1]);
-		else 
 		{
-			args.push_back(string(argv[i]));
-			args.push_back(string(argv[i+1]));
+			i++;
+			simu_parameters.policy = string(argv[i]);		
 		}
+		else if(string(argv[i]) == "-n")
+		{
+			i++;
+			simu_parameters.nbCores = atoi(argv[i]);
+		}
+		else if(string(argv[i]) == "--window_size")
+		{
+			i++;
+			simu_parameters.window_size = atoi(argv[i]);
+		}
+		else if(string(argv[i]) == "--deadCounter")
+		{
+			i++;
+			simu_parameters.deadSaturationCouter = atoi(argv[i]);
+		}
+		else if(string(argv[i]) == "--enableBP")
+			simu_parameters.enableBP = true;
+		else if(string(argv[i]) == "--enableDebug")
+			simu_parameters.printDebug = true;
+		else if(string(argv[i]) == "--enable-DYN")
+			simu_parameters.enableMigration = true;
+		else
+			args.push_back(string(argv[i]));
 	}
-	if( (argc%2) == 0)
-		args.push_back(argv[argc-1]);
+	
 
 	vector<string> memory_traces;
 	for(unsigned i = 0 ; i < args.size() ; i++)
@@ -79,9 +107,10 @@ int main(int argc , char* argv[]){
 	sigaction(SIGINT, &sigIntHandler, NULL);
 	***********************************/ 	
 
-	my_system = new Hierarchy(policy , nbCores);
+	my_system = new Hierarchy(simu_parameters.policy , simu_parameters.nbCores);
  
-	cout << "Launching simulation with " << memory_traces.size() << " file(s), the " << policy << " policy and with " << nbCores << " core(s)" << endl;
+	cout << "Launching simulation with " << memory_traces.size() << " file(s), the " << simu_parameters.policy \
+	 << " policy and with " << simu_parameters.nbCores << " core(s)" << endl;
 	cout << "Traces considered:" << endl;
 	for(auto memory_trace : memory_traces)
 		cout << "\t - " << memory_trace << endl;

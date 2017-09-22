@@ -43,6 +43,9 @@ const char* allocDecision_str[] = {"ALLOCATE_IN_SRAM", "ALLOCATE_IN_NVM" , "BYPA
 const char* directory_state_str[] = {"SHARED_L1" , "MODIFIED_L1", "EXCLUSIVE_L1", "CLEAN_LLC", "DIRTY_LLC" , "NOT_PRESENT"};
 
 
+SimuParameters simu_parameters;
+
+
 vector<string> 
 split(string s, char delimiter){
   vector<string> result;

@@ -19,9 +19,6 @@ $(EXEC) : $(OBJ) Makefile
 obj-intel64/%.o :  src/%.cc src/%.hh Makefile
 	$(CPP) $(FLAGS) -c $< -o $@
 	
-obj-intel64/testRAPPredictor.o :  src/testRAPPredictor.cc src/testRAPPredictor.hh Makefile RAP_config.hh
-	$(CPP) $(FLAGS) -c $< -o $@
-
 $(EXEC_RELEASE) : $(EXEC)	
 	cp $(EXEC) $(EXEC_RELEASE)
 

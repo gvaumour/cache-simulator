@@ -9,7 +9,7 @@ using namespace std;
 
 static const char* str_RW_status[] = {"DEAD" , "WO", "RO" , "RW", "RW_NOTACC"};
 static const char* str_RD_status[] = {"RD_SHORT" , "RD_MEDIUM", "RD_NOTACC", "UNKOWN"};
-EnergyParameters simu_parameters;
+EnergyParameters energy_parameters;
 
 
 /** RAPPredictor Implementation ***********/ 
@@ -370,7 +370,7 @@ RAPPredictor::printStats(std::ostream& out)
 		out << "\t Average Switch\t" << sum / (double) stats_nbSwitchDst.size() << endl;	
 	}
 	
-	if(ENABLE_LAZY_MIGRATION)
+	if(simu_parameters.enableMigration)
 	{
 		double migrationNVM = (double) stats_nbMigrationsFromNVM[0];
 		double migrationSRAM = (double) stats_nbMigrationsFromNVM[1];
@@ -396,7 +396,7 @@ RAPPredictor::updateWindow(RAPEntry* rap_current, Window_entry entry)
 	rap_current->cptWindow++;
 	rap_current->window.push_back(entry);	
 
-	if(rap_current->cptWindow == RAP_WINDOW_SIZE){
+	if(rap_current->cptWindow == simu_parameters.window_size){
 		endWindows(rap_current);
 	}
 }
@@ -469,12 +469,12 @@ RAPPredictor::evictPolicy(int set, bool inNVM)
 			else
 				rap_current->dead_counter++;
 		
-			if(rap_current->dead_counter > RAP_DEAD_COUNTER_SATURATION)
-				rap_current->dead_counter = RAP_DEAD_COUNTER_SATURATION;
-			else if(rap_current->dead_counter < -RAP_DEAD_COUNTER_SATURATION)
-				rap_current->dead_counter = -RAP_DEAD_COUNTER_SATURATION;
+			if(rap_current->dead_counter > simu_parameters.deadSaturationCouter)
+				rap_current->dead_counter = simu_parameters.deadSaturationCouter;
+			else if(rap_current->dead_counter < -simu_parameters.deadSaturationCouter)
+				rap_current->dead_counter = -simu_parameters.deadSaturationCouter;
 
-			if(rap_current->dead_counter == -RAP_DEAD_COUNTER_SATURATION && ENABLE_BYPASS)
+			if(rap_current->dead_counter == -simu_parameters.deadSaturationCouter && simu_parameters.enableBP)
 			{
 				/* Switch the state of the dataset to dead */ 
 				rap_current->des = BYPASS_CACHE;			
@@ -538,20 +538,20 @@ RAPPredictor::determineStatus(RAPEntry* entry)
 			if(a.rd == RD_SHORT)
 			{
 				cptShort++;
-				energySRAM += simu_parameters.costSRAM[a.isWrite]; 
-				energyNVM += simu_parameters.costNVM[a.isWrite];
+				energySRAM += energy_parameters.costSRAM[a.isWrite]; 
+				energyNVM += energy_parameters.costNVM[a.isWrite];
 			}
 			else if(a.rd == RD_MEDIUM)
 			{
 				cptMedium++;
-				energySRAM += simu_parameters.costDRAM[a.isWrite]; 
-				energyNVM += simu_parameters.costNVM[a.isWrite];	
+				energySRAM += energy_parameters.costDRAM[a.isWrite]; 
+				energyNVM += energy_parameters.costNVM[a.isWrite];	
 			}
 			else
 			{
 				cptLong++;
-				energySRAM += simu_parameters.costDRAM[a.isWrite]; 
-				energyNVM += simu_parameters.costDRAM[a.isWrite];
+				energySRAM += energy_parameters.costDRAM[a.isWrite]; 
+				energyNVM += energy_parameters.costDRAM[a.isWrite];
 			}			
 		}
 	}
@@ -568,7 +568,7 @@ RAPPredictor::determineStatus(RAPEntry* entry)
 	//if(entry->des == BYPASS_CACHE)
 	//{
 		/* If there are reuses on a dead datasets, we learn again */ 
-	/*	if( (cptLong + cptBypass) != RAP_WINDOW_SIZE )
+	/*	if( (cptLong + cptBypass) != simu_parameters.window_size )
 		{
 			entry->des = ALLOCATE_PREEMPTIVELY;
 			entry->state_rd = RD_NOT_ACCURATE;
@@ -632,14 +632,14 @@ RAPPredictor::printConfig(std::ostream& out)
 	out << "\t\tRAP Table Parameters" << endl;
 	out << "\t\t\t- Assoc : " << m_RAP_assoc << endl;
 	out << "\t\t\t- NB Sets : " << m_RAP_sets << endl;
-	out << "\t\t Window size : " << RAP_WINDOW_SIZE << endl;
-	out << "\t\t Inacurracy Threshold : " << RAP_INACURACY_TH << endl;
+	out << "\t\t Window size : " << simu_parameters.window_size << endl;
+	out << "\t\t Inacurracy Threshold : " << simu_parameters.rap_innacuracy_th << endl;
 
-	string a =  ENABLE_BYPASS ? "TRUE" : "FALSE"; 
+	string a =  simu_parameters.enableBP ? "TRUE" : "FALSE"; 
 	out << "\t\t Bypass Enable : " << a << endl;
-	out << "\t\t Bypass DEAD COUNTER Saturation : " << RAP_DEAD_COUNTER_SATURATION << endl;
-	out << "\t\t Bypass Learning Threshold : " << RAP_LEARNING_THRESHOLD << endl;
-	a =  ENABLE_LAZY_MIGRATION ? "TRUE" : "FALSE"; 
+	out << "\t\t Bypass DEAD COUNTER Saturation : " << simu_parameters.deadSaturationCouter << endl;
+	out << "\t\t Bypass Learning Threshold : " << simu_parameters.learningTH << endl;
+	a =  simu_parameters.enableMigration ? "TRUE" : "FALSE"; 
 	out << "\t\t Lazy Migration Enable : " << a << endl;
 }
 		

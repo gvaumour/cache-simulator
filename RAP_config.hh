@@ -1,9 +1,0 @@
-#ifndef _RAP_CONFIG_HH_
-#define _RAP_CONFIG_HH_
-#define ENABLE_BYPASS  false
-#define RAP_DEAD_COUNTER_SATURATION  3
-#define RAP_LEARNING_THRESHOLD  20
-#define RAP_WINDOW_SIZE  100
-#define RAP_INACURACY_TH  0.7
-#define ENABLE_LAZY_MIGRATION  false
-#endif
