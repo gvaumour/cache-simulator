@@ -452,7 +452,7 @@ testRAPPredictor::updateWindow(testRAPEntry* rap_current)
 		return;
 	}
 	else {
-		if(rap_current->cptWindow < RAP_WINDOW_SIZE)
+		if(rap_current->cptWindow < simu_parameters.window_size)
 			rap_current->cptWindow++;
 		else
 		{

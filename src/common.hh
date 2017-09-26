@@ -70,6 +70,7 @@ struct SimuParameters
 	int nbCores;
 	std::string policy;
 
+
 };
 
 std::vector<std::string> split(std::string s, char delimiter);
