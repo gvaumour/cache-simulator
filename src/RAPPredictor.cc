@@ -464,7 +464,7 @@ RAPPredictor::evictPolicy(int set, bool inNVM)
 		{
 
 			// A learning cache line on dead dataset goes here
-			if(current->nbWrite == 0 && current->nbWrite == 0)
+			if(current->nbWrite == 0 && current->nbRead == 0)
 				rap_current->dead_counter--;
 			else
 				rap_current->dead_counter++;

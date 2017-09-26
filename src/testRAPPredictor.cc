@@ -267,15 +267,31 @@ testRAPPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access 
 			rap_current->rd_history.push_back(rd);
 			rap_current->rw_history.push_back(element.isWrite());		
 			
-			updateWindow(rap_current);
-			
-			if(simu_parameters.enableMigration)
-			{ 
-				current = checkLazyMigration(rap_current , current , set , inNVM , index);
+			//A learning cl shows some reuse so we quit dead state 
+			if(current->isLearning)
+			{
+				// Reset the window 
+				RW_TYPE old_rw = rap_current->state_rw;
+				RD_TYPE old_rd = rap_current->state_rd;
+				
+				rap_current->des = ALLOCATE_PREEMPTIVELY;
+				rap_current->state_rd = RD_NOT_ACCURATE;
+				rap_current->state_rw = RW_NOT_ACCURATE;
+				rap_current->dead_counter = 0;
+	
+				if(!m_isWarmup)
+					stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
+				
 			}
+			else
+			{
+				updateWindow(rap_current);
+			
+				if(simu_parameters.enableMigration)
+					current = checkLazyMigration(rap_current , current , set , inNVM , index);
+			}
+			
 			reportAccess(rap_current , element, current, current->isNVM, "UPDATE");
-			
-			
 		}	
 	}
 	
@@ -288,12 +304,13 @@ void
 testRAPPredictor::reportAccess(testRAPEntry* rap_current, Access element, CacheEntry* current, bool inNVM, string entete)
 {
 	string cl_location = inNVM ? "NVM" : "SRAM";
+	string is_learning = current->isLearning ? "Learning" : "Regular";
 	
 	if(simu_parameters.printDebug)
 	{
 		dataset_file << entete << ":Dataset n°" << rap_current->id << ": [" << \
-		str_RW_status[rap_current->state_rw] << ","  << str_RD_status[rap_current->state_rd] << "], Cl is 0x" << std::hex << \
-		current->address << std::dec << " allocated in " << cl_location << endl;	
+		str_RW_status[rap_current->state_rw] << ","  << str_RD_status[rap_current->state_rd] << "]," << is_learning << \
+		" Cl is 0x" << std::hex << current->address << std::dec << " allocated in " << cl_location << endl;	
 	}
 	
 	
@@ -503,7 +520,7 @@ testRAPPredictor::evictPolicy(int set, bool inNVM)
 		if(rap_current->des == BYPASS_CACHE)
 		{
 			// A learning cache line on dead dataset goes here
-			if( !(current->nbWrite == 0 && current->nbWrite == 0) )
+			if( !(current->nbWrite == 0 && current->nbRead == 0) )
 			{
 				// Reset the window 
 				RW_TYPE old_rw = rap_current->state_rw;
