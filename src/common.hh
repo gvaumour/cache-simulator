@@ -64,6 +64,9 @@ struct SimuParameters
 	int window_size;
 	int learningTH;
 	
+	int sram_assoc;
+	int nvm_assoc;
+	
 	float rap_innacuracy_th;
 	
 	std::vector<std::string> memory_traces;

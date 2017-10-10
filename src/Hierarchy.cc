@@ -33,7 +33,8 @@ Hierarchy::Hierarchy(string policy, int nbCores)
 	ConfigCache L1Instconfig = L1Dataconfig;
 	firstLevel.push_back(L1Instconfig);
 
-	ConfigCache L2config ( TWO_MB , 16 , BLOCK_SIZE , policy , 12);
+	ConfigCache L2config ( TWO_MB , simu_parameters.sram_assoc + simu_parameters.nvm_assoc, \
+				BLOCK_SIZE , policy , simu_parameters.nvm_assoc);
 	L2config.m_printStats = true;
 	vector<ConfigCache> secondLevelConfig;
 	secondLevelConfig.push_back(L2config);

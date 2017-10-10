@@ -75,6 +75,16 @@ int main(int argc , char* argv[]){
 			i++;
 			simu_parameters.window_size = atoi(argv[i]);
 		}
+		else if(string(argv[i]) == "--SRAM-assoc")
+		{
+			i++;
+			simu_parameters.sram_assoc = atoi(argv[i]);
+		}
+		else if(string(argv[i]) == "--NVM-assoc")
+		{
+			i++;
+			simu_parameters.nvm_assoc = atoi(argv[i]);
+		}
 		else if(string(argv[i]) == "--deadCounter")
 		{
 			i++;
@@ -99,13 +109,13 @@ int main(int argc , char* argv[]){
 		memory_traces.push_back(DEFAULT_TRACE);
 	
 	
-	/* The Control C signal handler setup 
+	/* The Control C signal handler setup */
 	struct sigaction sigIntHandler;
 	sigIntHandler.sa_handler = my_handler;
 	sigemptyset(&sigIntHandler.sa_mask);
 	sigIntHandler.sa_flags = 0;
 	sigaction(SIGINT, &sigIntHandler, NULL);
-	***********************************/ 	
+	/***********************************/	
 
 	my_system = new Hierarchy(simu_parameters.policy , simu_parameters.nbCores);
  

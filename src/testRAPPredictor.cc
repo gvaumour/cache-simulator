@@ -305,12 +305,13 @@ testRAPPredictor::reportAccess(testRAPEntry* rap_current, Access element, CacheE
 {
 	string cl_location = inNVM ? "NVM" : "SRAM";
 	string is_learning = current->isLearning ? "Learning" : "Regular";
+	string access_type = element.isWrite() ? "WRITE" : "READ";
 	
 	if(simu_parameters.printDebug)
 	{
 		dataset_file << entete << ":Dataset n°" << rap_current->id << ": [" << \
-		str_RW_status[rap_current->state_rw] << ","  << str_RD_status[rap_current->state_rd] << "]," << is_learning << \
-		" Cl is 0x" << std::hex << current->address << std::dec << " allocated in " << cl_location << endl;	
+		str_RW_status[rap_current->state_rw] << ","  << str_RD_status[rap_current->state_rd] << "]," << access_type << " on " << is_learning << \
+		" Cl 0x" << std::hex << current->address << std::dec << " allocated in " << cl_location << endl;	
 	}
 	
 	
@@ -338,7 +339,7 @@ testRAPPredictor::reportAccess(testRAPEntry* rap_current, Access element, CacheE
 			if(rap_current->des == ALLOCATE_IN_NVM)
 				dataset_file << " Policy Error";		
 			else if(rap_current->des == ALLOCATE_PREEMPTIVELY)
-				stats_error_learning++;
+				dataset_file << " Learning Error";
 			else if(rap_current->des == ALLOCATE_IN_SRAM && inNVM)
 				dataset_file << "Wrongly allocated cl";
 			else
