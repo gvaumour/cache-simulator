@@ -83,6 +83,7 @@ int main(int argc , char* argv[]){
 		else if(string(argv[i]) == "--NVM-assoc")
 		{
 			i++;
+			cout << "Args : " << atoi(argv[i]) << endl;
 			simu_parameters.nvm_assoc = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--deadCounter")
@@ -100,7 +101,8 @@ int main(int argc , char* argv[]){
 			args.push_back(string(argv[i]));
 	}
 	
-
+	return 0;
+	
 	vector<string> memory_traces;
 	for(unsigned i = 0 ; i < args.size() ; i++)
 		memory_traces.push_back(args[i]);		
