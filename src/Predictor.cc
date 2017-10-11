@@ -234,6 +234,9 @@ Predictor::printStats(std::ostream& out)
 LRUPredictor::LRUPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache)\
  : Predictor(nbAssoc, nbSet, nbNVMways, SRAMtable, NVMtable, cache)
 {
+	/* With LRU policy, the cache is not hybrid, only NVM or only SRAM */ 
+	assert(m_nbNVMways == 0 || m_nbSRAMways == 0);
+	
 	m_cpt = 1;
 }
 
@@ -241,7 +244,12 @@ LRUPredictor::LRUPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SR
 allocDecision
 LRUPredictor::allocateInNVM(uint64_t set, Access element)
 {
-	return ALLOCATE_IN_SRAM;// Always allocate on SRAM 
+	// Always allocate on the same data array 
+	
+	if(m_nbNVMways == 0)
+		return ALLOCATE_IN_SRAM;
+	else 
+		return ALLOCATE_IN_NVM;
 }
 
 void
@@ -286,6 +294,13 @@ LRUPredictor::evictPolicy(int set, bool inNVM)
 allocDecision
 PreemptivePredictor::allocateInNVM(uint64_t set, Access element)
 {
+
+	if( m_nbSRAMways == 0 )
+		return ALLOCATE_IN_NVM;
+	else if(m_nbNVMways == 0)
+		return ALLOCATE_IN_SRAM;
+
+
 	if(element.isWrite())
 		return ALLOCATE_IN_SRAM;
 	else
