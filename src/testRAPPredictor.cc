@@ -287,7 +287,7 @@ testRAPPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access 
 			{
 				updateWindow(rap_current);
 			
-				if(simu_parameters.enableMigration)
+				if(simu_parameters.enableMigration && element.enableMigration )
 					current = checkLazyMigration(rap_current , current , set , inNVM , index);
 			}
 			
@@ -862,9 +862,9 @@ testRAPPredictor::evaluateRd(vector<int> reuse_distances)
 RD_TYPE
 testRAPPredictor::convertRD(int rd)
 {
-	if(rd < RAP_SRAM_ASSOC)
+	if(rd < simu_parameters.sram_assoc)
 		return RD_SHORT;
-	else if(rd < RAP_NVM_ASSOC)
+	else if(rd < simu_parameters.nvm_assoc)
 		return RD_MEDIUM;
 	else 
 		return RD_NOT_ACCURATE;

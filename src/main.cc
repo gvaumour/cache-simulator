@@ -93,7 +93,10 @@ int main(int argc , char* argv[]){
 		else if(string(argv[i]) == "--enableBP")
 			simu_parameters.enableBP = true;
 		else if(string(argv[i]) == "--enableDebug")
+		{
+			cout << "Debug enable "<< endl;		
 			simu_parameters.printDebug = true;
+		}
 		else if(string(argv[i]) == "--enable-DYN")
 			simu_parameters.enableMigration = true;
 		else

@@ -28,8 +28,6 @@
 #define TEST_RAP_TABLE_ASSOC 128
 #define TEST_RAP_TABLE_SET 128
 
-#define RAP_SRAM_ASSOC 4
-#define RAP_NVM_ASSOC 12 
 
 #define INDEX_READ 0
 #define INDEX_WRITE 1

@@ -60,7 +60,8 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 	m_policy = policy;
 	m_printStats = false;
 	m_isWarmup = false;
-	
+	m_Deallocating = false;
+		
 	m_tableSRAM.resize(m_nb_set);
 	m_tableNVM.resize(m_nb_set);
 	for(int i = 0  ; i < m_nb_set ; i++){
@@ -231,8 +232,12 @@ HybridCache::handleAccess(Access element)
 				entete_debug();
 				DPRINTF("Invalidation of the cache line : %#lx , id_assoc %d\n" , replaced_entry->address, id_assoc);		
 		
+				
+				//Prevent the cache line from being migrated du to WBs 
+				m_Deallocating = true;
 				//Inform the higher level of the deallocation
 				m_system->signalDeallocate(replaced_entry->address); 
+				m_Deallocating = false;
 				
 				//WB this cache line to the lower cache 
 				signalWB(replaced_entry->address, false);	
@@ -424,7 +429,8 @@ HybridCache::handleWB(uint64_t block_addr, bool isDirty)
 			Access element;
 			element.m_type = MemCmd::DIRTY_WRITEBACK;
 			element.m_compilerHints = current->m_compilerHints;
-
+			element.enableMigration = !m_Deallocating;
+			
 			current->nbWrite++;
 			
 			// The updatePolicy can provoke the migration so we update the nbWrite cpt before
