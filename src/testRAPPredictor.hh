@@ -169,7 +169,7 @@ class testRAPPredictor : public Predictor {
 		CacheEntry* checkLazyMigration(testRAPEntry* rap_current , CacheEntry* current ,uint64_t set,bool inNVM , uint64_t index);
 
 		void reportAccess(testRAPEntry* rap_current, Access element, CacheEntry* current, bool inNVM, std::string entete);
-
+		void reportMigration(testRAPEntry* rap_current, CacheEntry* current, bool fromNVM);
 
 	protected : 
 		uint64_t m_cpt;

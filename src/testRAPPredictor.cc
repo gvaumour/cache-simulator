@@ -364,6 +364,19 @@ testRAPPredictor::reportAccess(testRAPEntry* rap_current, Access element, CacheE
 	}
 }
 
+void
+testRAPPredictor::reportMigration(testRAPEntry* rap_current, CacheEntry* current, bool fromNVM)
+{
+	string cl_location = fromNVM ? "from NVM" : "from SRAM";
+	
+	if(simu_parameters.printDebug)
+	{
+		dataset_file << "Migration:Dataset n°" << rap_current->id << ": [" << \
+		str_RW_status[rap_current->state_rw] << ","  << str_RD_status[rap_current->state_rd] << "], Migration " << cl_location << \
+		" Cl 0x" << std::hex << current->address << std::dec << " allocated in " << cl_location << endl;	
+	}
+	
+}
 
 CacheEntry*
 testRAPPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* current ,uint64_t set,bool inNVM, uint64_t index)
@@ -383,9 +396,12 @@ testRAPPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* cur
 		/* Record the write error migration */ 
 		Predictor::migrationRecording();
 		
+		reportMigration(rap_current, current, false);
+		
 		m_cache->triggerMigration(set, index , id_assoc , false);
 		if(!m_isWarmup)
 			stats_nbMigrationsFromNVM.back()[FROMSRAM]++;
+
 
 		current = replaced_entry;		
 	}
@@ -401,6 +417,7 @@ testRAPPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* cur
 		/** Migration incurs one read and one extra write */ 
 		replaced_entry->nbWrite++;
 		current->nbRead++;
+		reportMigration(rap_current, current, true);
 	
 		m_cache->triggerMigration(set, id_assoc , index , true);
 		
@@ -677,16 +694,37 @@ testRAPPredictor::convertState(testRAPEntry* rap_current)
 
 	if(state_rw == RO)
 	{
-		return ALLOCATE_IN_NVM;	
+		if(simu_parameters.sram_assoc <= simu_parameters.nvm_assoc)
+		{
+			return ALLOCATE_IN_NVM;	
+		}
+		else
+		{
+			if(state_rd == RD_SHORT || state_rd == RD_NOT_ACCURATE)
+				return ALLOCATE_IN_NVM;
+			else if(state_rd == RD_MEDIUM)
+				return ALLOCATE_IN_SRAM;
+			else 
+				return BYPASS_CACHE;		
+		}
+		
 	}
 	else if(state_rw == RW || state_rw == WO)
 	{
-		if(state_rd == RD_SHORT || state_rd == RD_NOT_ACCURATE)
-			return ALLOCATE_IN_SRAM;
-		else if(state_rd == RD_MEDIUM)
-			return ALLOCATE_IN_NVM;
-		else 
-			return BYPASS_CACHE;
+	
+		if(simu_parameters.sram_assoc <= simu_parameters.nvm_assoc)
+		{
+			if(state_rd == RD_SHORT || state_rd == RD_NOT_ACCURATE)
+				return ALLOCATE_IN_SRAM;
+			else if(state_rd == RD_MEDIUM)
+				return ALLOCATE_IN_NVM;
+			else 
+				return BYPASS_CACHE;		
+		}
+		else
+		{
+			return ALLOCATE_IN_SRAM;		
+		}
 	}
 	else if(state_rw == DEAD)
 	{
@@ -862,12 +900,26 @@ testRAPPredictor::evaluateRd(vector<int> reuse_distances)
 RD_TYPE
 testRAPPredictor::convertRD(int rd)
 {
-	if(rd < simu_parameters.sram_assoc)
-		return RD_SHORT;
-	else if(rd < simu_parameters.nvm_assoc)
-		return RD_MEDIUM;
-	else 
-		return RD_NOT_ACCURATE;
+
+	if(simu_parameters.sram_assoc <= simu_parameters.nvm_assoc)
+	{	
+		if(rd < simu_parameters.sram_assoc)
+			return RD_SHORT;
+		else if(rd < simu_parameters.nvm_assoc)
+			return RD_MEDIUM;
+		else 
+			return RD_NOT_ACCURATE;
+	}
+	else
+	{
+		if(rd < simu_parameters.nvm_assoc)
+			return RD_SHORT;
+		else if(rd < simu_parameters.sram_assoc)
+			return RD_MEDIUM;
+		else 
+			return RD_NOT_ACCURATE;
+	
+	}
 }
 
 /************* Replacement Policy implementation for the test RAP table ********/ 
