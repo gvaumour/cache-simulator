@@ -176,3 +176,39 @@ isPolicyDynamic(std::string policy)
 }
 
 
+void
+init_default_parameters()
+{
+	simu_parameters.enableBP = false;
+	simu_parameters.enableMigration= false;
+	
+	simu_parameters.printDebug = false;
+	
+	simu_parameters.deadSaturationCouter = 3;
+	simu_parameters.window_size = 20; 
+	simu_parameters.learningTH = 20;
+	
+	simu_parameters.sram_assoc = 4;
+	simu_parameters.nvm_assoc = 12;
+
+	simu_parameters.rap_assoc = 128;
+	simu_parameters.rap_sets = 128;
+	
+	simu_parameters.rap_innacuracy_th = 0.9;
+	
+	simu_parameters.nbCores = 1;
+	simu_parameters.policy = "testRAP";
+
+	simu_parameters.nbCores = 1;
+	simu_parameters.policy = "testRAP";
+
+//	simu_parameters.deadSaturationCouter = RAP_DEAD_COUNTER_SATURATION;
+//	simu_parameters.rap_innacuracy_th = RAP_INACURACY_TH;
+//	simu_parameters.window_size = RAP_WINDOW_SIZE;
+//	simu_parameters.learningTH = RAP_LEARNING_THRESHOLD;
+//	simu_parameters.enableBP = false;
+//	simu_parameters.enableMigration = false;
+//	simu_parameters.printDebug = false;
+}
+
+

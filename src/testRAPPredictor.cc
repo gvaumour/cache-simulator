@@ -21,12 +21,10 @@ testRAPPredictor::testRAPPredictor(int nbAssoc , int nbSet, int nbNVMways, DataA
 	Predictor(nbAssoc, nbSet, nbNVMways, SRAMtable, NVMtable, cache) {
 
 	m_cpt = 1;
+	m_RAP_assoc = simu_parameters.rap_assoc;
+	m_RAP_sets = simu_parameters.rap_sets;
 
 	m_RAPtable.clear();
-
-	m_RAP_assoc = TEST_RAP_TABLE_ASSOC;
-	m_RAP_sets = TEST_RAP_TABLE_SET;
-
 	m_RAPtable.resize(m_RAP_sets);
 	
 	for(unsigned i = 0 ; i < m_RAP_sets ; i++)

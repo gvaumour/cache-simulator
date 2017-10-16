@@ -66,6 +66,9 @@ struct SimuParameters
 	
 	int sram_assoc;
 	int nvm_assoc;
+
+	int rap_assoc;
+	int rap_sets;
 	
 	float rap_innacuracy_th;
 	
@@ -86,6 +89,7 @@ bool isPow2(int x);
 std::string convert_hex(int n);
 const char * StripPath(const char * path);
 bool isPolicyDynamic(std::string policy);
+void init_default_parameters();
 
 
 extern uint64_t cpt_time;

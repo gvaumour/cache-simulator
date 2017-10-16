@@ -46,17 +46,9 @@ int main(int argc , char* argv[]){
 
 	bool mergingResults = MERGING_RESULTS;
 	
-	simu_parameters.nbCores = 1;
-	simu_parameters.policy = "testRAP";
 
-	simu_parameters.deadSaturationCouter = RAP_DEAD_COUNTER_SATURATION;
-	simu_parameters.rap_innacuracy_th = RAP_INACURACY_TH;
-	simu_parameters.window_size = RAP_WINDOW_SIZE;
-	simu_parameters.learningTH = RAP_LEARNING_THRESHOLD;
-	simu_parameters.enableBP = false;
-	simu_parameters.enableMigration = false;
 	
-	simu_parameters.printDebug = false;
+	init_default_parameters();
 	
 	for(int i = 1; i < argc ; i++)
 	{
@@ -69,6 +61,16 @@ int main(int argc , char* argv[]){
 		{
 			i++;
 			simu_parameters.nbCores = atoi(argv[i]);
+		}
+		else if(string(argv[i]) == "--rap-assoc")
+		{
+			i++;
+			simu_parameters.rap_assoc = atoi(argv[i]);
+		}
+		else if(string(argv[i]) == "--rap-sets")
+		{
+			i++;
+			simu_parameters.rap_sets = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--window_size")
 		{
@@ -102,7 +104,7 @@ int main(int argc , char* argv[]){
 		else
 			args.push_back(string(argv[i]));
 	}
-		
+	
 	vector<string> memory_traces;
 	for(unsigned i = 0 ; i < args.size() ; i++)
 		memory_traces.push_back(args[i]);		
