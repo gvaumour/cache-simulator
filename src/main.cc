@@ -116,11 +116,11 @@ int main(int argc , char* argv[]){
 	
 	
 	/* The Control C signal handler setup */
-	struct sigaction sigIntHandler;
+	/*struct sigaction sigIntHandler;
 	sigIntHandler.sa_handler = my_handler;
 	sigemptyset(&sigIntHandler.sa_mask);
 	sigIntHandler.sa_flags = 0;
-	sigaction(SIGINT, &sigIntHandler, NULL);
+	sigaction(SIGINT, &sigIntHandler, NULL);*/
 	/***********************************/	
 
 	my_system = new Hierarchy(simu_parameters.policy , simu_parameters.nbCores);
