@@ -94,6 +94,8 @@ int main(int argc , char* argv[]){
 		}
 		else if(string(argv[i]) == "--enableBP")
 			simu_parameters.enableBP = true;
+		else if(string(argv[i]) == "--flagTest")
+			simu_parameters.flagTest = true ;
 		else if(string(argv[i]) == "--enableDebug")
 		{
 			cout << "Debug enable "<< endl;		

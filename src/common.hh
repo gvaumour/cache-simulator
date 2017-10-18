@@ -70,6 +70,8 @@ struct SimuParameters
 	int rap_assoc;
 	int rap_sets;
 	
+	bool flagTest;
+
 	float rap_innacuracy_th;
 	
 	std::vector<std::string> memory_traces;

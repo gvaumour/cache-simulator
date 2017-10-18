@@ -572,24 +572,47 @@ testRAPPredictor::evictPolicy(int set, bool inNVM)
 				
 			if(rap_current->dead_counter == -simu_parameters.deadSaturationCouter && simu_parameters.enableBP)
 			{
-				/* Switch the state of the dataset to dead */ 
-				rap_current->des = BYPASS_CACHE;			
-				dataset_file << "Dataset n°" << rap_current->id << ": Going into BYPASS mode " << endl;
-				// Reset the window 
-				RW_TYPE old_rw = rap_current->state_rw;
-				RD_TYPE old_rd = rap_current->state_rd;
+				if(rap_current->des == ALLOCATE_IN_SRAM && simu_parameters.flagTest)
+				{
+					/* Switch the state of the dataset to NVM */ 
+					rap_current->des = ALLOCATE_IN_NVM;			
+					dataset_file << "Dataset n°" << rap_current->id << ": Going into NVM MEDIUM mode " << endl;
+					// Reset the window 
+					RW_TYPE old_rw = rap_current->state_rw;
+					RD_TYPE old_rd = rap_current->state_rd;
 
-				rap_current->state_rd = RD_NOT_ACCURATE;
-				rap_current->state_rw = DEAD;
-				rap_current->rd_history.clear();
-				rap_current->rw_history.clear();
-				rap_current->cptWindow = 0;	
-				rap_current->dead_counter = 0;
+					rap_current->state_rd = RD_MEDIUM;
+					rap_current->rd_history.clear();
+					rap_current->rw_history.clear();
+					rap_current->cptWindow = 0;	
+					rap_current->dead_counter = 0;
 	
-				// Monitor state switching 
-				if(!m_isWarmup)
-					stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
+					// Monitor state switching 
+					if(!m_isWarmup)
+						stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
+					
+				}
+				else			
+				{
+					/* Switch the state of the dataset to dead */ 
+					rap_current->des = BYPASS_CACHE;			
+					dataset_file << "Dataset n°" << rap_current->id << ": Going into BYPASS mode " << endl;
+					// Reset the window 
+					RW_TYPE old_rw = rap_current->state_rw;
+					RD_TYPE old_rd = rap_current->state_rd;
+
+					rap_current->state_rd = RD_NOT_ACCURATE;
+					rap_current->state_rw = DEAD;
+					rap_current->rd_history.clear();
+					rap_current->rw_history.clear();
+					rap_current->cptWindow = 0;	
+					rap_current->dead_counter = 0;
+	
+					// Monitor state switching 
+					if(!m_isWarmup)
+						stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
 			
+				}
 			}
 		}
 	}
