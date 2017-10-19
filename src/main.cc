@@ -45,9 +45,6 @@ int main(int argc , char* argv[]){
 	vector<string> args; 
 
 	bool mergingResults = MERGING_RESULTS;
-	
-
-	
 	init_default_parameters();
 	
 	for(int i = 1; i < argc ; i++)
@@ -94,15 +91,18 @@ int main(int argc , char* argv[]){
 		}
 		else if(string(argv[i]) == "--enableBP")
 			simu_parameters.enableBP = true;
+		else if(string(argv[i]) == "--enable-DYN")
+			simu_parameters.enableMigration = true;
 		else if(string(argv[i]) == "--flagTest")
-			simu_parameters.flagTest = true ;
+		{
+			simu_parameters.flagTest = true;
+			cout << "Flag Test Enable" << endl;		
+		}
 		else if(string(argv[i]) == "--enableDebug")
 		{
 			cout << "Debug enable "<< endl;		
 			simu_parameters.printDebug = true;
 		}
-		else if(string(argv[i]) == "--enable-DYN")
-			simu_parameters.enableMigration = true;
 		else
 			args.push_back(string(argv[i]));
 	}

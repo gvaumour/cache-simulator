@@ -235,7 +235,7 @@ LRUPredictor::LRUPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SR
  : Predictor(nbAssoc, nbSet, nbNVMways, SRAMtable, NVMtable, cache)
 {
 	/* With LRU policy, the cache is not hybrid, only NVM or only SRAM */ 
-	assert(m_nbNVMways == 0 || m_nbSRAMways == 0);
+//	assert(m_nbNVMways == 0 || m_nbSRAMways == 0);
 	
 	m_cpt = 1;
 }
