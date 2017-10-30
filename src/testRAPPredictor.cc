@@ -280,6 +280,7 @@ testRAPPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access 
 				if(!m_isWarmup)
 					stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
 				
+				dataset_file << "Dataset n°" << rap_current->id << ": Reuse detected on a learning Cl, switching to learning state" << endl;
 			}
 			else
 			{
@@ -458,50 +459,40 @@ testRAPPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 void
 testRAPPredictor::updateWindow(testRAPEntry* rap_current)
 {
-	if(rap_current->des == BYPASS_CACHE) 
-	//if(false)
-	{
-		//A learning cache line from a bypassed dataset
-		//We update dataset status immediately if we see reuse
-		//determineStatus(rap_current);
-		
-		return;
-	}
-	else {
-		if(rap_current->cptWindow < simu_parameters.window_size)
-			rap_current->cptWindow++;
-		else
-		{
-			RW_TYPE old_rw = rap_current->state_rw;
-			RD_TYPE old_rd = rap_current->state_rd;
 
-			determineStatus(rap_current);
+	if(rap_current->cptWindow < simu_parameters.window_size)
+		rap_current->cptWindow++;
+	else
+	{
+		RW_TYPE old_rw = rap_current->state_rw;
+		RD_TYPE old_rd = rap_current->state_rd;
+
+		determineStatus(rap_current);
+
+		if(!m_isWarmup)
+			stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
+
+		if(old_rd != rap_current->state_rd || old_rw != rap_current->state_rw)
+		{
+			HistoEntry current = {rap_current->state_rw , rap_current->state_rd, rap_current->nbKeepState};
 
 			if(!m_isWarmup)
-				stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
+				rap_current->stats_history.push_back(current);
 
-			if(old_rd != rap_current->state_rd || old_rw != rap_current->state_rw)
-			{
-				HistoEntry current = {rap_current->state_rw , rap_current->state_rd, rap_current->nbKeepState};
+			rap_current->nbSwitchState++;
+			rap_current->nbKeepState = 0;					
 
-				if(!m_isWarmup)
-					rap_current->stats_history.push_back(current);
-
-				rap_current->nbSwitchState++;
-				rap_current->nbKeepState = 0;					
-	
-				rap_current->des = convertState(rap_current);
-			}
-			else{
-				rap_current->nbKeepState++;
-				rap_current->nbKeepCurrentState++;			
-			}
-
-			/* Reset the window */			
-			rap_current->rd_history.clear();
-			rap_current->rw_history.clear();
-			rap_current->cptWindow = 0;		
+			rap_current->des = convertState(rap_current);
 		}
+		else{
+			rap_current->nbKeepState++;
+			rap_current->nbKeepCurrentState++;			
+		}
+
+		/* Reset the window */			
+		rap_current->rd_history.clear();
+		rap_current->rw_history.clear();
+		rap_current->cptWindow = 0;		
 	}	
 }
 
@@ -536,7 +527,8 @@ testRAPPredictor::evictPolicy(int set, bool inNVM)
 		if(rap_current->des == BYPASS_CACHE)
 		{
 			// A learning cache line on dead dataset goes here
-			if( !(current->nbWrite == 0 && current->nbRead == 0) )
+			
+			/*if( !(current->nbWrite == 0 && current->nbRead == 0) )
 			{
 				// Reset the window 
 				RW_TYPE old_rw = rap_current->state_rw;
@@ -549,7 +541,7 @@ testRAPPredictor::evictPolicy(int set, bool inNVM)
 	
 				if(!m_isWarmup)
 					stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
-			}
+			}*/
 			//No reuse on learning line , we stay on bypass mode		
 		}
 		else
@@ -628,13 +620,13 @@ testRAPPredictor::determineStatus(testRAPEntry* entry)
 	{
 		//All the info gathered here are from learning cache line
 		//If we see any any reuse we learn again
-		if(entry->rw_history.size() != 0)
+		/*if(entry->rw_history.size() != 0)
 		{
 			entry->des = ALLOCATE_PREEMPTIVELY;
 			entry->state_rd = RD_NOT_ACCURATE;
 			entry->state_rw = RW_NOT_ACCURATE;
 			entry->dead_counter = 0;
-		}
+		}*/
 		return;		
 	}
 

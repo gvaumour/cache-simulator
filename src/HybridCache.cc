@@ -149,7 +149,7 @@ HybridCache::~HybridCache(){
 		    delete m_tableNVM[i][j];
 		}
 	}
-	delete m_predictor;
+//	delete m_predictor;
 }
 
 void 
@@ -199,11 +199,12 @@ HybridCache::handleAccess(Access element)
 	if(current == NULL){ // The cache line is not in the hybrid cache, Miss !
 
 		//Verify if the cache line is in missing tags 
-		element.isSRAMerror = m_predictor->checkMissingTags(address , id_set);
+		element.isSRAMerror = m_predictor->checkSRAMerror(address , id_set);
 				
 		CacheEntry* replaced_entry = NULL;
 		
 		allocDecision des = m_predictor->allocateInNVM(id_set, element);
+		m_predictor->recordAllocationDecision(id_set, element, des);
 		
 		if(des == BYPASS_CACHE )
 		{

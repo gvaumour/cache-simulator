@@ -24,9 +24,10 @@ class MissingTagEntry{
 		uint64_t addr;
 		uint64_t last_time_touched;
 		bool isValid;
-
-		MissingTagEntry() : addr(0) , last_time_touched(0), isValid(false) { };
-		MissingTagEntry(uint64_t a , uint64_t t, bool v) : addr(a) , last_time_touched(t), isValid(v) {};
+		bool isBypassed;
+	
+		MissingTagEntry() : addr(0) , last_time_touched(0), isValid(false), isBypassed(false) { };
+		MissingTagEntry(uint64_t a , uint64_t t, bool v) : addr(a) , last_time_touched(t), isValid(v), isBypassed(false) {};
 	
 };
 
@@ -40,6 +41,8 @@ class Predictor{
 		virtual allocDecision allocateInNVM(uint64_t set, Access element) = 0; // Return true to allocate in NVM
 		virtual void updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element, bool isWBrequest) = 0;
 		virtual void insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access element) = 0;
+		bool recordAllocationDecision(uint64_t set, Access element, allocDecision des);
+
 		virtual int evictPolicy(int set, bool inNVM) =0;
 		virtual void printConfig(std::ostream& out) = 0;
 		virtual void finishSimu() = 0;
@@ -50,7 +53,8 @@ class Predictor{
 		virtual void stopWarmup();
 	
 		void insertRecord(int set, int assoc, bool inNVM);
-		bool checkMissingTags(uint64_t block_addr , int id_set);
+		bool checkSRAMerror(uint64_t block_addr , int id_set);
+		bool checkBPerror(uint64_t block_addr , int id_set);
 		void migrationRecording();
 		void evictRecording(int id_set , int id_assoc , bool inNVM);
 		
@@ -72,9 +76,11 @@ class Predictor{
 		bool m_trackError;
 		bool m_isWarmup;
 	
-		std::vector<std::vector<MissingTagEntry*> > missing_tags;
+		std::vector<std::vector<MissingTagEntry*> > SRAM_missing_tags;
+		std::vector<std::vector<MissingTagEntry*> > BP_missing_tags;
 		std::vector<int> stats_NVM_errors;
 		std::vector<int> stats_SRAM_errors;		
+		std::vector<int> stats_BP_errors;		
 		uint64_t stats_WBerrors;
 		uint64_t stats_COREerrors;
 		uint64_t stats_MigrationErrors;

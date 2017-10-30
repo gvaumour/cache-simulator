@@ -38,7 +38,7 @@ using namespace std;
 
 int start_debug;
 Hierarchy* my_system;
-
+vector<string> memory_traces;
 
 int main(int argc , char* argv[]){
 	
@@ -107,7 +107,7 @@ int main(int argc , char* argv[]){
 			args.push_back(string(argv[i]));
 	}
 	
-	vector<string> memory_traces;
+
 	for(unsigned i = 0 ; i < args.size() ; i++)
 		memory_traces.push_back(args[i]);		
 	
@@ -202,6 +202,11 @@ void printResults(bool mergingResults, int id_trace)
 	
 	ofstream configFile;
 	configFile.open("config" + suffixe + ".ini");
+	
+	configFile << "Simulated traces:" << endl;
+	for(auto p : memory_traces)
+		configFile << "\t-" << p << endl;
+ 	
 	my_system->printConfig(configFile);
 	configFile.close();
 	
