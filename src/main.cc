@@ -79,6 +79,11 @@ int main(int argc , char* argv[]){
 			i++;
 			simu_parameters.sram_assoc = atoi(argv[i]);
 		}
+		else if(string(argv[i]) == "--LLC-sets")
+		{
+			i++;
+			simu_parameters.nb_sets = atoi(argv[i]);
+		}
 		else if(string(argv[i]) == "--NVM-assoc")
 		{
 			i++;
