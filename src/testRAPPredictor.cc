@@ -452,7 +452,8 @@ testRAPPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 		}
 		else
 		{
-			rap_current->rd_history.push_back(RD_NOT_ACCURATE);
+			// Generate a RD_NOT_ACCURATE rd
+			rap_current->rd_history.push_back(m_assoc + 10); 
 			rap_current->rw_history.push_back(element.isWrite());
 			updateWindow(rap_current);		
 		}
