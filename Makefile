@@ -1,14 +1,17 @@
 EXEC = ./obj-intel64/roeval
 EXEC_RELEASE = ./obj-intel64/roeval_release
 
-FLAGS_DEBUGS =
+FLAGS = -std=c++11 -I./src/
+LDFLAGS= -lz 
 ifdef TEST
-	FLAGS_DEBUGS = -DTEST -g
+	FLAGS += -DTEST -g -O0
+	LDFLAGS += -g -O0
+else 
+	LDFLAGS += -Wall -O3
+	FLAGS += -Wall -O3
 endif 
 
 CPP   = g++
-FLAGS = -Wall -O3	 -std=c++11 -I./src/ $(FLAGS_DEBUGS)
-LDFLAGS= -lz -Wall -O0 $(FLAGS_DEBUGS)
 
 SRC= $(wildcard src/*.cc)
 OBJ= $(subst src/, obj-intel64/,  $(SRC:.cc=.o))

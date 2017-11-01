@@ -33,11 +33,13 @@ Predictor::Predictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtabl
 	if(m_trackError){
 	
 		/* Allocation of the SRAM missing tags array*/
-		SRAM_missing_tags.resize(m_nbNVMways - m_nbSRAMways);
-		for(int i = 0 ; i < m_nbNVMways - m_nbSRAMways ; i++)
+		SRAM_missing_tags.clear();
+		SRAM_missing_tags.resize(m_nb_set);
+		int assoc_MT = m_nbNVMways - m_nbSRAMways;
+		for(int i = 0 ; i < m_nb_set; i++)
 		{
-			SRAM_missing_tags[i].resize(m_nb_set);
-			for(int j = 0 ; j < m_nb_set ; j++)
+			SRAM_missing_tags[i].resize(assoc_MT);
+			for(int j = 0 ; j < assoc_MT; j++)
 			{
 				SRAM_missing_tags[i][j] = new MissingTagEntry();
 			}
@@ -102,26 +104,26 @@ Predictor::evictRecording(int set, int assoc_victim , bool inNVM)
 	CacheEntry* current = m_tableSRAM[set][assoc_victim];
 	
 	//Choose the oldest victim for the missing tags to replace from the current one 	
-	uint64_t cpt_longestime = SRAM_missing_tags[0][set]->last_time_touched;
+	uint64_t cpt_longestime = SRAM_missing_tags[set][0]->last_time_touched;
 	uint64_t index_victim = 0;
 	
-	for(unsigned i = 0 ; i < SRAM_missing_tags.size(); i++)
+	for(unsigned i = 0 ; i < SRAM_missing_tags[set].size(); i++)
 	{
-		if(!SRAM_missing_tags[i][set]->isValid)
+		if(!SRAM_missing_tags[set][i]->isValid)
 		{
 			index_victim = i;
 			break;
 		}	
 		
-		if(cpt_longestime > SRAM_missing_tags[i][set]->last_time_touched){
-			cpt_longestime = SRAM_missing_tags[i][set]->last_time_touched; 
+		if(cpt_longestime > SRAM_missing_tags[set][i]->last_time_touched){
+			cpt_longestime = SRAM_missing_tags[set][i]->last_time_touched; 
 			index_victim = i;
 		}	
 	}
 
-	SRAM_missing_tags[index_victim][set]->addr = current->address;
-	SRAM_missing_tags[index_victim][set]->last_time_touched = cpt_time;
-	SRAM_missing_tags[index_victim][set]->isValid = current->isValid;
+	SRAM_missing_tags[set][index_victim]->addr = current->address;
+	SRAM_missing_tags[set][index_victim]->last_time_touched = cpt_time;
+	SRAM_missing_tags[set][index_victim]->isValid = current->isValid;
 
 
 }
@@ -132,18 +134,22 @@ Predictor::insertRecord(int set, int assoc, bool inNVM)
 {
 	//Update the missing tag as a new cache line is brough into the cache 
 	//Has to remove the MT entry if it exists there 
-	if(inNVM || !m_trackError)
+	DPRINTF("Predictor::insertRecord Begin ");
+
+	if(!inNVM && m_trackError)
 	{
 	
 		CacheEntry* current = m_tableSRAM[set][assoc];
-		for(unsigned i = 0 ; i < SRAM_missing_tags.size(); i++)
+		for(unsigned i = 0 ; i < SRAM_missing_tags[set].size(); i++)
 		{
-			if(SRAM_missing_tags[i][set]->addr == current->address)
+			if(SRAM_missing_tags[set][i]->addr == current->address)
 			{
-				SRAM_missing_tags[i][set]->isValid = false;
+				SRAM_missing_tags[set][i]->isValid = false;
 			}
 		}
 	}	
+	DPRINTF("Predictor::insertRecord Begin ");
+
 }
 
 bool
@@ -162,14 +168,14 @@ Predictor::recordAllocationDecision(uint64_t set, Access element, allocDecision 
 		{
 			find = true;
 			BP_missing_tags[set][i]->last_time_touched = cpt_time;
-			DPRINTF("Predictor::recordAllocationDecision Entry Already present, Update time\n");
+			BP_missing_tags[set][i]->isBypassed = (des == BYPASS_CACHE);
 
 			
 			//Bypass an access that would be a hit , BP ERROR ! 
 			if(des == BYPASS_CACHE && BP_missing_tags[set][i]->isBypassed){
 			
 				DPRINTF("Predictor::recordAllocationDecision BP_error detected\n");
-				BP_missing_tags[set][i]->isBypassed = (des == BYPASS_CACHE);
+
 				isBPerror = false;
 				
 				if(!m_isWarmup)		
@@ -219,12 +225,12 @@ bool
 Predictor::checkSRAMerror(uint64_t block_addr , int id_set)
 {
 
-	if(m_trackError || m_isWarmup){
+	if(m_trackError && !m_isWarmup){
 		//An error in the SRAM part is a block that miss in the SRAM array 
 		//but not in the MT array
-		for(unsigned i = 0 ; i < SRAM_missing_tags.size(); i++)
+		for(unsigned i = 0 ; i < SRAM_missing_tags[id_set].size() ; i++)
 		{
-			if(SRAM_missing_tags[i][id_set]->addr == block_addr && SRAM_missing_tags[i][id_set]->isValid)
+			if(SRAM_missing_tags[id_set][i]->addr == block_addr && SRAM_missing_tags[id_set][i]->isValid)
 			{
 				//DPRINTF("BasePredictor::checkMissingTags Found SRAM error as %#lx is present in MT tag %i \n", block_addr ,i);  
 				stats_SRAM_errors[stats_SRAM_errors.size()-1]++;
@@ -348,6 +354,7 @@ LRUPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access e
 		m_replacementPolicySRAM_ptr->insertionPolicy(set, index , 0);
 	
 	Predictor::insertRecord(set, index , inNVM);
+	DPRINTF("END OF INSERTIONPolicy");
 	m_cpt++;
 }
 
