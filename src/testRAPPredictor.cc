@@ -444,9 +444,19 @@ testRAPPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 	testRAPEntry* rap_current;
 	if( (rap_current= lookup(current->m_pc) ) != NULL )
 	{
+
 		/* Set the flag of learning cache line when bypassing */
 		if(rap_current->des == BYPASS_CACHE)
+		{
 			current->isLearning = true;
+		}
+		else
+		{
+			rap_current->rd_history.push_back(RD_NOT_ACCURATE);
+			rap_current->rw_history.push_back(element.isWrite());
+			updateWindow(rap_current);		
+		}
+	
 		reportAccess(rap_current, element, current, inNVM, "INSERTION");
 	}
 	
@@ -547,7 +557,7 @@ testRAPPredictor::evictPolicy(int set, bool inNVM)
 		else
 		{
 			// A learning cache line on dead dataset goes here
-			if(current->nbWrite == 0 && current->nbRead == 0)
+			if( (current->nbWrite + current->nbRead) == 1)
 				rap_current->dead_counter--;
 			else
 				rap_current->dead_counter++;
@@ -558,7 +568,7 @@ testRAPPredictor::evictPolicy(int set, bool inNVM)
 				rap_current->dead_counter = -simu_parameters.deadSaturationCouter;
 
 
-			string a = (current->nbWrite == 0 && current->nbRead == 0) ? "DEAD" : "LIVELY";
+			string a = (current->nbWrite + current->nbRead) == 1 ? "DEAD" : "LIVELY";
 			dataset_file << "Dataset n°" << rap_current->id << ": Eviction of a " << a << " CL, Address :" << \
 				std::hex << current->address << std::dec << " DeadCounter=" << rap_current->dead_counter << endl;
 				

@@ -249,8 +249,13 @@ HybridCache::handleAccess(Access element)
 
 
 			deallocate(replaced_entry);
-			allocate(address , id_set , id_assoc, inNVM, element.m_pc);
+			allocate(address , id_set , id_assoc, inNVM, element.m_pc);			
 			m_predictor->insertionPolicy(id_set , id_assoc , inNVM, element);
+			if(element.isWrite())
+				replaced_entry->nbWrite++;
+			else
+				replaced_entry->nbRead++;
+
 
 			if(inNVM){
 				entete_debug();
@@ -360,7 +365,7 @@ HybridCache::updateStatsDeallocate(CacheEntry* current)
 		stats_nbWOlines++;
 		stats_nbWOaccess+= current->nbWrite; 	
 	}
-	else if(current->nbWrite == 0 && current->nbRead == 0){	
+	else if( (current->nbWrite + current->nbRead) == 1){	
 		stats_nbLostLine++;
 	}
 	else if( current->nbWrite == 1 && current->nbRead > 0){
