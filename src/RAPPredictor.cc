@@ -9,8 +9,7 @@ using namespace std;
 
 static const char* str_RW_status[] = {"DEAD" , "WO", "RO" , "RW", "RW_NOTACC"};
 static const char* str_RD_status[] = {"RD_SHORT" , "RD_MEDIUM", "RD_NOTACC", "UNKOWN"};
-EnergyParameters energy_parameters;
-
+static EnergyParameters energy_parameters;
 
 /** RAPPredictor Implementation ***********/ 
 RAPPredictor::RAPPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) : \

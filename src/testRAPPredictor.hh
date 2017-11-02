@@ -86,7 +86,7 @@ class testRAPEntry
 
 		int cptBypassLearning;
 		
-		std::vector<int> rd_history;
+		std::vector<RD_TYPE> rd_history;
 		std::vector<bool> rw_history;
 		
 		int nbAccess;

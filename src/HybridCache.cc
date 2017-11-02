@@ -251,11 +251,13 @@ HybridCache::handleAccess(Access element)
 			deallocate(replaced_entry);
 			allocate(address , id_set , id_assoc, inNVM, element.m_pc);			
 			m_predictor->insertionPolicy(id_set , id_assoc , inNVM, element);
+		
 			if(element.isWrite())
 				replaced_entry->nbWrite++;
 			else
 				replaced_entry->nbRead++;
 
+			
 
 			if(inNVM){
 				entete_debug();

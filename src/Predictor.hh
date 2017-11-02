@@ -81,9 +81,9 @@ class Predictor{
 		std::vector<int> stats_NVM_errors;
 		std::vector<int> stats_SRAM_errors;		
 		std::vector<int> stats_BP_errors;		
+		std::vector<int> stats_MigrationErrors;
 		uint64_t stats_WBerrors;
 		uint64_t stats_COREerrors;
-		uint64_t stats_MigrationErrors;
 };
 
 

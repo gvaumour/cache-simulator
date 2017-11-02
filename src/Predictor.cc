@@ -21,9 +21,9 @@ Predictor::Predictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtabl
 	stats_NVM_errors = vector<int>(1, 0);
 	stats_SRAM_errors = vector<int>(1, 0);
 	stats_BP_errors = vector<int>(1,0);
-
+	stats_MigrationErrors = vector<int>(1,0);
+	
 	m_trackError = false;
-	stats_MigrationErrors = 0;
 	stats_COREerrors = 0;
 	stats_WBerrors = 0;
 
@@ -252,6 +252,7 @@ Predictor::openNewTimeFrame()
 	stats_NVM_errors.push_back(0);
 	stats_SRAM_errors.push_back(0);
 	stats_BP_errors.push_back(0);
+	stats_MigrationErrors.push_back(0);
 	stats_nbLLCaccessPerFrame = 0;
 }
 
@@ -262,7 +263,7 @@ Predictor::migrationRecording()
 	if(!m_isWarmup)
 	{
 		stats_NVM_errors[stats_NVM_errors.size()-1]++;
-		stats_MigrationErrors++;	
+		stats_MigrationErrors[stats_MigrationErrors.size()-1]++;	
 	}
 }
 
@@ -290,15 +291,16 @@ void
 Predictor::printStats(std::ostream& out)
 {
 
-	uint64_t totalNVMerrors = 0, totalSRAMerrors= 0, totalBPerrors = 0;	
+	uint64_t totalNVMerrors = 0, totalSRAMerrors= 0, totalBPerrors = 0, totalMigration = 0;	
 	ofstream output_file;
 	output_file.open(PREDICTOR_OUTPUT_FILE);
 	for(unsigned i = 0 ; i <  stats_NVM_errors.size(); i++)
 	{	
-		output_file << stats_NVM_errors[i] << "\t" << stats_SRAM_errors[i] << "\t" << stats_BP_errors[i] << endl;	
+		output_file << stats_NVM_errors[i] << "\t" << stats_SRAM_errors[i] << "\t" << stats_BP_errors[i] << "\t"<< stats_BP_errors[i] << endl;	
 		totalNVMerrors += stats_NVM_errors[i];
 		totalSRAMerrors += stats_SRAM_errors[i];
 		totalBPerrors += stats_BP_errors[i];
+		totalMigration += stats_MigrationErrors[i];
 	}
 	output_file.close();
 
@@ -306,7 +308,7 @@ Predictor::printStats(std::ostream& out)
 	out << "\t\tNVM Error\t" << totalNVMerrors << endl;
 	out << "\t\t\t-From WB\t"  << stats_WBerrors << endl;
 	out << "\t\t\t-From Core\t" <<  stats_COREerrors << endl;
-	out << "\t\t\t-From Migration\t" <<  stats_MigrationErrors << endl;
+	out << "\t\t\t-From Migration\t" <<  totalMigration << endl;
 	out << "\t\tSRAM Error\t" << totalSRAMerrors << endl;
 	out << "\t\tBP Error\t" << totalBPerrors << endl;
 }

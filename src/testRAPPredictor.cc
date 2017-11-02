@@ -10,8 +10,8 @@ using namespace std;
 static const char* str_RW_status[] = {"DEAD" , "WO", "RO" , "RW", "RW_NOTACC"};
 static const char* str_RD_status[] = {"RD_SHORT" , "RD_MEDIUM", "RD_NOTACC", "UNKOWN"};
 
+static EnergyParameters energy_parameters;
 
-//ofstream myFile;
 
 ofstream dataset_file;
 int id_DATASET = 0;
@@ -262,7 +262,7 @@ testRAPPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access 
 		{
 
 //			DPRINTF("testRAPPredictor::updatePolicy Reuse distance of the pc %lx, RD = %d\n", current->m_pc , rd );
-			rap_current->rd_history.push_back(rd);
+			rap_current->rd_history.push_back(convertRD(rd));
 			rap_current->rw_history.push_back(element.isWrite());		
 			
 			//A learning cl shows some reuse so we quit dead state 
@@ -306,11 +306,15 @@ testRAPPredictor::reportAccess(testRAPEntry* rap_current, Access element, CacheE
 	string is_learning = current->isLearning ? "Learning" : "Regular";
 	string access_type = element.isWrite() ? "WRITE" : "READ";
 	
+	string is_error= "";
+	if(element.isSRAMerror)
+		is_error = ", is an SRAM error";
+	
 	if(simu_parameters.printDebug)
 	{
 		dataset_file << entete << ":Dataset n°" << rap_current->id << ": [" << \
 		str_RW_status[rap_current->state_rw] << ","  << str_RD_status[rap_current->state_rd] << "]," << access_type << " on " << is_learning << \
-		" Cl 0x" << std::hex << current->address << std::dec << " allocated in " << cl_location << endl;	
+		" Cl 0x" << std::hex << current->address << std::dec << " allocated in " << cl_location<< " " << is_error << endl;	
 	}
 	
 	
@@ -452,8 +456,12 @@ testRAPPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 		}
 		else
 		{
-			// Generate a RD_NOT_ACCURATE rd
-			rap_current->rd_history.push_back(m_assoc + 10); 
+		
+			if(element.isSRAMerror)
+				rap_current->rd_history.push_back(RD_MEDIUM); 
+			else
+				rap_current->rd_history.push_back(RD_NOT_ACCURATE); 
+
 			rap_current->rw_history.push_back(element.isWrite());
 			updateWindow(rap_current);		
 		}
@@ -479,7 +487,11 @@ testRAPPredictor::updateWindow(testRAPEntry* rap_current)
 		RD_TYPE old_rd = rap_current->state_rd;
 
 		determineStatus(rap_current);
-
+		
+		dataset_file << "Window:Dataset n°" << rap_current->id << ": NewWindow [" << str_RW_status[rap_current->state_rw] << "," \
+		  	     << str_RD_status[rap_current->state_rd] << "]"  << endl;	
+	
+	
 		if(!m_isWarmup)
 			stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
 
@@ -669,26 +681,60 @@ testRAPPredictor::determineStatus(testRAPEntry* entry)
 
 	
 	/* Determination of the rd type */
-	int window_rd = entry->rd_history.size();
+//	int window_rd = entry->rd_history.size();
 
 	vector<int> cpts_rd = vector<int>(NUM_RD_TYPE,0);
 	
 	for(auto rd : entry->rd_history)
-		cpts_rd[convertRD(rd)]++;	
+		cpts_rd[rd]++;
+		
+
 	
-	int max = 0, index_max = -1;
-	for(unsigned i = 0 ; i < cpts_rd.size() ; i++)
+//	int max = 0, index_max = -1;
+//	for(unsigned i = 0 ; i < cpts_rd.size() ; i++)
+//	{
+//		if(cpts_rd[i] > max)
+//		{
+//			max = cpts_rd[i];
+//			index_max = i;
+//		}
+//	}
+
+	double energySRAM = 0;
+	double energyNVM =0;
+	for(unsigned i = 0 ; i < entry->rd_history.size() ; i++)
 	{
-		if(cpts_rd[i] > max)
+		bool isWrite = entry->rw_history[i];
+		if(entry->rd_history[i] == RD_NOT_ACCURATE)
+		{			
+				energySRAM += energy_parameters.costDRAM[isWrite] + energy_parameters.costSRAM[isWrite]; 
+				energyNVM += energy_parameters.costDRAM[isWrite] + energy_parameters.costNVM[isWrite];		
+		}
+		else if(entry->rd_history[i] == RD_SHORT)
 		{
-			max = cpts_rd[i];
-			index_max = i;
+			energySRAM += energy_parameters.costSRAM[isWrite]; 
+			energyNVM += energy_parameters.costNVM[isWrite];
+		}
+		else
+		{
+			energySRAM += energy_parameters.costDRAM[isWrite]; 
+			energyNVM += energy_parameters.costNVM[isWrite];	
 		}
 	}
-	if( ((double)max / (double)window_rd) > RAP_INACURACY_TH)
-		entry->state_rd = (RD_TYPE) index_max;
+
+	if(energySRAM > energyNVM)
+		entry->state_rd = (RD_TYPE) RD_MEDIUM;
 	else
-		entry->state_rd = RD_NOT_ACCURATE;
+		entry->state_rd = (RD_TYPE) RD_SHORT;
+			
+	
+//	if( ((double)max / (double)window_rd) > RAP_INACURACY_TH)
+//		entry->state_rd = (RD_TYPE) index_max;
+//	else
+//		entry->state_rd = RD_NOT_ACCURATE;
+
+	
+
 			
 //	/** Debugging purpose */	
 //	if(entry->state_rd == RD_NOT_ACCURATE && entry->state_rw == DEAD)

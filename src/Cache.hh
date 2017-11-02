@@ -186,6 +186,34 @@ class CacheEntry{
 };
 
 
+#define READ_ACCESS 0
+#define WRITE_ACCESS 1
+
+class EnergyParameters
+{
+	public: 
+		EnergyParameters() {
+
+			costSRAM = std::vector<double>(2 ,0);
+			costSRAM[READ_ACCESS] = 271.678E-12;
+			costSRAM[WRITE_ACCESS] = 257.436E-12;
+
+			costNVM = std::vector<double>(2 ,0);
+			costNVM[READ_ACCESS] = 236.828E-12;
+			costNVM[WRITE_ACCESS] = 652.278E-12;
+
+			costDRAM = std::vector<double>(2 ,0);
+			costDRAM[READ_ACCESS] = 4.08893E-9;
+			costDRAM[WRITE_ACCESS] = 4.10241E-9;
+
+		};
+
+		std::vector<double> costNVM; 
+		std::vector<double> costSRAM;
+		std::vector<double> costDRAM;
+};
+
+
 typedef std::vector<std::vector<CacheEntry*> > DataArray;
 
 
