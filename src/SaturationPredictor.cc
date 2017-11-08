@@ -39,8 +39,8 @@ void SaturationCounter::updatePolicy(uint64_t set, uint64_t index, bool inNVM, A
 		current->policyInfo = m_cpt;
 		
 		if(element.isWrite()){
-			current->saturation_counter--;
-			if(current->saturation_counter == 1)
+			current->saturation_counter++;
+			if(current->saturation_counter == simu_parameters.saturation_threshold)
 			{
 				//Trigger Migration
 				//Select LRU candidate from SRAM cache
@@ -50,8 +50,8 @@ void SaturationCounter::updatePolicy(uint64_t set, uint64_t index, bool inNVM, A
 				
 				CacheEntry* replaced_entry = m_tableSRAM[set][id_assoc];
 			
-				current->saturation_counter = SATURATION_TH;
-				replaced_entry->saturation_counter = SATURATION_TH;
+				current->saturation_counter = 0;
+				replaced_entry->saturation_counter = 0;
 			
 				/** Migration incurs one read and one extra write */ 
 				replaced_entry->nbWrite++;
@@ -65,9 +65,9 @@ void SaturationCounter::updatePolicy(uint64_t set, uint64_t index, bool inNVM, A
 			}
 		}
 		else{
-			current->saturation_counter++;
-			if(current->saturation_counter > SATURATION_TH)
-				current->saturation_counter = SATURATION_TH;					
+			current->saturation_counter--;
+			if(current->saturation_counter < 0)
+				current->saturation_counter = 0;					
 		}
 			
 	}
@@ -77,13 +77,13 @@ void SaturationCounter::updatePolicy(uint64_t set, uint64_t index, bool inNVM, A
 		
 		if(element.isWrite())
 		{
-			current->saturation_counter++;
-			if(current->saturation_counter > SATURATION_TH)
-				current->saturation_counter = SATURATION_TH;
+			current->saturation_counter--;
+			if(current->saturation_counter < 0)
+				current->saturation_counter = 0;
 		}
 		else{
-			current->saturation_counter--;
-			if(current->saturation_counter == 1)
+			current->saturation_counter++;
+			if(current->saturation_counter == simu_parameters.saturation_threshold)
 			{
 				//Trigger Migration
 				DPRINTF("SaturationCounter:: Migration Triggered from SRAM\n");
@@ -92,8 +92,8 @@ void SaturationCounter::updatePolicy(uint64_t set, uint64_t index, bool inNVM, A
 				CacheEntry* replaced_entry = m_tableNVM[set][id_assoc];
 				assert(replaced_entry != NULL);
 							
-				current->saturation_counter = SATURATION_TH;
-				replaced_entry->saturation_counter = SATURATION_TH;
+				current->saturation_counter = 0;
+				replaced_entry->saturation_counter = 0;
 
 				/** Migration incurs one read and one extra write */ 
 				replaced_entry->nbWrite++;
@@ -118,11 +118,11 @@ void SaturationCounter::insertionPolicy(uint64_t set, uint64_t index, bool inNVM
 
 	if(inNVM){
 		m_tableNVM[set][index]->policyInfo = m_cpt;
-		m_tableNVM[set][index]->saturation_counter = SATURATION_TH;		
+		m_tableNVM[set][index]->saturation_counter = 0;		
 	}
 	else{
 		m_tableSRAM[set][index]->policyInfo = m_cpt;
-		m_tableSRAM[set][index]->saturation_counter = SATURATION_TH;	
+		m_tableSRAM[set][index]->saturation_counter = 0;	
 	
 	}
 	
@@ -131,7 +131,7 @@ void SaturationCounter::insertionPolicy(uint64_t set, uint64_t index, bool inNVM
 
 void
 SaturationCounter::printConfig(std::ostream& out) {
-	out<< "\t\tSaturation Threshold : " << SATURATION_TH << std::endl;
+	out<< "\t\tSaturation Threshold : " << simu_parameters.saturation_threshold << std::endl;
 };
 
 

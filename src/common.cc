@@ -200,6 +200,9 @@ init_default_parameters()
 	simu_parameters.nbCores = 1;
 	simu_parameters.policy = "testRAP";
 
+
+	simu_parameters.saturation_threshold = 4;
+	
 //	simu_parameters.deadSaturationCouter = RAP_DEAD_COUNTER_SATURATION;
 //	simu_parameters.rap_innacuracy_th = RAP_INACURACY_TH;
 //	simu_parameters.window_size = RAP_WINDOW_SIZE;

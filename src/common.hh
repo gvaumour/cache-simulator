@@ -79,6 +79,7 @@ struct SimuParameters
 	int nbCores;
 	std::string policy;
 
+	int saturation_threshold;
 
 };
 

@@ -172,7 +172,8 @@ Predictor::recordAllocationDecision(uint64_t set, Access element, allocDecision 
 
 			
 			//Bypass an access that would be a hit , BP ERROR ! 
-			if(des == BYPASS_CACHE && BP_missing_tags[set][i]->isBypassed){
+//			if(des == BYPASS_CACHE && BP_missing_tags[set][i]->isBypassed){
+			if(des == BYPASS_CACHE){
 			
 				DPRINTF("Predictor::recordAllocationDecision BP_error detected\n");
 

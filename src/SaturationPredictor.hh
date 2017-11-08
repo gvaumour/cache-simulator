@@ -12,8 +12,6 @@
 class Predictor;
 class HybridCache;
 
-#define SATURATION_TH 3
-
 /*
 	Implementation of the saturation-based predictor 
 	"Power and performance of read-write aware Hybrid Caches with non-volatile memories,"
