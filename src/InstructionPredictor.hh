@@ -22,10 +22,9 @@ class HybridCache;
 */
 
 
-#define CACHE_THRESHOLD 1
+
 #define PC_THRESHOLD 3
-#define OUTPUT_PREDICTOR_FILE "InstructionPredictor.out"
-#define DATASET_OUTPUT_FILE "datasets.out"
+//#define UTPUT_PREDICTOR_FILE "InstructionPredictor.out"
 
 
 class InstructionPredictor : public Predictor {

@@ -146,6 +146,7 @@ class CacheEntry{
 			m_compilerHints = 0;
 			justMigrate = false;
 			value = 0;
+			cost_value = 0;
 			coherence_state = COHERENCE_INVALID;
 		}
 		
@@ -177,6 +178,8 @@ class CacheEntry{
 		
 		//field used only by the SaturationCounter Predictor
 		int saturation_counter; 
+		int cost_value; 
+		
 		//field used only by the RAP predictor
 		bool isLearning;
 

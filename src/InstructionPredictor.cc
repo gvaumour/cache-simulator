@@ -7,12 +7,9 @@
 
 using namespace std;
 
-/** InstructionPredictor Implementation ***********/ 
 
-/*
-InstructionPredictor::InstructionPredictor() : Predictor(){
-	m_cpt = 1;
-}*/
+#define WRITE_VALUE 24
+#define READ_VALUE -1
 
 InstructionPredictor::InstructionPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) : \
 	Predictor(nbAssoc, nbSet, nbNVMways, SRAMtable, NVMtable, cache) {
@@ -40,15 +37,10 @@ InstructionPredictor::allocateInNVM(uint64_t set, Access element)
 		map<uint64_t, pair<int,int> > my_tab = map<uint64_t, pair<int,int> >();
 	}
 
-	if(element.isWrite())
+	if(pc_counters[element.m_pc] < 2)
+		return ALLOCATE_IN_NVM; 
+	else
 		return ALLOCATE_IN_SRAM;
-	else{
-		//Test if the instruction is cold or not
-		if(pc_counters[element.m_pc] < (PC_THRESHOLD-1))
-			return ALLOCATE_IN_NVM; 
-		else
-			return ALLOCATE_IN_SRAM;
-	}
 
 }
 
@@ -70,30 +62,10 @@ InstructionPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 		
 	current->policyInfo = m_cpt;
 	if(element.isWrite()){
-		if(current->saturation_counter < CACHE_THRESHOLD)
-		{
-			current->saturation_counter++;
-			if(current->saturation_counter == CACHE_THRESHOLD)
-			{
-				//If the counter now saturates, update the inst info
-				pc_counters[current->m_pc]++;
-				if(pc_counters[current->m_pc] > PC_THRESHOLD){
-					//cout << "Data set " << current->m_pc << " saturates " <<  cpt_time << endl;
-					pc_counters[current->m_pc] = PC_THRESHOLD;
-				}
-				
-			}
-						
-		}
-		//We do nothing if the counter is already saturated			
-		if(!m_isWarmup)
-			stats_PCwrites[current->m_pc].first++;
+		current->cost_value+= WRITE_VALUE;
 	}
-	else{ //Collect nb of R/W of datasets 
-
-		if(!m_isWarmup)
-			stats_PCwrites[current->m_pc].second++;
-	
+	else{ 
+		current->cost_value += READ_VALUE;	
 	} 	
 	Predictor::updatePolicy(set, index, inNVM, element , isWBrequest);
 
@@ -104,24 +76,31 @@ InstructionPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 void InstructionPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access element)
 {
 	DPRINTF("InstructionPredictor::insertionPolicy\n");
-
+	
+	CacheEntry* current;
 	if(inNVM){
-		m_replacementPolicyNVM_ptr->insertionPolicy(set, index , 0);
-		m_tableNVM[set][index]->saturation_counter = 0;		
-	}
+		current = m_tableNVM[set][index];
+	}		
 	else{
-		m_replacementPolicySRAM_ptr->insertionPolicy(set, index , 0);
-		m_tableSRAM[set][index]->saturation_counter = 0;
+		current = m_tableSRAM[set][index];
 	}
+	
+	current->policyInfo = m_cpt;
+
+	if(element.isWrite())
+		current->cost_value = WRITE_VALUE;
+	else
+		current->cost_value = READ_VALUE;
 	
 	m_cpt++;
 }
 
 void
 InstructionPredictor::printConfig(std::ostream& out){
-	out << "\tSaturation Threshold:" << std::endl;
-	out << "\t\t- CACHE_THRESHOLD : " << CACHE_THRESHOLD << std::endl;		
-	out << "\t\t- PC_THRESHOLD : " << PC_THRESHOLD << std::endl;		
+	out << "\tInstruction Predictor :" << std::endl;
+	out << "\t\t- READ_VALUE : " << READ_VALUE << std::endl;		
+	out << "\t\t- WRITE_VALUE " << WRITE_VALUE << std::endl;		
+	out << "\t\t- Cost Threshold " << simu_parameters.cost_threshold << std::endl;		
 };
 
 
@@ -135,12 +114,13 @@ InstructionPredictor::printStats(std::ostream& out)
 		totalWrite += current.first;
 	}
 	
-	out << "InstructionPredictor Results:" << endl;
+	out << "InstructionPredictor Parameters:" << endl;
 	out << "PC Threshold : " << PC_THRESHOLD << endl;
-	out << "Cache Line Threshold : " << CACHE_THRESHOLD << endl;
+	out << "Cache Line Cost Threshold : " << simu_parameters.cost_threshold << endl;
 	
 	out << "Total Write :" << totalWrite << endl;
 	
+	/*
 	ofstream output_file;
 	output_file.open(OUTPUT_PREDICTOR_FILE , std::ofstream::app);
 	if(totalWrite > 0){
@@ -152,27 +132,7 @@ InstructionPredictor::printStats(std::ostream& out)
 		}
 	}
 	output_file.close();
-	
-	/*
-	ofstream dataset_output_file(DATASET_OUTPUT_FILE);
-	int i = 0;
-	for(auto dataset = stats_datasets.begin() ; dataset != stats_datasets.end() ; dataset++ )
-	{
-		dataset_output_file << "DATASET\t" << i << "\tAddress\t0x"  << std::hex << dataset->first << endl;	
-		int a = 0;
-		map<uint64_t , pair<int,int> > current = dataset->second;
-		
-		for(auto cacheline = current.begin() ; cacheline != current.end() ; cacheline++ )
-		{
-			pair<int,int> current_cache_line = cacheline->second;
-			dataset_output_file << "\t0x" << std::hex << cacheline->first << std::dec \
-			<<  "\t" << current_cache_line.first << "\t" << current_cache_line.second << endl;
-			a++;
-		}
-		i++;
-	}
-	dataset_output_file.close();*/
-	
+	*/
 	Predictor::printStats(out);
 }
 
@@ -200,7 +160,14 @@ InstructionPredictor::evictPolicy(int set, bool inNVM)
 
 	if(current->isValid){
 		DPRINTF("InstructionPredictor::evictPolicy is Valid\n");
-		if(current->saturation_counter < 2)
+		if( current->cost_value >= simu_parameters.cost_threshold)
+		{
+			pc_counters[current->m_pc]++;
+			if(pc_counters[current->m_pc] == 3)
+				pc_counters[current->m_pc] = 3;
+		
+		}
+		else
 		{
 			pc_counters[current->m_pc]--;
 			if(pc_counters[current->m_pc] < 0)

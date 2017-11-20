@@ -87,7 +87,7 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		 m_predictor = new DynamicSaturation(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "Compiler")
 		 m_predictor = new CompilerPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
-	else if(m_policy == "InstructionPredictor")
+	else if(m_policy == "Instruction")
 		 m_predictor = new InstructionPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "RAP")
 		 m_predictor = new RAPPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
@@ -251,12 +251,6 @@ HybridCache::handleAccess(Access element)
 			deallocate(replaced_entry);
 			allocate(address , id_set , id_assoc, inNVM, element.m_pc);			
 			m_predictor->insertionPolicy(id_set , id_assoc , inNVM, element);
-		
-			if(element.isWrite())
-				replaced_entry->nbWrite++;
-			else
-				replaced_entry->nbRead++;
-
 			
 
 			if(inNVM){
@@ -325,6 +319,7 @@ HybridCache::handleAccess(Access element)
 		
 		current->m_compilerHints = element.m_compilerHints;
 	}
+	
 }
 
 
@@ -351,6 +346,9 @@ HybridCache::updateStatsDeallocate(CacheEntry* current)
 	if(!current->isValid || m_isWarmup)
 		return;
 		
+		
+//	cout << "current->nbWrite = " << current->nbWrite << ", current->nbRead = " << current->nbRead << endl;
+	
 	if(stats_histo_ratioRW.count(current->nbWrite) == 0)
 		stats_histo_ratioRW.insert(pair<int,int>(current->nbWrite , 0));
 		
@@ -367,7 +365,7 @@ HybridCache::updateStatsDeallocate(CacheEntry* current)
 		stats_nbWOlines++;
 		stats_nbWOaccess+= current->nbWrite; 	
 	}
-	else if( (current->nbWrite + current->nbRead) == 1){	
+	else if( current->nbWrite == 0 && current->nbRead == 0){	
 		stats_nbLostLine++;
 	}
 	else if( current->nbWrite == 1 && current->nbRead > 0){
@@ -385,7 +383,7 @@ void
 HybridCache::deallocate(uint64_t block_addr)
 {
 	entete_debug();
-DPRINTF("DEALLOCATE %#lx\n", block_addr);
+	DPRINTF("DEALLOCATE %#lx\n", block_addr);
 	map<uint64_t,HybridLocation>::iterator it = m_tag_index.find(block_addr);	
 	
 	if(it != m_tag_index.end()){

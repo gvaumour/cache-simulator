@@ -79,6 +79,11 @@ int main(int argc , char* argv[]){
 			i++;
 			simu_parameters.sram_assoc = atoi(argv[i]);
 		}
+		else if(string(argv[i]) == "--InstructionTh")
+		{
+			i++;
+			simu_parameters.cost_threshold = atoi(argv[i]);
+		}
 		else if(string(argv[i]) == "--SaturationTh")
 		{
 			i++;

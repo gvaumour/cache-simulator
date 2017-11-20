@@ -80,6 +80,7 @@ struct SimuParameters
 	std::string policy;
 
 	int saturation_threshold;
+	int cost_threshold;
 
 };
 

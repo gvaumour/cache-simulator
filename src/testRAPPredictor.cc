@@ -570,7 +570,7 @@ testRAPPredictor::evictPolicy(int set, bool inNVM)
 		else
 		{
 			// A learning cache line on dead dataset goes here
-			if( (current->nbWrite + current->nbRead) == 1)
+			if( current->nbWrite == 0 && current->nbRead == 0)
 				rap_current->dead_counter--;
 			else
 				rap_current->dead_counter++;
@@ -581,7 +581,7 @@ testRAPPredictor::evictPolicy(int set, bool inNVM)
 				rap_current->dead_counter = -simu_parameters.deadSaturationCouter;
 
 
-			string a = (current->nbWrite + current->nbRead) == 1 ? "DEAD" : "LIVELY";
+			string a =  current->nbWrite == 0 && current->nbRead == 0 ? "DEAD" : "LIVELY";
 			dataset_file << "Dataset n°" << rap_current->id << ": Eviction of a " << a << " CL, Address :" << \
 				std::hex << current->address << std::dec << " DeadCounter=" << rap_current->dead_counter << endl;
 				
