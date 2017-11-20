@@ -8,7 +8,7 @@
 using namespace std;
 
 
-#define WRITE_VALUE 24
+#define WRITE_VALUE 3
 #define READ_VALUE -1
 
 InstructionPredictor::InstructionPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) : \
