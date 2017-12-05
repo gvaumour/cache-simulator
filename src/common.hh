@@ -67,6 +67,7 @@ struct SimuParameters
 	int sram_assoc;
 	int nvm_assoc;
 	int nb_sets;
+	int nb_bits;
 
 	int rap_assoc;
 	int rap_sets;

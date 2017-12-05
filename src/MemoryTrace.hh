@@ -55,6 +55,7 @@ class MemoryTrace{
 		virtual bool open() = 0;
 		virtual void close() = 0;
 		bool isOpen() {return m_isOpen;};
+		uint64_t compressPC(uint64_t pc);
 		
 	protected : 
 		std::string m_trace;

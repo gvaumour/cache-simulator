@@ -120,6 +120,7 @@ testRAPPredictor::allocateInNVM(uint64_t set, Access element)
 		rap_current->initEntry(element);
 		rap_current->id = id_DATASET++;
 		rap_current->m_pc = element.m_pc;
+		dataset_file << "ID Dataset:" << rap_current->id << "\t" << element.m_pc << endl;
 	}
 	else
 	{	
@@ -933,7 +934,7 @@ testRAPPredictor::openNewTimeFrame()
 
 //	stats_switchDecision.push_back(vector<vector<int> >(NUM_ALLOC_DECISION,vector<int>(NUM_ALLOC_DECISION,0)));
 	stats_nbMigrationsFromNVM.push_back(vector<int>(2,0));
-
+	dataset_file << "TimeFrame" << endl;
 	Predictor::openNewTimeFrame();
 }
 
