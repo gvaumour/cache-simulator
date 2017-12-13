@@ -835,6 +835,8 @@ testRAPPredictor::printConfig(std::ostream& out)
 	out << "\t\t Bypass Learning Threshold : " << simu_parameters.learningTH << endl;
 	a =  simu_parameters.enableMigration ? "TRUE" : "FALSE"; 
 	out << "\t\t Lazy Migration Enable : " << a << endl;
+	
+	Predictor::printConfig(out);
 }
 
 void 

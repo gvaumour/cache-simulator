@@ -132,6 +132,7 @@ void SaturationCounter::insertionPolicy(uint64_t set, uint64_t index, bool inNVM
 void
 SaturationCounter::printConfig(std::ostream& out) {
 	out<< "\t\tSaturation Threshold : " << simu_parameters.saturation_threshold << std::endl;
+	Predictor::printConfig(out);
 };
 
 

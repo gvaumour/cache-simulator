@@ -44,7 +44,7 @@ class Predictor{
 		bool recordAllocationDecision(uint64_t set, Access element, allocDecision des);
 
 		virtual int evictPolicy(int set, bool inNVM) =0;
-		virtual void printConfig(std::ostream& out) = 0;
+		virtual void printConfig(std::ostream& out) ;
 		virtual void finishSimu() = 0;
 		virtual void printStats(std::ostream& out);
 		virtual void openNewTimeFrame();
@@ -66,6 +66,8 @@ class Predictor{
 		int m_assoc;
 		int m_nbNVMways;
 		int m_nbSRAMways;
+		int m_assoc_MT;
+		
 		ReplacementPolicy* m_replacementPolicyNVM_ptr;
 		ReplacementPolicy* m_replacementPolicySRAM_ptr;
 
@@ -102,7 +104,7 @@ class LRUPredictor : public Predictor{
 		void openNewTimeFrame() { };
 
 		void printStats(std::ostream& out) { Predictor::printStats(out);};
-		void printConfig(std::ostream& out) { };
+		void printConfig(std::ostream& out) { Predictor::printConfig(out);};
 		~LRUPredictor() {};
 		
 	private : 

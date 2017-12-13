@@ -207,6 +207,8 @@ init_default_parameters()
 	
 	simu_parameters.nb_bits = 64;
 
+	simu_parameters.sizeMTtags = simu_parameters.nvm_assoc - simu_parameters.sram_assoc;
+
 //	simu_parameters.deadSaturationCouter = RAP_DEAD_COUNTER_SATURATION;
 //	simu_parameters.rap_innacuracy_th = RAP_INACURACY_TH;
 //	simu_parameters.window_size = RAP_WINDOW_SIZE;

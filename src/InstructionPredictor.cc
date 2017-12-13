@@ -101,6 +101,7 @@ InstructionPredictor::printConfig(std::ostream& out){
 	out << "\t\t- READ_VALUE : " << READ_VALUE << std::endl;		
 	out << "\t\t- WRITE_VALUE " << WRITE_VALUE << std::endl;		
 	out << "\t\t- Cost Threshold " << simu_parameters.cost_threshold << std::endl;		
+	Predictor::printConfig(out);
 };
 
 

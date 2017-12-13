@@ -35,11 +35,12 @@ Predictor::Predictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtabl
 		/* Allocation of the SRAM missing tags array*/
 		SRAM_missing_tags.clear();
 		SRAM_missing_tags.resize(m_nb_set);
-		int assoc_MT = m_nbNVMways - m_nbSRAMways;
+//		int assoc_MT = m_nbNVMways - m_nbSRAMways;
+		m_assoc_MT = simu_parameters.sizeMTtags;
 		for(int i = 0 ; i < m_nb_set; i++)
 		{
-			SRAM_missing_tags[i].resize(assoc_MT);
-			for(int j = 0 ; j < assoc_MT; j++)
+			SRAM_missing_tags[i].resize(m_assoc_MT);
+			for(int j = 0 ; j < m_assoc_MT; j++)
 			{
 				SRAM_missing_tags[i][j] = new MissingTagEntry();
 			}
@@ -287,6 +288,18 @@ Predictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element
 			stats_COREerrors++;
 	}
 }
+
+void 
+Predictor::printConfig(std::ostream& out)
+{
+	out << "Predictor:" << endl;
+	if(m_trackError)
+		out << "\tNo SRAM error tracking enabled" << endl;
+	else
+		out << "\tSize of the MT array\t" << m_assoc_MT << endl;	
+}
+
+
 				 
 void 
 Predictor::printStats(std::ostream& out)

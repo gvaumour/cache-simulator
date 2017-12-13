@@ -84,6 +84,11 @@ int main(int argc , char* argv[]){
 			i++;
 			simu_parameters.nb_bits = atoi(argv[i]);
 		}
+		else if(string(argv[i]) == "--MT-size")
+		{
+			i++;
+			simu_parameters.sizeMTtags = atoi(argv[i]);
+		}
 		else if(string(argv[i]) == "--InstructionTh")
 		{
 			i++;
