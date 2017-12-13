@@ -292,11 +292,11 @@ Predictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element
 void 
 Predictor::printConfig(std::ostream& out)
 {
-	out << "Predictor:" << endl;
+	out << "\t- Predictor:" << endl;
 	if(m_trackError)
-		out << "\tNo SRAM error tracking enabled" << endl;
+		out << "\t\tSize of the MT array\t" << m_assoc_MT << endl;	
 	else
-		out << "\tSize of the MT array\t" << m_assoc_MT << endl;	
+		out << "\t\tNo SRAM error tracking enabled" << endl;
 }
 
 
