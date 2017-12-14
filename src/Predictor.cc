@@ -51,7 +51,7 @@ Predictor::Predictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtabl
 		for(int i = 0 ; i < m_nb_set; i++)
 		{
 			BP_missing_tags[i].resize(m_assoc);
-			for(int j = 0 ; j < m_nb_set ; j++)
+			for(unsigned j = 0 ; j < BP_missing_tags[i].size(); j++)
 			{
 				BP_missing_tags[i][j] = new MissingTagEntry();
 			}
