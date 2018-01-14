@@ -304,11 +304,11 @@ Hierarchy::L1sdeallocate(uint64_t addr)
 		
 		set<int> nodes = m_directory->getTrackers(addr);
 
+		bool isDirty = false;
 		for(auto node : nodes)
-			m_private_caches[node]->sendInvalidation(addr, entry->isInst);
-
-		for(auto node : nodes)
-			m_private_caches[node]->deallocate(addr);
+			isDirty = isDirty || m_private_caches[node]->receiveInvalidation(addr);
+		
+		m_LLC->getEntry(addr)->isDirty = isDirty;
 		
 		m_directory->resetTrackersToEntry(addr);
 		m_directory->setCoherenceState(addr , CLEAN_LLC);

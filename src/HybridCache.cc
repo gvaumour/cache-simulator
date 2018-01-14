@@ -509,11 +509,17 @@ void HybridCache::triggerMigration(int set, int id_assocSRAM, int id_assocNVM , 
 		//From NVM to SRAM 
 		//NVM cl erase the SRAM cl 
 		deallocate(sram_line);
+		if(sram_line->isValid)
+		{
+			signalWB(sram_line->address, false);
+			stats_evict++;		
+		}
+		
 		sram_line->copyCL(nvm_line);
 		sram_line->justMigrate = true;
 		sram_line->isNVM = false;
 		sram_line->policyInfo = cpt_time;	
-			
+
 		/* Update the tag */
 		map<uint64_t,HybridLocation>::iterator p1 = m_tag_index.find(nvm_line->address);
 		if(p1 != m_tag_index.end())
@@ -533,6 +539,12 @@ void HybridCache::triggerMigration(int set, int id_assocSRAM, int id_assocNVM , 
 		//From SRAM to NVM 
 		//SRAM cl erase the NVM cl 
 		deallocate(nvm_line);
+		if(nvm_line->isValid)
+		{
+			signalWB(nvm_line->address, false);
+			stats_evict++;		
+		}
+	
 		nvm_line->copyCL(sram_line);
 		nvm_line->justMigrate = true;
 		nvm_line->isNVM = true;
@@ -568,12 +580,50 @@ void
 HybridCache::signalWB(uint64_t addr, bool isKept)
 {
 	CacheEntry* entry = getEntry(addr);
-	assert(entry != NULL);
+	if(entry != NULL)
+	{
+		entete_debug();
+		DPRINTF("Invalidation of the block [%#lx]\n" , entry->address);
+		m_system->signalWB(entry->address , entry->isDirty, isKept);		
+	}
 	
-	entete_debug();
-	DPRINTF("Invalidation of the block [%#lx]\n" , entry->address);
-	m_system->signalWB(entry->address , entry->isDirty, isKept);	
 }
+
+bool
+HybridCache::receiveInvalidation(uint64_t block_addr)
+{
+	entete_debug();
+	DPRINTF("HERE Receive Invalidation for the block [%#lx] by the LLC\n" , block_addr);
+
+	map<uint64_t,HybridLocation>::iterator p = m_tag_index.find(block_addr);
+	
+	if (p != m_tag_index.end()){
+
+	
+		DPRINTF("Find block [%#lx]\n" , block_addr);
+
+		int id_set = blockAddressToCacheSet(block_addr);
+		HybridLocation loc = p->second;
+		CacheEntry* entry = NULL;
+
+		if(loc.m_inNVM)
+			entry = m_tableNVM[id_set][loc.m_way];
+		else 
+			entry = m_tableSRAM[id_set][loc.m_way];	
+	
+		entete_debug();
+		DPRINTF("Receive Invalidation for the block [%#lx] by the LLC\n" , entry->address);
+
+		entry->isValid = false;
+		return entry->isDirty;
+	}
+	else{
+		DPRINTF("Didn't find block [%#lx]\n" , block_addr);
+		return false;
+	
+	}
+}
+
 
 void HybridCache::startWarmup()
 {

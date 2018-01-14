@@ -27,7 +27,8 @@ class Level{
 		void signalWB(uint64_t addr, bool isDirty, bool isKept);
 
 		void sendInvalidation(uint64_t addr, bool toInstCache);
-
+		bool receiveInvalidation(uint64_t addr);
+		
 		void handleWB(uint64_t addr, bool isDirty);
 		void print(std::ostream& out);
 		void printResults(std::ostream& out);

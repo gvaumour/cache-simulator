@@ -86,7 +86,8 @@ Level::finishSimu()
 		m_icache->finishSimu();
 }
 
-void Level::sendInvalidation(uint64_t addr, bool toInstCache)
+void
+Level::sendInvalidation(uint64_t addr, bool toInstCache)
 {
 	if(toInstCache && !m_isUnified)
 		m_icache->signalWB(addr, true);
@@ -94,6 +95,11 @@ void Level::sendInvalidation(uint64_t addr, bool toInstCache)
 		m_dcache->signalWB(addr, true);
 }
 
+bool
+Level::receiveInvalidation(uint64_t addr)
+{
+		return m_icache->receiveInvalidation(addr) || m_dcache->receiveInvalidation(addr);
+}
 
 void 
 Level::signalWB(uint64_t addr,  bool isDirty, bool isKept)
