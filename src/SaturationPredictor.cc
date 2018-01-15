@@ -56,7 +56,8 @@ void SaturationCounter::updatePolicy(uint64_t set, uint64_t index, bool inNVM, A
 				/** Migration incurs one read and one extra write */ 
 				replaced_entry->nbWrite++;
 				current->nbRead++;
-				
+
+				Predictor::migrationRecording();
 				m_cache->triggerMigration(set, id_assoc , index , true);
 				if(!m_isWarmup)
 					stats_nbMigrationsFromNVM[inNVM]++;
@@ -94,7 +95,9 @@ void SaturationCounter::updatePolicy(uint64_t set, uint64_t index, bool inNVM, A
 							
 				current->saturation_counter = 0;
 				replaced_entry->saturation_counter = 0;
-
+		
+				Predictor::migrationRecording();
+		
 				/** Migration incurs one read and one extra write */ 
 				replaced_entry->nbWrite++;
 				current->nbRead++;

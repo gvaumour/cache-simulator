@@ -181,7 +181,7 @@ init_default_parameters()
 {
 	simu_parameters.enableBP = false;
 	simu_parameters.enableMigration= false;
-	simu_parameters.flagTest = false;	
+	simu_parameters.flagTest = true;	
 	simu_parameters.printDebug = false;
 	
 	simu_parameters.deadSaturationCouter = 3;

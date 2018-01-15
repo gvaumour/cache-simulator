@@ -288,7 +288,7 @@ testRAPPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access 
 				updateWindow(rap_current);
 			
 				if(simu_parameters.enableMigration && element.enableMigration )
-					current = checkLazyMigration(rap_current , current , set , inNVM , index);
+					current = checkLazyMigration(rap_current , current , set , inNVM , index, element.isWrite());
 			}
 			
 			reportAccess(rap_current , element, current, current->isNVM, "UPDATE");
@@ -383,9 +383,9 @@ testRAPPredictor::reportMigration(testRAPEntry* rap_current, CacheEntry* current
 }
 
 CacheEntry*
-testRAPPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* current ,uint64_t set,bool inNVM, uint64_t index)
+testRAPPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* current ,uint64_t set,bool inNVM, uint64_t index, bool isWrite)
 {
-	if(rap_current->des == ALLOCATE_IN_NVM && inNVM == false)
+	if(rap_current->des == ALLOCATE_IN_NVM && inNVM == false && (simu_parameters.flagTest && !isWrite) )
 	{
 		//Trigger Migration
 		int id_assoc = evictPolicy(set, true);//Select LRU candidate from NVM cache
