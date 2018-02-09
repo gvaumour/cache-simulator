@@ -264,7 +264,7 @@ Predictor::migrationRecording()
 
 	if(!m_isWarmup)
 	{
-		stats_NVM_errors[stats_NVM_errors.size()-1]++;
+		//stats_NVM_errors[stats_NVM_errors.size()-1]++;
 		stats_MigrationErrors[stats_MigrationErrors.size()-1]++;	
 	}
 }
@@ -322,7 +322,7 @@ Predictor::printStats(std::ostream& out)
 	out << "\t\tNVM Error\t" << totalNVMerrors << endl;
 	out << "\t\t\t-From WB\t"  << stats_WBerrors << endl;
 	out << "\t\t\t-From Core\t" <<  stats_COREerrors << endl;
-	out << "\t\t\t-From Migration\t" <<  totalMigration << endl;
+	out << "\t\tTotal Migration\t" <<  totalMigration << endl;
 	out << "\t\tSRAM Error\t" << totalSRAMerrors << endl;
 	out << "\t\tBP Error\t" << totalBPerrors << endl;
 }

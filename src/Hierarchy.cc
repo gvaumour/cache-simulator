@@ -14,7 +14,7 @@ Hierarchy::Hierarchy()
 {
 	DPRINTF("Hierarchy:: null constructor\n");
 
-	Hierarchy("RAP" , 1);
+	Hierarchy("DB-AMB" , 1);
 }
 
 Hierarchy::Hierarchy(const Hierarchy& a)
@@ -50,6 +50,10 @@ Hierarchy::Hierarchy(string policy, int nbCores)
 	
 	m_directory = new Directory();
 	
+	m_prefetcher = NULL;
+	if(simu_parameters.enablePrefetch)
+		m_prefetcher = new SimplePrefetcher( simu_parameters.prefetchDegree , simu_parameters.prefetchStreams , true);
+
 	stats_beginTimeFrame = 0;
 	
 	for(unsigned i = 0 ; i < m_nbCores ; i++){
@@ -62,6 +66,9 @@ Hierarchy::Hierarchy(string policy, int nbCores)
 	
 	stats_cleanWB_MainMem = 0;
 	stats_dirtyWB_MainMem = 0;
+
+	m_stats_hitsPrefetch = 0;
+	m_stats_issuedPrefetchs = 0;
 }
 
 
@@ -71,7 +78,6 @@ Hierarchy::~Hierarchy()
 		delete p;
 	delete m_LLC;
 }
-
 
 void
 Hierarchy::startWarmup()
@@ -104,6 +110,13 @@ Hierarchy::printResults(ostream& out)
 	out << "Last Level Cache : " << endl;
 	m_LLC->printResults(out);
 	out << "***************" << endl;
+
+	out << "Prefetcher::Stats" << endl;
+	out << "Prefetcher::issuedPrefetch\t"<< m_stats_issuedPrefetchs << endl;
+	out << "Prefetcher::hitPrefecth\t"<< m_stats_hitsPrefetch << endl;
+	out << "Prefetcher::prefetchErrors\t"<< m_stats_issuedPrefetchs - m_stats_hitsPrefetch << endl;
+
+
 	out << "Main Mem" << endl;
 	out << "\tClean WB\t" << stats_cleanWB_MainMem << endl;
 	out << "\tDirty WB\t" << stats_dirtyWB_MainMem << endl;
@@ -167,6 +180,39 @@ Hierarchy::finishSimu()
 }
 
 
+void 
+Hierarchy::prefetchAddress(Access element)
+{
+	uint64_t addr = element.m_address;
+	uint64_t block_addr = bitRemove(addr , 0 , m_start_index+1);
+	
+
+	DPRINTF("HIERARCHY::Prefetching of block %#lx\n", block_addr);
+
+		
+	DirectoryEntry* entry = m_directory->getEntry(block_addr);
+	if(entry == NULL){
+		entry = m_directory->addEntry(block_addr, element.isInstFetch());
+	}
+	assert(entry != NULL);
+
+	DirectoryState dir_state = m_directory->getEntry(block_addr)->coherence_state;
+
+	entry->print();
+	
+	if(dir_state == NOT_PRESENT)
+	{
+		m_LLC->handleAccess(element);
+		m_directory->updateEntry(block_addr);
+		m_directory->setCoherenceState(block_addr, CLEAN_LLC);	
+		m_stats_issuedPrefetchs++;
+	}
+	else
+	{
+		DPRINTF("HIERARCHY::Prefetcher Block %#lx already present\n", block_addr);
+	}
+}
+
 void
 Hierarchy::handleAccess(Access element)
 {
@@ -188,9 +234,12 @@ Hierarchy::handleAccess(Access element)
 	DirectoryState dir_state = m_directory->getEntry(block_addr)->coherence_state;
 	
 	entry->print();
+	bool doPrefetch = true;
+//	bool isInHierarchy = true;
 	
 	if(dir_state == NOT_PRESENT)
 	{
+//		isInHierarchy = false;
 		m_directory->setTrackerToEntry(block_addr, id_core);			
 
 		m_private_caches[id_core]->handleAccess(element);		
@@ -201,15 +250,22 @@ Hierarchy::handleAccess(Access element)
 	}
 	else if(dir_state == CLEAN_LLC || dir_state == DIRTY_LLC)
 	{
-			m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);
-			m_directory->setTrackerToEntry(block_addr, id_core);			
-	
-			m_private_caches[id_core]->handleAccess(element);
-			m_LLC->handleAccess(element);
-			m_directory->updateEntry(block_addr);
+		m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);
+		m_directory->setTrackerToEntry(block_addr, id_core);			
+
+		m_private_caches[id_core]->handleAccess(element);
+		m_LLC->handleAccess(element);
+		
+		/* Prefetch stats collection */ 
+		m_stats_hitsPrefetch += m_LLC->isPrefetchBlock(element.m_address) ? 1 : 0;
+		m_LLC->resetPrefetchFlag(element.m_address);
+		
+		m_directory->updateEntry(block_addr);
+		
 	}
 	else if( dir_state == MODIFIED_L1 || dir_state == EXCLUSIVE_L1)
 	{
+		doPrefetch = false;
 		set<int> nodes = m_directory->getTrackers(block_addr);
 		assert(nodes.size() == 1);
 		int node = *(nodes.begin());
@@ -246,6 +302,7 @@ Hierarchy::handleAccess(Access element)
 	}
 	else if(dir_state == SHARED_L1)
 	{
+		doPrefetch = false;
 		if(element.isWrite())
 		{
 			//We invalidate all the sharers
@@ -270,6 +327,19 @@ Hierarchy::handleAccess(Access element)
 		}
 	}
 
+
+	if(doPrefetch && simu_parameters.enablePrefetch) //We generate prefetch only for LLC demand accesses 
+	{
+		vector<uint64_t> prefetch_addresses = m_prefetcher->getNextAddress(element.m_address);
+		for(auto p : prefetch_addresses)
+		{
+			Access request;
+			request.m_address = p;
+			request.m_size = 4;
+			request.m_type = element.isInstFetch() ? MemCmd::DATA_PREFETCH : MemCmd::INST_PREFETCH;
+			prefetchAddress(request);
+		}
+	}	 
 
 	if( (cpt_time - stats_beginTimeFrame) > PREDICTOR_TIME_FRAME)
 		openNewTimeFrame();

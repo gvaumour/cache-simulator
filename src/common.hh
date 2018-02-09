@@ -45,6 +45,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define RAP_WINDOW_SIZE  20
 #define RAP_INACURACY_TH  0.7
 
+/* Used by the prefetcher */ 
+#define PAGE_SIZE 4096
+#define PAGE_MASK ~(PAGE_SIZE-1)
 
 
 #define BLOCK_SIZE 64
@@ -73,6 +76,10 @@ struct SimuParameters
 	int rap_sets;
 	
 	bool flagTest;
+
+	bool enablePrefetch;
+	int prefetchDegree;
+	int prefetchStreams;
 
 	float rap_innacuracy_th;
 	

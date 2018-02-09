@@ -39,6 +39,9 @@ class Level{
 		void startWarmup();
 		void stopWarmup();
 
+		void resetPrefetchFlag(uint64_t block_addr);
+		bool isPrefetchBlock(uint64_t block_addr);
+		
 		CacheEntry* getEntry(uint64_t addr);
 		
 	protected:

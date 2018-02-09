@@ -193,6 +193,19 @@ Level::openNewTimeFrame()
 
 
 void
+Level::resetPrefetchFlag(uint64_t block_addr)
+{
+	m_dcache->resetPrefetchFlag(block_addr);
+}
+
+bool
+Level::isPrefetchBlock(uint64_t block_addr)
+{
+	return m_dcache->isPrefetchBlock(block_addr);
+}
+
+
+void
 Level::print(std::ostream& out)
 {
 	printResults(out);

@@ -91,7 +91,7 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		 m_predictor = new InstructionPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "RAP")
 		 m_predictor = new RAPPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
-	else if(m_policy == "testRAP")
+	else if(m_policy == "DB-AMB" || m_policy == "testRAP" || m_policy == "DB-A")
 		 m_predictor = new testRAPPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else {
 		assert(false && "Cannot initialize predictor for HybridCache");
@@ -249,7 +249,7 @@ HybridCache::handleAccess(Access element)
 
 
 			deallocate(replaced_entry);
-			allocate(address , id_set , id_assoc, inNVM, element.m_pc);			
+			allocate(address , id_set , id_assoc, inNVM, element.m_pc, element.isPrefetch());			
 			m_predictor->insertionPolicy(id_set , id_assoc , inNVM, element);
 			
 
@@ -259,7 +259,7 @@ HybridCache::handleAccess(Access element)
 				if(!m_isWarmup)
 				{
 					stats_missNVM[stats_index]++;
-					stats_hitsNVM[stats_index]++;
+					stats_hitsNVM[1]++; // The insertion write 
 				}
 
 				if(element.isWrite())
@@ -273,7 +273,7 @@ HybridCache::handleAccess(Access element)
 				DPRINTF("It is a Miss ! Block[%#lx] is allocated in the SRAM cache : Set=%d, Way=%d\n",block_addr, id_set, id_assoc);
 				if(!m_isWarmup){				
 					stats_missSRAM[stats_index]++;			
-					stats_hitsSRAM[stats_index]++;			
+					stats_hitsSRAM[1]++; // The insertion write 
 				}
 			
 				if(element.isWrite())
@@ -459,7 +459,7 @@ HybridCache::handleWB(uint64_t block_addr, bool isDirty)
 }
 
 void 
-HybridCache::allocate(uint64_t address , int id_set , int id_assoc, bool inNVM, uint64_t pc)
+HybridCache::allocate(uint64_t address , int id_set , int id_assoc, bool inNVM, uint64_t pc, bool isPrefetch)
 {
 
 	uint64_t block_addr = bitRemove(address , 0 , m_start_index+1);
@@ -471,6 +471,7 @@ HybridCache::allocate(uint64_t address , int id_set , int id_assoc, bool inNVM, 
 		m_tableNVM[id_set][id_assoc]->address = block_addr;
 		m_tableNVM[id_set][id_assoc]->policyInfo = 0;
 		m_tableNVM[id_set][id_assoc]->m_pc = pc;
+		m_tableNVM[id_set][id_assoc]->isPrefetch = isPrefetch;
 	}
 	else
 	{
@@ -480,6 +481,7 @@ HybridCache::allocate(uint64_t address , int id_set , int id_assoc, bool inNVM, 
 		m_tableSRAM[id_set][id_assoc]->address = block_addr;
 		m_tableSRAM[id_set][id_assoc]->policyInfo = 0;		
 		m_tableSRAM[id_set][id_assoc]->m_pc = pc;		
+		m_tableSRAM[id_set][id_assoc]->isPrefetch = isPrefetch;
 	}
 	
 	if(!m_isWarmup)
@@ -682,7 +684,22 @@ HybridCache::openNewTimeFrame()
 		m_predictor->openNewTimeFrame();
 }
 	
+bool
+HybridCache::isPrefetchBlock(uint64_t addr)
+{
+	CacheEntry* entry = getEntry(addr);
+	if(entry != NULL)
+		return entry->isPrefetch;
+	return false;
+}
 
+void
+HybridCache::resetPrefetchFlag(uint64_t addr)
+{
+	CacheEntry* entry = getEntry(addr);
+	if(entry != NULL)
+		entry->isPrefetch = false;
+}
 
 void 
 HybridCache::print(ostream& out) 
@@ -727,14 +744,10 @@ HybridCache::printResults(std::ostream& out)
 			out << "\t- Miss Rate : " << (double)(total_miss)*100 / (double)(total_access) << "%"<< endl;
 			out << "\t- Clean Write Back : " << stats_cleanWBNVM + stats_cleanWBSRAM << endl;
 			out << "\t- Dirty Write Back : " << stats_dirtyWBNVM + stats_dirtyWBSRAM << endl;
-			out << "\t- Eviction : " << stats_evict << endl;
-	
-			if(stats_bypass > 0)
-				out << "\t- Bypass : " << stats_bypass << endl;
-			
-			if(isPolicyDynamic(m_policy))
-				out << "\tDead Migration : " << stats_nbDeadMigration << endl;
-				out << "\tPing Migration : " << stats_nbPingMigration << endl;
+			out << "\t- Eviction : " << stats_evict << endl;	
+			out << "\t- Bypass : " << stats_bypass << endl;
+			out << "\t- Dead Migration : " << stats_nbDeadMigration << endl;
+			out << "\t- Ping Migration : " << stats_nbPingMigration << endl;
 	
 			out << endl;
 			if(m_nbNVMways > 0){

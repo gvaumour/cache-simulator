@@ -1,3 +1,5 @@
+
+#include <set>
 #include <fstream>
 #include <vector>
 #include <map>
@@ -39,6 +41,9 @@ testRAPPredictor::testRAPPredictor(int nbAssoc , int nbSet, int nbNVMways, DataA
 			m_RAPtable[i][j]->assoc = j;
 		}
 	}
+	
+	stats_history_SRAM.resize(nbSet);
+	
 	
 	DPRINTF("RAPPredictor::Constructor m_RAPtable.size() = %lu , m_RAPtable[0].size() = %lu\n" , m_RAPtable.size() , m_RAPtable[0].size());
 
@@ -254,9 +259,30 @@ testRAPPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access 
 	
 	int rd = computeRd(set, index , inNVM);
 
+
+	if(inNVM){
+		RD_TYPE reuse_class = convertRD(rd);
+		if(reuse_class == RD_MEDIUM)
+		{
+			stats_NVM_medium_pred++;
+			//cout <<"testRAPPredictor::set=" << set << " RD MEDIUM DETECTED cpt_time="<< m_cpt << " address=" << current->address << endl; 
+
+			if(hitInSRAM(set , current->policyInfo))
+			{
+				stats_NVM_medium_pred_errors++;			
+				//cout <<"testRAPPredictor::set=" << set << " stats_NVM_medium_pred_errors happens cpt_time="<< m_cpt << " address=" << current->address << endl; 
+			}
+		}
+
+		//cout <<"testRAPPredictor::Record history cpt_time=" << m_cpt << " address=" << current->address << " set=" << set << endl; 
+		stats_history_SRAM[set].push_front(pair<uint64_t, uint64_t>(m_cpt, current->address));
+	}
+	
+
 	current->policyInfo = m_cpt;
 	testRAPEntry* rap_current = lookup(current->m_pc);
-	
+
+
 	if(current->m_pc !=0)
 	{	
 		if(rap_current)
@@ -287,11 +313,11 @@ testRAPPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access 
 			{
 				updateWindow(rap_current);
 			
+				reportAccess(rap_current , element, current, current->isNVM, "UPDATE", str_RD_status[convertRD(rd)]);
 				if(simu_parameters.enableMigration && element.enableMigration )
 					current = checkLazyMigration(rap_current , current , set , inNVM , index, element.isWrite());
 			}
 			
-			reportAccess(rap_current , element, current, current->isNVM, "UPDATE");
 		}	
 	}
 	
@@ -301,7 +327,7 @@ testRAPPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access 
 
 
 void
-testRAPPredictor::reportAccess(testRAPEntry* rap_current, Access element, CacheEntry* current, bool inNVM, string entete)
+testRAPPredictor::reportAccess(testRAPEntry* rap_current, Access element, CacheEntry* current, bool inNVM, string entete, string reuse_class)
 {
 	string cl_location = inNVM ? "NVM" : "SRAM";
 	string is_learning = current->isLearning ? "Learning" : "Regular";
@@ -313,9 +339,11 @@ testRAPPredictor::reportAccess(testRAPEntry* rap_current, Access element, CacheE
 	
 	if(simu_parameters.printDebug)
 	{
-		dataset_file << entete << ":Dataset n°" << rap_current->id << ": [" << \
-		str_RW_status[rap_current->state_rw] << ","  << str_RD_status[rap_current->state_rd] << "]," << access_type << " on " << is_learning << \
-		" Cl 0x" << std::hex << current->address << std::dec << " allocated in " << cl_location<< " " << is_error << endl;	
+		dataset_file << entete << ":Dataset n°" << rap_current->id << ": [" \
+		<< str_RW_status[rap_current->state_rw] << ","  << str_RD_status[rap_current->state_rd] << "]," \
+		<< access_type << " on " << is_learning << " Cl 0x" << std::hex << current->address \
+		<< std::dec << " allocated in " << cl_location<< ", Reuse=" << reuse_class \
+		<< " , " << is_error << endl;	
 	}
 	
 	
@@ -434,6 +462,33 @@ testRAPPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* cur
 	return current;
 }
 
+bool
+testRAPPredictor::hitInSRAM(int set, uint64_t old_time)
+{
+	//cout <<"old_time=" << old_time << endl;
+	if(old_time == 0)
+		return false;
+	
+	std::set<uint64_t> adresses_access;
+	
+	for(auto item : stats_history_SRAM[set])
+	{
+		if(item.first < old_time)
+			return true;
+		
+		if(adresses_access.count(item.second) == 0)
+		{
+			//cout <<"\tRD++"<<endl;		
+			adresses_access.insert(item.second);
+		}
+
+		if(adresses_access.size() >= simu_parameters.sram_assoc)
+			return false;
+	}
+	
+	return false;
+}
+
 void
 testRAPPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access element)
 {
@@ -446,7 +501,15 @@ testRAPPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 	current->policyInfo = m_cpt;
 	
 	
+	RD_TYPE reuse_class = RD_NOT_ACCURATE;
 	testRAPEntry* rap_current;
+	
+	if(inNVM)
+	{
+		//cout <<"testRAPPredictor::Record history cpt_time=" << m_cpt << " address=" << current->address << " set=" << set << endl; 
+		stats_history_SRAM[set].push_front(pair<uint64_t, uint64_t>(m_cpt, current->address));	
+	}
+		
 	if( (rap_current= lookup(current->m_pc) ) != NULL )
 	{
 
@@ -459,15 +522,15 @@ testRAPPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 		{
 		
 			if(element.isSRAMerror)
-				rap_current->rd_history.push_back(RD_MEDIUM); 
-			else
-				rap_current->rd_history.push_back(RD_NOT_ACCURATE); 
+				reuse_class = RD_MEDIUM; 
 
+			rap_current->rd_history.push_back(reuse_class); 
 			rap_current->rw_history.push_back(element.isWrite());
+
 			updateWindow(rap_current);		
 		}
 	
-		reportAccess(rap_current, element, current, inNVM, "INSERTION");
+		reportAccess(rap_current, element, current, inNVM, "INSERTION",  str_RD_status[reuse_class]);
 	}
 	
 	m_cpt++;
@@ -740,12 +803,12 @@ testRAPPredictor::determineStatus(testRAPEntry* entry)
 //	/** Debugging purpose */	
 //	if(entry->state_rd == RD_NOT_ACCURATE && entry->state_rw == DEAD)
 //	{
-//		cout << "RD history\t";
+//		//cout <<"RD history\t";
 //		for(auto p : entry->rd_history)
-//			cout << p << "\t";
-//		cout << endl;
-//		cout << "RW history\tNBWrite=" << cpts_rw[INDEX_WRITE] << "\tNBRead=" << cpts_rw[INDEX_READ] << endl;
-//		cout << "New state is " << str_RD_status[entry->state_rd] << "\t" << str_RW_status[entry->state_rw] << endl;	
+//			//cout <<p << "\t";
+//		//cout <<endl;
+//		//cout <<"RW history\tNBWrite=" << cpts_rw[INDEX_WRITE] << "\tNBRead=" << cpts_rw[INDEX_READ] << endl;
+//		//cout <<"New state is " << str_RD_status[entry->state_rd] << "\t" << str_RW_status[entry->state_rw] << endl;	
 //	}
 
 
@@ -881,43 +944,48 @@ testRAPPredictor::printStats(std::ostream& out)
 		}
 		file_migration_stats.close();
 	}
-	
+	/*
 	out << "\tRAP Table:" << endl;
 	out << "\t\t NB Hits\t" << stats_RAP_hits << endl;
 	out << "\t\t NB Miss\t" << stats_RAP_miss << endl;
 	out << "\t\t Miss Ratio\t" << stats_RAP_miss*100.0/(double)(stats_RAP_hits+stats_RAP_miss)<< "%" << endl;
-	out << "\tSource of Error, NVM error" << endl;
+	*/
+	
+	/*out << "\tSource of Error, NVM error" << endl;
 	out << "\t\tWrong Policy\t" << stats_error_wrongpolicy << endl;
 	out << "\t\tWrong Allocation\t" << stats_error_wrongallocation << endl;
 	out << "\t\tLearning\t" << stats_error_learning << endl;		
-
+	*/
+	/*
 	if(simu_parameters.enableMigration)
 		out << "\t\tMigration Error\t" << migrationSRAM << endl;		
+	*/
+	out << "testRAPPredictor.NVM_medium_pred\t" << stats_NVM_medium_pred << endl;
+	out << "testRAPPredictor.NVM_medium_pred_errors\t" << stats_NVM_medium_pred_errors << endl;
 
-	out << "\tSource of Error, SRAM error" << endl;
-	out << "\t\tWrong Policy\t" << stats_error_SRAMwrongpolicy << endl;
-	out << "\t\tWrong Allocation\t" << stats_error_SRAMwrongallocation << endl;
-	out << "\t\tLearning\t" << stats_error_SRAMlearning << endl;		
+//	out << "\tSource of Error, SRAM error" << endl;
+//	out << "\t\tWrong Policy\t" << stats_error_SRAMwrongpolicy << endl;
+//	out << "\t\tWrong Allocation\t" << stats_error_SRAMwrongallocation << endl;
+//	out << "\t\tLearning\t" << stats_error_SRAMlearning << endl;		
 	
 	
-	
+	/*
 	if(stats_nbSwitchDst.size() > 0)
 	{
 		double sum=0;
 		for(auto d : stats_nbSwitchDst)
 			sum+= d;
 		out << "\t Average Switch\t" << sum / (double) stats_nbSwitchDst.size() << endl;	
-	}
+	}*/
 	
 
 
 	double total = migrationNVM+migrationSRAM;
 
 	if(total > 0){
-		out << "Predictor Migration:" << endl;
-		out << "NB Migration :" << total << endl;
-		out << "\t From NVM : " << migrationNVM*100/total << "%" << endl;
-		out << "\t From SRAM : " << migrationSRAM*100/total << "%" << endl;	
+		out << "testRAPPredictor.nb_Migration\t" << total << endl;
+		out << "testRAPPredictor.nb_Migration_from_NVM\t" << migrationNVM << "\t" << migrationNVM*100/total << "%" << endl;
+		out << "testRAPPredictor.nb_Migration_from_SRAM\t" << migrationSRAM << "\t" << migrationSRAM*100/total << "%" << endl;
 	}
 
 

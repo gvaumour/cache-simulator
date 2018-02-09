@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <list>
 #include <ostream>
 
 #include "Predictor.hh"
@@ -164,11 +165,13 @@ class testRAPPredictor : public Predictor {
 		allocDecision convertState(testRAPEntry* rap_current);
 		void dumpDataset(testRAPEntry* entry);		
 
+		bool hitInSRAM(int set, uint64_t old_time);
+
 		void updateWindow(testRAPEntry* rap_current);
 		
 		CacheEntry* checkLazyMigration(testRAPEntry* rap_current , CacheEntry* current ,uint64_t set,bool inNVM , uint64_t index, bool isWrite);
 
-		void reportAccess(testRAPEntry* rap_current, Access element, CacheEntry* current, bool inNVM, std::string entete);
+		void reportAccess(testRAPEntry* rap_current, Access element, CacheEntry* current, bool inNVM, std::string entete, std::string reuse_class);
 		void reportMigration(testRAPEntry* rap_current, CacheEntry* current, bool fromNVM);
 
 	protected : 
@@ -184,6 +187,11 @@ class testRAPPredictor : public Predictor {
 		unsigned stats_RAP_miss;
 		unsigned stats_RAP_hits;
 				
+
+		unsigned stats_NVM_medium_pred_errors;
+		unsigned stats_NVM_medium_pred;
+
+
 		/* Stats */
 //		std::vector< std::vector< std::vector<int> > > stats_switchDecision;		
 		std::vector<double> stats_nbSwitchDst;
@@ -191,6 +199,7 @@ class testRAPPredictor : public Predictor {
 
 		/* Lazy Migration opt */ 
 		std::vector< std::vector<int> > stats_nbMigrationsFromNVM;
+		std::vector< std::list<std::pair<uint64_t,uint64_t> > > stats_history_SRAM;
 
 		uint64_t stats_error_wrongallocation, stats_error_learning, stats_error_wrongpolicy;
 		uint64_t stats_error_SRAMwrongallocation, stats_error_SRAMlearning, stats_error_SRAMwrongpolicy;

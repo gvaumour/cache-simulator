@@ -196,6 +196,9 @@ init_default_parameters()
 	simu_parameters.rap_assoc = 128;
 	simu_parameters.rap_sets = 128;
 	
+	simu_parameters.prefetchDegree = 2;
+	simu_parameters.prefetchStreams = 16; 
+	simu_parameters.enablePrefetch = false;
 	
 	simu_parameters.nbCores = 1;
 	simu_parameters.policy = "testRAP";

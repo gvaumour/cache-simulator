@@ -105,9 +105,11 @@ class Access{
 
 		bool isWrite() { return m_type == MemCmd::DATA_WRITE || m_type == MemCmd::DIRTY_WRITEBACK;}
 		bool isInstFetch() { return m_type == MemCmd::INST_READ || m_type == MemCmd::INST_PREFETCH;}
+		bool isPrefetch() { return m_type == MemCmd::DATA_PREFETCH || m_type == MemCmd::INST_PREFETCH;}
 		
 		void print(std::ostream& out) const;
 
+		
 		uint64_t m_address;
 		int m_size;
 		uint64_t m_pc;
@@ -137,6 +139,7 @@ class CacheEntry{
 			isDirty = false;
 			lastWrite = false;
 			isLearning = false;
+			isPrefetch = false;
 			address = 0;
 			policyInfo = 0; 
 			saturation_counter = 0;
@@ -147,6 +150,7 @@ class CacheEntry{
 			justMigrate = false;
 			value = 0;
 			cost_value = 0;
+			last_time_access = 0;
 			coherence_state = COHERENCE_INVALID;
 		}
 		
@@ -161,12 +165,14 @@ class CacheEntry{
 			isLearning = a->isLearning;
 			m_pc = a->m_pc;
 			coherence_state = a->coherence_state; 
+			isPrefetch = a->isPrefetch;
 		}
 		bool isValid;
 		bool isDirty;
 		uint64_t address;
 		uint64_t m_pc;
 		uint64_t value;
+		uint64_t last_time_access;
 		
 		int policyInfo;
 		int m_compilerHints;
@@ -182,7 +188,7 @@ class CacheEntry{
 		
 		//field used only by the RAP predictor
 		bool isLearning;
-
+		bool isPrefetch;
 		bool justMigrate;
 
 		CoherenceState coherence_state;
@@ -222,13 +228,12 @@ typedef std::vector<std::vector<CacheEntry*> > DataArray;
 
 class ConfigCache{
 	public : 
+		ConfigCache(): m_size(0), m_assoc(0), m_blocksize(0), m_policy(""), m_nbNVMways(0), m_printStats(false) {};
 		ConfigCache(int size , int assoc , int blocksize, std::string policy, int nbNVMways) : \
 		m_size(size), m_assoc(assoc), m_blocksize(blocksize), m_policy(policy), m_nbNVMways(nbNVMways), m_printStats(false) {};
 		
 		ConfigCache(const ConfigCache& a): m_size(a.m_size), m_assoc(a.m_assoc), m_blocksize(a.m_blocksize),\
 					 m_policy(a.m_policy), m_nbNVMways(a.m_nbNVMways), m_printStats(a.m_printStats) {};		
-
-		ConfigCache(): m_size(0), m_assoc(0), m_blocksize(0), m_policy(""), m_nbNVMways(0), m_printStats(false) {};
 
 		int m_size;
 		int m_assoc;

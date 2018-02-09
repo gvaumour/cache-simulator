@@ -66,7 +66,7 @@ class HybridCache {
 		int findTagInSet(int id_set, uint64_t address); 
 		void deallocate(CacheEntry* entry);
 		void deallocate(uint64_t addr);
-		void allocate(uint64_t address , int id_set , int id_assoc , bool inNVM, uint64_t pc);		
+		void allocate(uint64_t address , int id_set , int id_assoc , bool inNVM, uint64_t pc, bool isPrefetch);		
 		CacheEntry* getEntry(uint64_t addr);
 		void handleWB(uint64_t addr, bool isDirty);
 		void signalWB(uint64_t block_addr, bool isKept);
@@ -93,7 +93,9 @@ class HybridCache {
 		void setPrintState(bool printStats) { m_printStats = printStats;};
 		int getID() const {return m_ID;};
 		bool isInstCache() const {return m_isInstructionCache;};
-		
+		bool isPrefetchBlock(uint64_t block_addr);
+		void resetPrefetchFlag(uint64_t block_addr);
+
 	private :
 	
 		int m_ID;

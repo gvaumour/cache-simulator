@@ -114,6 +114,18 @@ int main(int argc , char* argv[]){
 			i++;
 			simu_parameters.deadSaturationCouter = atoi(argv[i]);
 		}
+		else if(string(argv[i]) == "--prefetchDegree")
+		{
+			i++;
+			simu_parameters.prefetchDegree = atoi(argv[i]);
+		}
+		else if(string(argv[i]) == "--prefetchStreams")
+		{
+			i++;
+			simu_parameters.prefetchStreams = atoi(argv[i]);
+		}
+		else if(string(argv[i]) == "--enablePrefetch")
+			simu_parameters.enablePrefetch = true;
 		else if(string(argv[i]) == "--enableBP")
 			simu_parameters.enableBP = true;
 		else if(string(argv[i]) == "--enable-DYN")
@@ -130,6 +142,17 @@ int main(int argc , char* argv[]){
 		}
 		else
 			args.push_back(string(argv[i]));
+	}
+	
+	if(simu_parameters.policy == "DB-A")
+	{
+		simu_parameters.enableBP = false;
+		simu_parameters.enableMigration = false;
+	}
+	else if(simu_parameters.policy == "DB-AMB")
+	{
+		simu_parameters.enableBP = true;
+		simu_parameters.enableMigration = true;
 	}
 	
 
@@ -171,6 +194,9 @@ int main(int argc , char* argv[]){
 		
 		while(traceWrapper->readNext(element)){
 
+			cpt_time++;
+			cpt_access++;
+
 			my_system->handleAccess(element);
 			DPRINTF("TIME::%ld\n",cpt_access);
 			
@@ -180,8 +206,6 @@ int main(int argc , char* argv[]){
 				my_system->stopWarmup();
 			}
 			
-			cpt_time++;
-			cpt_access++;
 		}
 		traceWrapper->close();
 		free(traceWrapper);
