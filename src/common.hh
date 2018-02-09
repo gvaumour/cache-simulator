@@ -80,6 +80,8 @@ struct SimuParameters
 	bool enablePrefetch;
 	int prefetchDegree;
 	int prefetchStreams;
+	
+	bool enableReuseErrorComputation;
 
 	float rap_innacuracy_th;
 	

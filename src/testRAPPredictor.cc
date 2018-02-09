@@ -42,7 +42,8 @@ testRAPPredictor::testRAPPredictor(int nbAssoc , int nbSet, int nbNVMways, DataA
 		}
 	}
 	
-	stats_history_SRAM.resize(nbSet);
+	if(simu_parameters.enableReuseErrorComputation)
+		stats_history_SRAM.resize(nbSet);
 	
 	
 	DPRINTF("RAPPredictor::Constructor m_RAPtable.size() = %lu , m_RAPtable[0].size() = %lu\n" , m_RAPtable.size() , m_RAPtable[0].size());
@@ -260,21 +261,23 @@ testRAPPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access 
 	int rd = computeRd(set, index , inNVM);
 
 
-	if(inNVM){
+	if(inNVM && simu_parameters.enableReuseErrorComputation){
 		RD_TYPE reuse_class = convertRD(rd);
 		if(reuse_class == RD_MEDIUM)
 		{
 			stats_NVM_medium_pred++;
-			//cout <<"testRAPPredictor::set=" << set << " RD MEDIUM DETECTED cpt_time="<< m_cpt << " address=" << current->address << endl; 
+			cout <<"testRAPPredictor::set=" << set << " RD MEDIUM DETECTED cpt_time="<< m_cpt << " address=" << current->address << endl; 
+			cerr <<"testRAPPredictor::set=" << set << " RD MEDIUM DETECTED cpt_time="<< m_cpt << " address=" << current->address << endl; 
 
 			if(hitInSRAM(set , current->policyInfo))
 			{
 				stats_NVM_medium_pred_errors++;			
-				//cout <<"testRAPPredictor::set=" << set << " stats_NVM_medium_pred_errors happens cpt_time="<< m_cpt << " address=" << current->address << endl; 
+				cout <<"testRAPPredictor::set=" << set << " stats_NVM_medium_pred_errors happens cpt_time="<< m_cpt << " address=" << current->address << endl; 
+				
 			}
 		}
 
-		//cout <<"testRAPPredictor::Record history cpt_time=" << m_cpt << " address=" << current->address << " set=" << set << endl; 
+		cout <<"testRAPPredictor::Record history cpt_time=" << m_cpt << " address=" << current->address << " set=" << set << endl; 
 		stats_history_SRAM[set].push_front(pair<uint64_t, uint64_t>(m_cpt, current->address));
 	}
 	
@@ -465,7 +468,7 @@ testRAPPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* cur
 bool
 testRAPPredictor::hitInSRAM(int set, uint64_t old_time)
 {
-	//cout <<"old_time=" << old_time << endl;
+	cout <<"old_time=" << old_time << endl;
 	if(old_time == 0)
 		return false;
 	
@@ -478,7 +481,7 @@ testRAPPredictor::hitInSRAM(int set, uint64_t old_time)
 		
 		if(adresses_access.count(item.second) == 0)
 		{
-			//cout <<"\tRD++"<<endl;		
+			cout <<"\tRD++"<<endl;		
 			adresses_access.insert(item.second);
 		}
 
@@ -504,10 +507,13 @@ testRAPPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 	RD_TYPE reuse_class = RD_NOT_ACCURATE;
 	testRAPEntry* rap_current;
 	
-	if(inNVM)
+	if(simu_parameters.enableReuseErrorComputation)
 	{
-		//cout <<"testRAPPredictor::Record history cpt_time=" << m_cpt << " address=" << current->address << " set=" << set << endl; 
-		stats_history_SRAM[set].push_front(pair<uint64_t, uint64_t>(m_cpt, current->address));	
+		if(inNVM)
+		{
+			cout <<"testRAPPredictor::Record history cpt_time=" << m_cpt << " address=" << current->address << " set=" << set << endl; 
+			stats_history_SRAM[set].push_front(pair<uint64_t, uint64_t>(m_cpt, current->address));	
+		}			
 	}
 		
 	if( (rap_current= lookup(current->m_pc) ) != NULL )
@@ -803,12 +809,12 @@ testRAPPredictor::determineStatus(testRAPEntry* entry)
 //	/** Debugging purpose */	
 //	if(entry->state_rd == RD_NOT_ACCURATE && entry->state_rw == DEAD)
 //	{
-//		//cout <<"RD history\t";
+//		cout <<"RD history\t";
 //		for(auto p : entry->rd_history)
-//			//cout <<p << "\t";
-//		//cout <<endl;
-//		//cout <<"RW history\tNBWrite=" << cpts_rw[INDEX_WRITE] << "\tNBRead=" << cpts_rw[INDEX_READ] << endl;
-//		//cout <<"New state is " << str_RD_status[entry->state_rd] << "\t" << str_RW_status[entry->state_rw] << endl;	
+//			cout <<p << "\t";
+//		cout <<endl;
+//		cout <<"RW history\tNBWrite=" << cpts_rw[INDEX_WRITE] << "\tNBRead=" << cpts_rw[INDEX_READ] << endl;
+//		cout <<"New state is " << str_RD_status[entry->state_rd] << "\t" << str_RW_status[entry->state_rw] << endl;	
 //	}
 
 

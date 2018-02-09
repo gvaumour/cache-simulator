@@ -130,6 +130,8 @@ int main(int argc , char* argv[]){
 			simu_parameters.enableBP = true;
 		else if(string(argv[i]) == "--enable-DYN")
 			simu_parameters.enableMigration = true;
+		else if(string(argv[i]) == "--enableReuseError")
+			simu_parameters.enableReuseErrorComputation = true;
 		else if(string(argv[i]) == "--flagTest")
 		{
 			simu_parameters.flagTest = true;
