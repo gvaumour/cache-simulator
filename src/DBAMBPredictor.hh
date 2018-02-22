@@ -108,10 +108,10 @@ class testRAPEntry
 };
 
 
-class testRAPReplacementPolicy{
+class DBAMBReplacementPolicy{
 	
 	public : 
-		testRAPReplacementPolicy(int nbAssoc , int nbSet , std::vector<std::vector<testRAPEntry*> >& rap_entries ) : m_rap_entries(rap_entries),\
+		DBAMBReplacementPolicy(int nbAssoc , int nbSet , std::vector<std::vector<testRAPEntry*> >& rap_entries ) : m_rap_entries(rap_entries),\
 											m_nb_set(nbSet) , m_assoc(nbAssoc) {};
 		virtual void updatePolicy(uint64_t set, uint64_t index) = 0;
 		virtual void insertionPolicy(uint64_t set, uint64_t index) = 0;
@@ -125,10 +125,10 @@ class testRAPReplacementPolicy{
 };
 
 
-class testRAPLRUPolicy : public testRAPReplacementPolicy {
+class DBAMBLRUPolicy : public DBAMBReplacementPolicy {
 
 	public :
-		testRAPLRUPolicy(int nbAssoc , int nbSet , std::vector<std::vector<testRAPEntry*> >& rap_entries);
+		DBAMBLRUPolicy(int nbAssoc , int nbSet , std::vector<std::vector<testRAPEntry*> >& rap_entries);
 		void updatePolicy(uint64_t set, uint64_t index);
 		void insertionPolicy(uint64_t set, uint64_t index) { updatePolicy(set,index);}
 		int evictPolicy(int set);
@@ -139,11 +139,11 @@ class testRAPLRUPolicy : public testRAPReplacementPolicy {
 
 
 
-class testRAPPredictor : public Predictor {
+class DBAMBPredictor : public Predictor {
 
 	public :
-		testRAPPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache);
-		~testRAPPredictor();
+		DBAMBPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache);
+		~DBAMBPredictor();
 			
 		allocDecision allocateInNVM(uint64_t set, Access element);
 		void updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element , bool isWBrequest );
@@ -180,7 +180,7 @@ class testRAPPredictor : public Predictor {
 
 		/* RAP Table Handlers	*/
 		std::vector< std::vector<testRAPEntry*> > m_RAPtable;
-		testRAPReplacementPolicy* m_rap_policy;
+		DBAMBReplacementPolicy* m_rap_policy;
 		unsigned m_RAP_assoc;
 		unsigned m_RAP_sets; 
 		

@@ -126,6 +126,8 @@ int main(int argc , char* argv[]){
 		}
 		else if(string(argv[i]) == "--enablePrefetch")
 			simu_parameters.enablePrefetch = true;
+		else if(string(argv[i]) == "--enablePCHistoryTracking")
+			simu_parameters.enablePCHistoryTracking = true;
 		else if(string(argv[i]) == "--enableBP")
 			simu_parameters.enableBP = true;
 		else if(string(argv[i]) == "--enable-DYN")

@@ -201,6 +201,7 @@ init_default_parameters()
 	simu_parameters.enablePrefetch = false;
 
 	simu_parameters.enableReuseErrorComputation = false;
+	simu_parameters.enablePCHistoryTracking = false;
 	
 	simu_parameters.nbCores = 1;
 	simu_parameters.policy = "testRAP";

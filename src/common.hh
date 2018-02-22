@@ -82,6 +82,7 @@ struct SimuParameters
 	int prefetchStreams;
 	
 	bool enableReuseErrorComputation;
+	bool enablePCHistoryTracking;
 
 	float rap_innacuracy_th;
 	

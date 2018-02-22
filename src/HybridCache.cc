@@ -34,8 +34,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "InstructionPredictor.hh"
 #include "DynamicSaturation.hh"
 #include "CompilerPredictor.hh"
-#include "RAPPredictor.hh"
-#include "testRAPPredictor.hh"
+#include "DBAMBPredictor.hh"
 //#include "RAPPredictor_opt.hh"
 
 using namespace std;
@@ -89,10 +88,8 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		 m_predictor = new CompilerPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "Instruction")
 		 m_predictor = new InstructionPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
-	else if(m_policy == "RAP")
-		 m_predictor = new RAPPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
-	else if(m_policy == "DB-AMB" || m_policy == "testRAP" || m_policy == "DB-A")
-		 m_predictor = new testRAPPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
+	else if(m_policy == "DB-AMB" || m_policy == "DB-A")
+		 m_predictor = new DBAMBPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else {
 		assert(false && "Cannot initialize predictor for HybridCache");
 	}
@@ -132,7 +129,10 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 	// Record the number of operations issued by the cache 
 	stats_operations = vector<uint64_t>(NUM_MEM_CMDS , 0); 
 
-
+	if(simu_parameters.enablePCHistoryTracking && m_printStats){	
+		ofstream file_history_cache("LLC_PC_History.out", std::ofstream::trunc); //Create the file
+		file_history_cache.close(); 
+	}
 }
 
 HybridCache::HybridCache(const HybridCache& a) : HybridCache(a.getID(), a.isInstCache(),\
@@ -267,6 +267,9 @@ HybridCache::handleAccess(Access element)
 							
 				m_tableNVM[id_set][id_assoc]->coherence_state = COHERENCE_EXCLUSIVE;					
 				m_tableNVM[id_set][id_assoc]->m_compilerHints = element.m_compilerHints;
+			
+				if(simu_parameters.enablePCHistoryTracking && m_printStats)
+					m_tableNVM[id_set][id_assoc]->pc_history.push_back(element.m_pc);
 			}
 			else{
 				entete_debug();
@@ -281,6 +284,9 @@ HybridCache::handleAccess(Access element)
 
 				m_tableSRAM[id_set][id_assoc]->coherence_state = COHERENCE_EXCLUSIVE;
 				m_tableSRAM[id_set][id_assoc]->m_compilerHints = element.m_compilerHints;
+
+				if(simu_parameters.enablePCHistoryTracking&& m_printStats)
+					m_tableSRAM[id_set][id_assoc]->pc_history.push_back(element.m_pc);
 			}
 		}
 	}
@@ -306,6 +312,9 @@ HybridCache::handleAccess(Access element)
 			//current->coherence_state stays in the same state in any case 
 			current->nbRead++;		
 		}
+
+		if(simu_parameters.enablePCHistoryTracking && m_printStats)
+			current->pc_history.push_back(element.m_pc);
 	
 		if(!m_isWarmup)
 		{
@@ -345,9 +354,16 @@ HybridCache::updateStatsDeallocate(CacheEntry* current)
 
 	if(!current->isValid || m_isWarmup)
 		return;
-		
-		
-//	cout << "current->nbWrite = " << current->nbWrite << ", current->nbRead = " << current->nbRead << endl;
+	
+	if(simu_parameters.enablePCHistoryTracking && m_printStats){	
+		ofstream file_history_cache("LLC_PC_History.out", std::ostream::app);
+		file_history_cache << std::hex << current->address << "\t";
+		for(unsigned i = 0; i < current->pc_history.size()-1; i++)
+			file_history_cache << current->pc_history[i] << ",";
+		file_history_cache << current->pc_history[current->pc_history.size()-1] << endl;
+		file_history_cache << std::dec;
+		file_history_cache.close();
+	}
 	
 	if(stats_histo_ratioRW.count(current->nbWrite) == 0)
 		stats_histo_ratioRW.insert(pair<int,int>(current->nbWrite , 0));
@@ -455,6 +471,9 @@ HybridCache::handleWB(uint64_t block_addr, bool isDirty)
 			else 
 				stats_cleanWBSRAM++;			
 		}
+		if(simu_parameters.enablePCHistoryTracking && m_printStats)
+			current->pc_history.push_back(1);
+
 	}
 }
 

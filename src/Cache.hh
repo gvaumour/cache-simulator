@@ -166,6 +166,7 @@ class CacheEntry{
 			m_pc = a->m_pc;
 			coherence_state = a->coherence_state; 
 			isPrefetch = a->isPrefetch;
+			pc_history = a->pc_history;
 		}
 		bool isValid;
 		bool isDirty;
@@ -190,6 +191,7 @@ class CacheEntry{
 		bool isLearning;
 		bool isPrefetch;
 		bool justMigrate;
+		std::vector<uint64_t> pc_history;
 
 		CoherenceState coherence_state;
 };
