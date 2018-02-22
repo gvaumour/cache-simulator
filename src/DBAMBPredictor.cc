@@ -40,10 +40,10 @@ DBAMBPredictor::DBAMBPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray
 			m_RAPtable[i][j]->assoc = j;
 		}
 	}
-	
+	/*
 	if(simu_parameters.enableReuseErrorComputation)
 		stats_history_SRAM.resize(nbSet);
-	
+	*/
 	
 	DPRINTF("RAPPredictor::Constructor m_RAPtable.size() = %lu , m_RAPtable[0].size() = %lu\n" , m_RAPtable.size() , m_RAPtable[0].size());
 
@@ -259,7 +259,7 @@ DBAMBPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access el
 	
 	int rd = computeRd(set, index , inNVM);
 
-
+	/*
 	if(inNVM && simu_parameters.enableReuseErrorComputation){
 		RD_TYPE reuse_class = convertRD(rd);
 		if(reuse_class == RD_MEDIUM)
@@ -278,7 +278,7 @@ DBAMBPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access el
 
 		cout <<"DBAMBPredictor::Record history cpt_time=" << m_cpt << " address=" << current->address << " set=" << set << endl; 
 		stats_history_SRAM[set].push_front(pair<uint64_t, uint64_t>(m_cpt, current->address));
-	}
+	}*/
 	
 
 	current->policyInfo = m_cpt;
@@ -467,6 +467,7 @@ DBAMBPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* curre
 bool
 DBAMBPredictor::hitInSRAM(int set, uint64_t old_time)
 {
+	/*
 	cout <<"old_time=" << old_time << endl;
 	if(old_time == 0)
 		return false;
@@ -487,7 +488,7 @@ DBAMBPredictor::hitInSRAM(int set, uint64_t old_time)
 		if(adresses_access.size() >= simu_parameters.sram_assoc)
 			return false;
 	}
-	
+	*/
 	return false;
 }
 
@@ -505,7 +506,7 @@ DBAMBPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access
 	
 	RD_TYPE reuse_class = RD_NOT_ACCURATE;
 	testRAPEntry* rap_current;
-	
+	/*
 	if(simu_parameters.enableReuseErrorComputation)
 	{
 		if(inNVM)
@@ -513,7 +514,7 @@ DBAMBPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access
 			cout <<"DBAMBPredictor::Record history cpt_time=" << m_cpt << " address=" << current->address << " set=" << set << endl; 
 			stats_history_SRAM[set].push_front(pair<uint64_t, uint64_t>(m_cpt, current->address));	
 		}			
-	}
+	}*/
 		
 	if( (rap_current= lookup(current->m_pc) ) != NULL )
 	{

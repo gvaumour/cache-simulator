@@ -3,6 +3,7 @@ EXEC_RELEASE = ./obj-intel64/roeval_release
 
 FLAGS = -std=c++11 -I./src/
 LDFLAGS= -lz 
+
 ifdef TEST
 	FLAGS += -DTEST -g -O0
 	LDFLAGS += -g -O0
