@@ -5,10 +5,10 @@ Cache Simulator for Hybrid Cache Evaluation
 This project is a cache simulator associated with Pintools. It is currently developped at Uppsala University in the UART group for quick evaluation of different strategies for data placement specially with hybrid cache architecture where the cache is divided into several regions with different memory technologies
 
 This framework is usefull for: 
-	- Evaluation of predictors for hybrid SRAM/NVM cache architecture
-	- Evaluation of cache replacement/insertion policies
-	- Evaluation of prefetching strategies
-	- Evaluation of dead block prediction strategies 
+	* Evaluation of predictors for hybrid SRAM/NVM cache architecture
+	* Evaluation of cache replacement/insertion policies
+	* Evaluation of prefetching strategies
+	* Evaluation of dead block prediction strategies 
 
 
 ### Compilation 
@@ -28,5 +28,5 @@ We need memory traces to feed the simulator. 2 formats are now supported and a p
 
 
 Utils directory:
-	- traces-pintools : it contains a pintools script to generate compressed memory traces 
-	- energyModel:
+	* traces-pintools : it contains a pintools script to generate compressed memory traces 
+	* energyModel:
