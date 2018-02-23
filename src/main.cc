@@ -147,12 +147,12 @@ int main(int argc , char* argv[]){
 			args.push_back(string(argv[i]));
 	}
 	
-	if(simu_parameters.policy == "DB-A")
+	if(simu_parameters.policy == "DBA")
 	{
 		simu_parameters.enableBP = false;
 		simu_parameters.enableMigration = false;
 	}
-	else if(simu_parameters.policy == "DB-AMB")
+	else if(simu_parameters.policy == "DBAMB")
 	{
 		simu_parameters.enableBP = true;
 		simu_parameters.enableMigration = true;

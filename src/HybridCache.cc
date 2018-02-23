@@ -88,7 +88,7 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		 m_predictor = new CompilerPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "Instruction")
 		 m_predictor = new InstructionPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
-	else if(m_policy == "DB-AMB" || m_policy == "DB-A")
+	else if(m_policy == "DBAMB" || m_policy == "DBA")
 		 m_predictor = new DBAMBPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else {
 		assert(false && "Cannot initialize predictor for HybridCache");
@@ -781,7 +781,7 @@ HybridCache::printResults(std::ostream& out)
 		out << entete << ":DirtyWriteBack\t" << stats_dirtyWBNVM + stats_dirtyWBSRAM << endl;
 		out << entete << ":Eviction\t" << stats_evict << endl;	
 		out << entete << ":Bypass\t" << stats_bypass << endl;
-
+	
 		if(m_nbNVMways > 0){
 			out << entete << ":NVMways:reads\t"<< stats_hitsNVM[0] + stats_migration[true]<< endl;
 			out << entete << ":NVMways:writes\t"<< stats_hitsNVM[1] + stats_dirtyWBNVM + stats_migration[false] << endl;		
@@ -796,6 +796,8 @@ HybridCache::printResults(std::ostream& out)
 		
 		if(m_printStats)
 		{
+			out << entete << ":MigrationFromNVM\t" << stats_migration[true] << endl;
+			out << entete << ":MigrationFromSRAM\t" << stats_migration[false] << endl;
 			out << entete << ":BlockClassification" << endl;
 			out << entete << ":FetchedBlocks\t" << stats_nbFetchedLines << endl;
 			out << entete << ":DeadBlocks\t" << stats_nbLostLine << "\t" << \

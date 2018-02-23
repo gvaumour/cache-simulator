@@ -1,0 +1,66 @@
+
+my_dir="/home/gvaumour/Dev/benchmark/spec2006/benchspec/CPU2006"
+
+declare -a benchs=("bzip2_0" "bzip2_1" "bzip2_2" "gcc_0" "gcc_1" "gcc_2" "gcc_3" "gcc_4" "gcc_5" "gcc_6" "gcc_7" "gcc_8" "gcc_9" "mcf" "namd" "soplex_0" "soplex_1" "povray" "sjeng_0" "soplex_1" "libquantum" "h264" "lbm" "omnetpp" "astar_0" "astar_1" "sphinx3" "specrand_0" "specrand_1")
+
+declare -a directories=( 
+$my_dir/401.bzip2/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/401.bzip2/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/401.bzip2/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/403.gcc/run/run_base_ref_amd64-m64-gcc42-nn.0000 \
+$my_dir/403.gcc/run/run_base_ref_amd64-m64-gcc42-nn.0000 \
+$my_dir/403.gcc/run/run_base_ref_amd64-m64-gcc42-nn.0000 \
+$my_dir/403.gcc/run/run_base_ref_amd64-m64-gcc42-nn.0000 \
+$my_dir/403.gcc/run/run_base_ref_amd64-m64-gcc42-nn.0000 \
+$my_dir/403.gcc/run/run_base_ref_amd64-m64-gcc42-nn.0000 \
+$my_dir/403.gcc/run/run_base_ref_amd64-m64-gcc42-nn.0000 \
+$my_dir/403.gcc/run/run_base_ref_amd64-m64-gcc42-nn.0000 \
+$my_dir/403.gcc/run/run_base_ref_amd64-m64-gcc42-nn.0000 \
+$my_dir/403.gcc/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/429.mcf/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/444.namd/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/450.soplex/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/450.soplex/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/453.povray/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/458.sjeng/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/458.sjeng/run/run_base_train_amd64-m64-gcc42-nn.0001
+$my_dir/462.libquantum/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/464.h264ref/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/470.lbm/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/471.omnetpp/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/473.astar/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/473.astar/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/482.sphinx3/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/998.specrand/run/run_base_train_amd64-m64-gcc42-nn.0000 \
+$my_dir/999.specrand/run/run_base_train_amd64-m64-gcc42-nn.0000 )
+
+declare -a cmds=( "../run_base_train_amd64-m64-gcc42-nn.0000/bzip2_base.amd64-m64-gcc42-nn input.program 10" \
+"../run_base_train_amd64-m64-gcc42-nn.0000/bzip2_base.amd64-m64-gcc42-nn byoudoin.jpg 5 " \
+"../run_base_train_amd64-m64-gcc42-nn.0000/bzip2_base.amd64-m64-gcc42-nn input.combined 80" \
+"../run_base_ref_amd64-m64-gcc42-nn.0000/gcc_base.amd64-m64-gcc42-nn 166.i -o 166.s" \
+"../run_base_ref_amd64-m64-gcc42-nn.0000/gcc_base.amd64-m64-gcc42-nn 200.i -o 200.s " \
+"../run_base_ref_amd64-m64-gcc42-nn.0000/gcc_base.amd64-m64-gcc42-nn c-typeck.i -o c-typeck.s " \
+"../run_base_ref_amd64-m64-gcc42-nn.0000/gcc_base.amd64-m64-gcc42-nn cp-decl.i -o cp-decl.s" \
+"../run_base_ref_amd64-m64-gcc42-nn.0000/gcc_base.amd64-m64-gcc42-nn expr.i -o expr.s" \
+"../run_base_ref_amd64-m64-gcc42-nn.0000/gcc_base.amd64-m64-gcc42-nn expr2.i -o expr2.s" \
+"../run_base_ref_amd64-m64-gcc42-nn.0000/gcc_base.amd64-m64-gcc42-nn g23.i -o g23.s"  \
+"../run_base_ref_amd64-m64-gcc42-nn.0000/gcc_base.amd64-m64-gcc42-nn s04.i -o s04.s" \
+"../run_base_ref_amd64-m64-gcc42-nn.0000/gcc_base.amd64-m64-gcc42-nn scilab.i -o scilab.s" \
+"../run_base_train_amd64-m64-gcc42-nn.0000/gcc_base.amd64-m64-gcc42-nn integrate.i -o integrate.s" \
+"../run_base_train_amd64-m64-gcc42-nn.0000/mcf_base.amd64-m64-gcc42-nn inp.in " \
+"../run_base_train_amd64-m64-gcc42-nn.0000/namd_base.amd64-m64-gcc42-nn --input namd.input --iterations 1 --output namd.out " \
+"../run_base_train_amd64-m64-gcc42-nn.0000/soplex_base.amd64-m64-gcc42-nn -s1 -e -m5000 pds-20.mps " \
+"../run_base_train_amd64-m64-gcc42-nn.0000/soplex_base.amd64-m64-gcc42-nn -m1200 train.mps " \
+"../run_base_train_amd64-m64-gcc42-nn.0000/povray_base.amd64-m64-gcc42-nn SPEC-benchmark-train.ini" \
+"../run_base_train_amd64-m64-gcc42-nn.0000/sjeng_base.amd64-m64-gcc42-nn train.txt" \
+"../run_base_train_amd64-m64-gcc42-nn.0001/sjeng_base.amd64-m64-gcc42-nn train.txt" \
+"../run_base_train_amd64-m64-gcc42-nn.0000/libquantum_base.amd64-m64-gcc42-nn 143 25" \
+"../run_base_train_amd64-m64-gcc42-nn.0000/h264ref_base.amd64-m64-gcc42-nn -d foreman_train_encoder_baseline.cfg " \
+"../run_base_train_amd64-m64-gcc42-nn.0000/lbm_base.amd64-m64-gcc42-nn 300 reference.dat 0 1 100_100_130_cf_b.of" \
+"../run_base_train_amd64-m64-gcc42-nn.0000/omnetpp_base.amd64-m64-gcc42-nn omnetpp.ini " \
+"../run_base_train_amd64-m64-gcc42-nn.0000/astar_base.amd64-m64-gcc42-nn BigLakes1024.cfg" \
+"../run_base_train_amd64-m64-gcc42-nn.0000/astar_base.amd64-m64-gcc42-nn rivers1.cfg " \
+"../run_base_train_amd64-m64-gcc42-nn.0000/sphinx_livepretend_base.amd64-m64-gcc42-nn ctlfile . args.an4" \
+"../run_base_train_amd64-m64-gcc42-nn.0000/specrand_base.amd64-m64-gcc42-nn 1 3 " \
+"../run_base_train_amd64-m64-gcc42-nn.0000/specrand_base.amd64-m64-gcc42-nn 1 3" \
+)

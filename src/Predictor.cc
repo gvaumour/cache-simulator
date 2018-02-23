@@ -292,7 +292,7 @@ Predictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element
 void 
 Predictor::printConfig(std::ostream& out, std::string entete)
 {
-	out << entete << ":Predictor" << endl;
+//	out << entete << ":Predictor" << endl;
 	if(m_trackError)
 		out << entete << ":Predictor:SizeMTarray:\t" << m_assoc_MT << endl;	
 //	else

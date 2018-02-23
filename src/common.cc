@@ -207,7 +207,7 @@ init_default_parameters()
 	simu_parameters.enablePCHistoryTracking = false;
 	
 	simu_parameters.nbCores = 1;
-	simu_parameters.policy = "DB-AMB";
+	simu_parameters.policy = "DBAMB";
 
 
 	simu_parameters.saturation_threshold = 2;
