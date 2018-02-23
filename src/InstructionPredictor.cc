@@ -22,7 +22,7 @@ InstructionPredictor::~InstructionPredictor()
 allocDecision
 InstructionPredictor::allocateInNVM(uint64_t set, Access element)
 {
-	DPRINTF("InstructionPredictor::allocateInNVM\n");
+	//DPRINTF("InstructionPredictor::allocateInNVM\n");
 	
 	if(element.isInstFetch())
 		return ALLOCATE_IN_NVM;
@@ -47,7 +47,7 @@ InstructionPredictor::allocateInNVM(uint64_t set, Access element)
 void
 InstructionPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element, bool isWBrequest = false)
 {
-	DPRINTF("InstructionPredictor::updatePolicy\n");
+	//DPRINTF("InstructionPredictor::updatePolicy\n");
 	
 	CacheEntry* current;
 
@@ -70,12 +70,12 @@ InstructionPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 	Predictor::updatePolicy(set, index, inNVM, element , isWBrequest);
 
 	m_cpt++;
-	DPRINTF("InstructionPredictor:: End updatePolicy\n");
+	//DPRINTF("InstructionPredictor:: End updatePolicy\n");
 }
 
 void InstructionPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access element)
 {
-	DPRINTF("InstructionPredictor::insertionPolicy\n");
+	//DPRINTF("InstructionPredictor::insertionPolicy\n");
 	
 	CacheEntry* current;
 	if(inNVM){
@@ -96,17 +96,18 @@ void InstructionPredictor::insertionPolicy(uint64_t set, uint64_t index, bool in
 }
 
 void
-InstructionPredictor::printConfig(std::ostream& out){
-	out << "\tInstruction Predictor :" << std::endl;
-	out << "\t\t- READ_VALUE : " << READ_VALUE << std::endl;		
-	out << "\t\t- WRITE_VALUE " << WRITE_VALUE << std::endl;		
-	out << "\t\t- Cost Threshold " << simu_parameters.cost_threshold << std::endl;		
-	Predictor::printConfig(out);
+InstructionPredictor::printConfig(std::ostream& out, string entete){
+	out << entete << ":InstructionPredictor" << std::endl;
+	out << entete << ":READ_VALUE\t" << READ_VALUE << std::endl;		
+	out << entete << ":WRITE_VALUE\t" << WRITE_VALUE << std::endl;		
+	out << entete << ":CostThreshold\t" << simu_parameters.cost_threshold << std::endl;		
+	out << entete << ":PCThreshold\t" << PC_THRESHOLD << endl;
+	Predictor::printConfig(out, entete);
 };
 
 
 void 
-InstructionPredictor::printStats(std::ostream& out)
+InstructionPredictor::printStats(std::ostream& out, string entete)
 {	
 	int totalWrite = 0;
 	for(auto p : stats_PCwrites)
@@ -115,11 +116,8 @@ InstructionPredictor::printStats(std::ostream& out)
 		totalWrite += current.first;
 	}
 	
-	out << "InstructionPredictor Parameters:" << endl;
-	out << "PC Threshold : " << PC_THRESHOLD << endl;
-	out << "Cache Line Cost Threshold : " << simu_parameters.cost_threshold << endl;
-	
-	out << "Total Write :" << totalWrite << endl;
+	out << entete << ":InstructionPredictor Parameters:" << endl;
+	out << entete << ":Total Write\t" << totalWrite << endl;
 	
 	/*
 	ofstream output_file;
@@ -134,13 +132,13 @@ InstructionPredictor::printStats(std::ostream& out)
 	}
 	output_file.close();
 	*/
-	Predictor::printStats(out);
+	Predictor::printStats(out,entete);
 }
 
 int
 InstructionPredictor::evictPolicy(int set, bool inNVM)
 {	
-	DPRINTF("InstructionPredictor::evictPolicy set %d\n" , set);
+	//DPRINTF("InstructionPredictor::evictPolicy set %d\n" , set);
 	int assoc_victim = -1;
 	assert(m_replacementPolicyNVM_ptr != NULL);
 	assert(m_replacementPolicySRAM_ptr != NULL);
@@ -160,7 +158,7 @@ InstructionPredictor::evictPolicy(int set, bool inNVM)
 		current = m_tableSRAM[set][assoc_victim];
 
 	if(current->isValid){
-		DPRINTF("InstructionPredictor::evictPolicy is Valid\n");
+		//DPRINTF("InstructionPredictor::evictPolicy is Valid\n");
 		if( current->cost_value >= simu_parameters.cost_threshold)
 		{
 			pc_counters[current->m_pc]++;

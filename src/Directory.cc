@@ -35,7 +35,7 @@ Directory::Directory()
 	m_nb_set = DIRECTORY_NB_SETS;
 	m_assoc = DIRECTORY_ASSOC;
 
-	DPRINTF("DIRECTORY::Constructor , assoc=%d , m_nb_set=%d\n", m_assoc , m_nb_set);
+	//DPRINTF("DIRECTORY::Constructor , assoc=%d , m_nb_set=%d\n", m_assoc , m_nb_set);
 
 	m_table.resize(m_nb_set);
 	for(int i = 0  ; i < m_nb_set ; i++){
@@ -78,7 +78,7 @@ Directory::addEntry(uint64_t addr , bool isInst)
 	{
 	
 //		cout << "ID SET =" << id_set << endl;
-		DPRINTF("DIRECTORY::Eviction of dir entry, Block_addr[%#lx] \n", entry->block_addr);
+		//DPRINTF("DIRECTORY::Eviction of dir entry, Block_addr[%#lx] \n", entry->block_addr);
 		cout << "Assoc victim =" << assoc_victim << endl;
 //		entry->print();	
 //		for(int i  = 0 ; i < m_table[id_set].size(); i++)
@@ -141,7 +141,7 @@ Directory::removeTracker(uint64_t addr, int node)
 	DirectoryEntry* entry = getEntry(addr);
 	assert(entry != NULL);
 
-	DPRINTF("DIRECTORY::removeTracker Addr %#lx, Node %d\n", addr, node );	
+	//DPRINTF("DIRECTORY::removeTracker Addr %#lx, Node %d\n", addr, node );	
 
 	set<int>::iterator it = entry->nodeTrackers.find(node);
 	if(it != entry->nodeTrackers.end())
@@ -167,7 +167,7 @@ Directory::setCoherenceState(uint64_t addr, DirectoryState dir_state)
 void
 Directory::resetTrackersToEntry(uint64_t addr)
 {
-	DPRINTF("DIRECTORY::resetTrackersToEntry Addr %#lx\n", addr );
+	//DPRINTF("DIRECTORY::resetTrackersToEntry Addr %#lx\n", addr );
 
 	DirectoryEntry* entry = getEntry(addr);
 	assert(entry != NULL);
@@ -194,7 +194,7 @@ Directory::removeEntry(uint64_t addr)
 {
 	DirectoryEntry* entry = getEntry(addr);
 	assert(entry != NULL);
-	DPRINTF("DIRECTORY::removeEntry Addr %#lx\n" , addr);
+	//DPRINTF("DIRECTORY::removeEntry Addr %#lx\n" , addr);
 	int id_set = indexFunction(addr);
 	for(unsigned i = 0 ; i < m_table[id_set].size(); i++)
 	{
@@ -209,7 +209,7 @@ Directory::removeEntry(uint64_t addr)
 void 
 Directory::addTrackerToEntry(uint64_t addr, int node)
 {
-	DPRINTF("DIRECTORY::addTrackerToEntry Addr %#lx, node %d\n" , addr, node );
+	//DPRINTF("DIRECTORY::addTrackerToEntry Addr %#lx, node %d\n" , addr, node );
 
 	DirectoryEntry* entry = getEntry(addr);
 	assert(entry != NULL);	

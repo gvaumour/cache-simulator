@@ -135,7 +135,7 @@ Predictor::insertRecord(int set, int assoc, bool inNVM)
 {
 	//Update the missing tag as a new cache line is brough into the cache 
 	//Has to remove the MT entry if it exists there 
-	DPRINTF("Predictor::insertRecord Begin ");
+	//DPRINTF("Predictor::insertRecord Begin ");
 
 	if(!inNVM && m_trackError)
 	{
@@ -149,7 +149,7 @@ Predictor::insertRecord(int set, int assoc, bool inNVM)
 			}
 		}
 	}	
-	DPRINTF("Predictor::insertRecord Begin ");
+	//DPRINTF("Predictor::insertRecord Begin ");
 
 }
 
@@ -160,7 +160,7 @@ Predictor::recordAllocationDecision(uint64_t set, Access element, allocDecision 
 		return false;
 	
 	bool find = false , isBPerror = false;
-	DPRINTF("Predictor::recordAllocationDecision Set %d, element.m_address = 0x%lx, des = %s \n ", set, element.m_address, allocDecision_str[des]);
+	//DPRINTF("Predictor::recordAllocationDecision Set %d, element.m_address = 0x%lx, des = %s \n ", set, element.m_address, allocDecision_str[des]);
 
 	//Look if the element already exists , if yes update it, if no insert it
 	for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
@@ -176,7 +176,7 @@ Predictor::recordAllocationDecision(uint64_t set, Access element, allocDecision 
 //			if(des == BYPASS_CACHE && BP_missing_tags[set][i]->isBypassed){
 			if(des == BYPASS_CACHE){
 			
-				DPRINTF("Predictor::recordAllocationDecision BP_error detected\n");
+				//DPRINTF("Predictor::recordAllocationDecision BP_error detected\n");
 
 				isBPerror = false;
 				
@@ -189,7 +189,7 @@ Predictor::recordAllocationDecision(uint64_t set, Access element, allocDecision 
 	}
 	if(!find)
 	{
-		DPRINTF("Predictor::recordAllocationDecision Didn't find the entry in the BP Missing Tags\n");
+		//DPRINTF("Predictor::recordAllocationDecision Didn't find the entry in the BP Missing Tags\n");
 		int index_oldest =0;
 		uint64_t oldest = BP_missing_tags[set][0]->last_time_touched;
 		for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
@@ -210,9 +210,9 @@ Predictor::recordAllocationDecision(uint64_t set, Access element, allocDecision 
 		
 		if(BP_missing_tags[set][index_oldest]->isValid)
 		{
-			DPRINTF("Predictor::Eviction of entry 0x%lx\n",BP_missing_tags[set][index_oldest]->addr);
+			//DPRINTF("Predictor::Eviction of entry 0x%lx\n",BP_missing_tags[set][index_oldest]->addr);
 		}
-		DPRINTF("Predictor::Insertion of the new entry at assoc %d\n", index_oldest);
+		//DPRINTF("Predictor::Insertion of the new entry at assoc %d\n", index_oldest);
 		
 		BP_missing_tags[set][index_oldest]->last_time_touched = cpt_time;
 		BP_missing_tags[set][index_oldest]->addr = element.m_address;
@@ -234,7 +234,7 @@ Predictor::checkSRAMerror(uint64_t block_addr , int id_set)
 		{
 			if(SRAM_missing_tags[id_set][i]->addr == block_addr && SRAM_missing_tags[id_set][i]->isValid)
 			{
-				//DPRINTF("BasePredictor::checkMissingTags Found SRAM error as %#lx is present in MT tag %i \n", block_addr ,i);  
+				////DPRINTF("BasePredictor::checkMissingTags Found SRAM error as %#lx is present in MT tag %i \n", block_addr ,i);  
 				stats_SRAM_errors[stats_SRAM_errors.size()-1]++;
 				return true;
 			}
@@ -250,7 +250,7 @@ Predictor::openNewTimeFrame()
 	if(m_isWarmup)
 		return;
 		
-	DPRINTF("BasePredictor::openNewTimeFrame New Time Frame Start\n");  
+	//DPRINTF("BasePredictor::openNewTimeFrame New Time Frame Start\n");  
 	stats_NVM_errors.push_back(0);
 	stats_SRAM_errors.push_back(0);
 	stats_BP_errors.push_back(0);
@@ -290,19 +290,19 @@ Predictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element
 }
 
 void 
-Predictor::printConfig(std::ostream& out)
+Predictor::printConfig(std::ostream& out, std::string entete)
 {
-	out << "\t- Predictor:" << endl;
+	out << entete << ":Predictor" << endl;
 	if(m_trackError)
-		out << "\t\tSize of the MT array\t" << m_assoc_MT << endl;	
-	else
-		out << "\t\tNo SRAM error tracking enabled" << endl;
+		out << entete << ":Predictor:SizeMTarray:\t" << m_assoc_MT << endl;	
+//	else
+//		out << entete << ":Predictor:TrackingEnabled\tFALSE" << endl;
 }
 
 
 				 
 void 
-Predictor::printStats(std::ostream& out)
+Predictor::printStats(std::ostream& out, string entete)
 {
 
 	uint64_t totalNVMerrors = 0, totalSRAMerrors= 0, totalBPerrors = 0, totalMigration = 0;	
@@ -318,13 +318,13 @@ Predictor::printStats(std::ostream& out)
 	}
 	output_file.close();
 
-	out << "\tPredictor Errors:" <<endl;
-	out << "\t\tNVM Error\t" << totalNVMerrors << endl;
-	out << "\t\t\t-From WB\t"  << stats_WBerrors << endl;
-	out << "\t\t\t-From Core\t" <<  stats_COREerrors << endl;
-	out << "\t\tTotal Migration\t" <<  totalMigration << endl;
-	out << "\t\tSRAM Error\t" << totalSRAMerrors << endl;
-	out << "\t\tBP Error\t" << totalBPerrors << endl;
+	out << entete << ":Predictor:PredictorErrors:" <<endl;
+	out << entete << ":Predictor:TotalNVMError\t" << totalNVMerrors << endl;
+	out << entete << ":Predictor:NVMError:FromWB\t"  << stats_WBerrors << endl;
+	out << entete << ":Predictor:NVMError:FromCore\t" <<  stats_COREerrors << endl;
+	out << entete << ":Predictor:TotalMigration\t" <<  totalMigration << endl;
+	out << entete << ":Predictor:SRAMError\t" << totalSRAMerrors << endl;
+	out << entete << ":Predictor:BPError\t" << totalBPerrors << endl;
 }
 
 
@@ -370,7 +370,7 @@ LRUPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access e
 		m_replacementPolicySRAM_ptr->insertionPolicy(set, index , 0);
 	
 	Predictor::insertRecord(set, index , inNVM);
-	DPRINTF("END OF INSERTIONPolicy");
+	//DPRINTF("END OF INSERTIONPolicy");
 	m_cpt++;
 }
 

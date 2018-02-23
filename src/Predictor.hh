@@ -44,9 +44,9 @@ class Predictor{
 		bool recordAllocationDecision(uint64_t set, Access element, allocDecision des);
 
 		virtual int evictPolicy(int set, bool inNVM) =0;
-		virtual void printConfig(std::ostream& out) ;
+		virtual void printConfig(std::ostream& out, std::string entete) ;
 		virtual void finishSimu() = 0;
-		virtual void printStats(std::ostream& out);
+		virtual void printStats(std::ostream& out, std::string entete);
 		virtual void openNewTimeFrame();
 
 		virtual void startWarmup();
@@ -103,8 +103,8 @@ class LRUPredictor : public Predictor{
 		void evictRecording( int id_set , int id_assoc , bool inNVM) { Predictor::evictRecording(id_set, id_assoc, inNVM);};
 		void openNewTimeFrame() { };
 
-		void printStats(std::ostream& out) { Predictor::printStats(out);};
-		void printConfig(std::ostream& out) { Predictor::printConfig(out);};
+		void printStats(std::ostream& out, std::string entete) { Predictor::printStats(out, entete);};
+		void printConfig(std::ostream& out, std::string entete) { Predictor::printConfig(out, entete);};
 		~LRUPredictor() {};
 		
 	private : 

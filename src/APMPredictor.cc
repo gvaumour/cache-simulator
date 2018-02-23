@@ -54,12 +54,13 @@ void APMPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 }
 
 void
-APMPredictor::printConfig(std::ostream& out) {
-//	out<< "\t\tSaturation Threshold : " << SATURATION_TH << std::endl;
+APMPredictor::printConfig(std::ostream& out, string entete) {
+
+	Predictor::printConfig(out , entete);
 };
 
 
-void APMPredictor::printStats(std::ostream& out)
+void APMPredictor::printStats(std::ostream& out, string entete)
 {	
 	
 	double migrationNVM = (double) stats_nbMigrationsFromNVM[0];
@@ -67,12 +68,12 @@ void APMPredictor::printStats(std::ostream& out)
 	double total = migrationNVM+migrationSRAM;
 
 	if(total > 0){
-		out << "Predictor Stats:" << endl;
-		out << "NB Migration :" << total << endl;
-		out << "\t From NVM : " << migrationNVM*100/total << "%" << endl;
-		out << "\t From SRAM : " << migrationSRAM*100/total << "%" << endl;	
+		out << entete << ":PredictorStats:" << endl;
+		out << entete << ":NBMigration\t" << total << endl;
+		out << entete << ":MigrationFromNVM\t" << migrationNVM*100/total << "%" << endl;
+		out << entete << ":MigrationFromSRAM\t" << migrationSRAM*100/total << "%" << endl;	
 	}
-	Predictor::printStats(out);
+	Predictor::printStats(out, entete);
 }
 
 int APMPredictor::evictPolicy(int set, bool inNVM)

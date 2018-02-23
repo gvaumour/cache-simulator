@@ -1,5 +1,5 @@
-#ifndef TEST_RAP_PREDICTOR_HH_
-#define TEST_RAP_PREDICTOR_HH_
+#ifndef __DBAMP__PREDICTOR__HH__
+#define __DBAMP__PREDICTOR__HH__
 
 #include <vector>
 #include <map>
@@ -40,10 +40,10 @@ class Predictor;
 class HybridCache;
 
 
-class testRAPEntry
+class DHPEntry
 {
 	public: 
-		testRAPEntry() { initEntry( Access()); isValid = false; };
+		DHPEntry() { initEntry( Access()); isValid = false; };
 		
 		void initEntry(Access element) {
 		 	cpts =  std::vector<int>(NUM_RW_TYPE,0);
@@ -111,14 +111,14 @@ class testRAPEntry
 class DBAMBReplacementPolicy{
 	
 	public : 
-		DBAMBReplacementPolicy(int nbAssoc , int nbSet , std::vector<std::vector<testRAPEntry*> >& rap_entries ) : m_rap_entries(rap_entries),\
+		DBAMBReplacementPolicy(int nbAssoc , int nbSet , std::vector<std::vector<DHPEntry*> >& rap_entries ) : m_rap_entries(rap_entries),\
 											m_nb_set(nbSet) , m_assoc(nbAssoc) {};
 		virtual void updatePolicy(uint64_t set, uint64_t index) = 0;
 		virtual void insertionPolicy(uint64_t set, uint64_t index) = 0;
 		virtual int evictPolicy(int set) = 0;
 		
 	protected : 
-		std::vector<std::vector<testRAPEntry*> >& m_rap_entries;
+		std::vector<std::vector<DHPEntry*> >& m_rap_entries;
 		int m_cpt;
 		unsigned m_nb_set;
 		unsigned m_assoc;
@@ -128,7 +128,7 @@ class DBAMBReplacementPolicy{
 class DBAMBLRUPolicy : public DBAMBReplacementPolicy {
 
 	public :
-		DBAMBLRUPolicy(int nbAssoc , int nbSet , std::vector<std::vector<testRAPEntry*> >& rap_entries);
+		DBAMBLRUPolicy(int nbAssoc , int nbSet , std::vector<std::vector<DHPEntry*> >& rap_entries);
 		void updatePolicy(uint64_t set, uint64_t index);
 		void insertionPolicy(uint64_t set, uint64_t index) { updatePolicy(set,index);}
 		int evictPolicy(int set);
@@ -150,36 +150,36 @@ class DBAMBPredictor : public Predictor {
 		void insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access element);
 		int evictPolicy(int set, bool inNVM);
 		void evictRecording( int id_set , int id_assoc , bool inNVM) { Predictor::evictRecording(id_set, id_assoc, inNVM);};
-		void printStats(std::ostream& out);
-		void printConfig(std::ostream& out);
+		void printStats(std::ostream& out, std::string entete);
+		void printConfig(std::ostream& out, std::string entete);
 		void openNewTimeFrame();
 		void finishSimu();
-		testRAPEntry* lookup(uint64_t pc);
+		DHPEntry* lookup(uint64_t pc);
 		uint64_t indexFunction(uint64_t pc);
 
 		int computeRd(uint64_t set, uint64_t index, bool inNVM);
 		RD_TYPE convertRD(int rd);
 		RD_TYPE evaluateRd(std::vector<int> reuse_distances);
 		
-		void determineStatus(testRAPEntry* entry);
-		allocDecision convertState(testRAPEntry* rap_current);
-		void dumpDataset(testRAPEntry* entry);		
+		void determineStatus(DHPEntry* entry);
+		allocDecision convertState(DHPEntry* rap_current);
+		void dumpDataset(DHPEntry* entry);		
 
 		bool hitInSRAM(int set, uint64_t old_time);
 
-		void updateWindow(testRAPEntry* rap_current);
+		void updateWindow(DHPEntry* rap_current);
 		
-		CacheEntry* checkLazyMigration(testRAPEntry* rap_current , CacheEntry* current ,uint64_t set,bool inNVM , uint64_t index, bool isWrite);
+		CacheEntry* checkLazyMigration(DHPEntry* rap_current , CacheEntry* current ,uint64_t set,bool inNVM , uint64_t index, bool isWrite);
 
-		void reportAccess(testRAPEntry* rap_current, Access element, CacheEntry* current, bool inNVM, std::string entete, std::string reuse_class);
-		void reportMigration(testRAPEntry* rap_current, CacheEntry* current, bool fromNVM);
+		void reportAccess(DHPEntry* rap_current, Access element, CacheEntry* current, bool inNVM, std::string entete, std::string reuse_class);
+		void reportMigration(DHPEntry* rap_current, CacheEntry* current, bool fromNVM);
 
 	protected : 
 		uint64_t m_cpt;
 		int learningTHcpt;
 
 		/* RAP Table Handlers	*/
-		std::vector< std::vector<testRAPEntry*> > m_RAPtable;
+		std::vector< std::vector<DHPEntry*> > m_DHPTable;
 		DBAMBReplacementPolicy* m_rap_policy;
 		unsigned m_RAP_assoc;
 		unsigned m_RAP_sets; 

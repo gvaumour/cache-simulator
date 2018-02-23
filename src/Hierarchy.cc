@@ -12,15 +12,14 @@ using namespace std;
 
 Hierarchy::Hierarchy()
 {
-	DPRINTF("Hierarchy:: null constructor\n");
+	DPRINTF(DebugHierarchy, "Hierarchy:: null constructor\n");
 
 	Hierarchy("DB-AMB" , 1);
 }
 
 Hierarchy::Hierarchy(const Hierarchy& a)
 {
-	DPRINTF("Hierarchy:: copy constructor\n");
-
+	DPRINTF(DebugHierarchy, "Hierarchy:: copy constructor\n");
 }
 
 
@@ -66,9 +65,11 @@ Hierarchy::Hierarchy(string policy, int nbCores)
 	
 	stats_cleanWB_MainMem = 0;
 	stats_dirtyWB_MainMem = 0;
-
-	m_stats_hitsPrefetch = 0;
-	m_stats_issuedPrefetchs = 0;
+	stats_writeMainMem = 0;
+	stats_readMainMem = 0;
+	
+	stats_hitsPrefetch = 0;
+	stats_issuedPrefetchs = 0;
 }
 
 
@@ -100,26 +101,28 @@ Hierarchy::stopWarmup()
 void
 Hierarchy::printResults(ostream& out)
 {
-	out << "***************" << endl;
+//	out << "***************" << endl;
 	for(unsigned j = 0 ; j < m_private_caches.size() ; j++)
 	{
-		out << "Core n°" << j << endl;		
+//		out << "Core n°" << j << endl;		
 		m_private_caches[j]->printResults(out);
 	}
-	out << "***************" << endl;
-	out << "Last Level Cache : " << endl;
+//	out << "***************" << endl;
+//	out << "Last Level Cache : " << endl;
 	m_LLC->printResults(out);
 	out << "***************" << endl;
 
-	out << "Prefetcher::Stats" << endl;
-	out << "Prefetcher::issuedPrefetch\t"<< m_stats_issuedPrefetchs << endl;
-	out << "Prefetcher::hitPrefecth\t"<< m_stats_hitsPrefetch << endl;
-	out << "Prefetcher::prefetchErrors\t"<< m_stats_issuedPrefetchs - m_stats_hitsPrefetch << endl;
+	out << "Prefetcher:Stats" << endl;
+	out << "Prefetcher:issuedPrefetch\t"<< stats_issuedPrefetchs << endl;
+	out << "Prefetcher:hitPrefecth\t"<< stats_hitsPrefetch << endl;
+	out << "Prefetcher:prefetchErrors\t"<< stats_issuedPrefetchs - stats_hitsPrefetch << endl;
 
 
-	out << "Main Mem" << endl;
-	out << "\tClean WB\t" << stats_cleanWB_MainMem << endl;
-	out << "\tDirty WB\t" << stats_dirtyWB_MainMem << endl;
+//	out << "MainMem" << endl;
+	out << "MainMem:ReadFetch\t" << stats_readMainMem << endl;
+	out << "MainMem:WriteFetch\t" << stats_writeMainMem << endl;
+	out << "MainMem:CleanWB\t" << stats_cleanWB_MainMem << endl;
+	out << "MainMem:DirtyWB\t" << stats_dirtyWB_MainMem << endl;
 	
 }
 
@@ -187,7 +190,7 @@ Hierarchy::prefetchAddress(Access element)
 	uint64_t block_addr = bitRemove(addr , 0 , m_start_index+1);
 	
 
-	DPRINTF("HIERARCHY::Prefetching of block %#lx\n", block_addr);
+	DPRINTF(DebugHierarchy, "HIERARCHY::Prefetching of block %#lx\n", block_addr);
 
 		
 	DirectoryEntry* entry = m_directory->getEntry(block_addr);
@@ -205,18 +208,18 @@ Hierarchy::prefetchAddress(Access element)
 		m_LLC->handleAccess(element);
 		m_directory->updateEntry(block_addr);
 		m_directory->setCoherenceState(block_addr, CLEAN_LLC);	
-		m_stats_issuedPrefetchs++;
+		stats_issuedPrefetchs++;
 	}
 	else
 	{
-		DPRINTF("HIERARCHY::Prefetcher Block %#lx already present\n", block_addr);
+		DPRINTF(DebugHierarchy, "HIERARCHY::Prefetcher Block %#lx already present\n", block_addr);
 	}
 }
 
 void
 Hierarchy::handleAccess(Access element)
 {
-	DPRINTF("HIERARCHY::New Access : Data %#lx Req %s, Id_Thread %d\n", element.m_address , memCmd_str[element.m_type], element.m_idthread);
+	DPRINTF(DebugHierarchy, "HIERARCHY::New Access : Data %#lx Req %s, Id_Thread %d\n", element.m_address , memCmd_str[element.m_type], element.m_idthread);
 	
 	uint64_t addr = element.m_address;
 	uint64_t block_addr = bitRemove(addr , 0 , m_start_index+1);
@@ -247,6 +250,11 @@ Hierarchy::handleAccess(Access element)
 		m_directory->updateEntry(block_addr);
 
 		m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);
+		
+		if(element.isWrite())
+			stats_writeMainMem++;
+		else
+			stats_readMainMem++;
 	}
 	else if(dir_state == CLEAN_LLC || dir_state == DIRTY_LLC)
 	{
@@ -257,7 +265,7 @@ Hierarchy::handleAccess(Access element)
 		m_LLC->handleAccess(element);
 		
 		/* Prefetch stats collection */ 
-		m_stats_hitsPrefetch += m_LLC->isPrefetchBlock(element.m_address) ? 1 : 0;
+		stats_hitsPrefetch += m_LLC->isPrefetchBlock(element.m_address) ? 1 : 0;
 		m_LLC->resetPrefetchFlag(element.m_address);
 		
 		m_directory->updateEntry(block_addr);
@@ -344,7 +352,7 @@ Hierarchy::handleAccess(Access element)
 	if( (cpt_time - stats_beginTimeFrame) > PREDICTOR_TIME_FRAME)
 		openNewTimeFrame();
 	
-	DPRINTF("HIERARCHY::End of handleAccess\n");
+	DPRINTF(DebugHierarchy, "HIERARCHY::End of handleAccess\n");
 }
 
 
@@ -369,7 +377,7 @@ Hierarchy::L1sdeallocate(uint64_t addr)
 	DirectoryEntry* entry = m_directory->getEntry(addr);
 	if( entry->isInL1() )
 	{
-		DPRINTF("Hierarchy::Deallocation of the block[%#lx] from LLC, invalidation of L1s\n" , addr);
+		DPRINTF(DebugHierarchy, "Hierarchy::Deallocation of the block[%#lx] from LLC, invalidation of L1s\n" , addr);
 		entry->print();
 		
 		set<int> nodes = m_directory->getTrackers(addr);

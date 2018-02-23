@@ -31,7 +31,7 @@ SaturationCounter::allocateInNVM(uint64_t set, Access element)
 
 void SaturationCounter::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element , bool isWBrequest = false)
 {
-	DPRINTF("SaturationCounter::updatePolicy\n");
+	//DPRINTF("SaturationCounter::updatePolicy\n");
 	
 	if(inNVM){
 		//Update NVM entry 
@@ -44,7 +44,7 @@ void SaturationCounter::updatePolicy(uint64_t set, uint64_t index, bool inNVM, A
 			{
 				//Trigger Migration
 				//Select LRU candidate from SRAM cache
-				DPRINTF("SaturationCounter:: Migration Triggered from NVM\n");
+				//DPRINTF("SaturationCounter:: Migration Triggered from NVM\n");
 
 				int id_assoc = evictPolicy(set, false);
 				
@@ -87,7 +87,7 @@ void SaturationCounter::updatePolicy(uint64_t set, uint64_t index, bool inNVM, A
 			if(current->saturation_counter == simu_parameters.saturation_threshold)
 			{
 				//Trigger Migration
-				DPRINTF("SaturationCounter:: Migration Triggered from SRAM\n");
+				//DPRINTF("SaturationCounter:: Migration Triggered from SRAM\n");
 				int id_assoc = evictPolicy(set, true);//Select LRU candidate from NVM cache
 
 				CacheEntry* replaced_entry = m_tableNVM[set][id_assoc];
@@ -133,13 +133,13 @@ void SaturationCounter::insertionPolicy(uint64_t set, uint64_t index, bool inNVM
 }
 
 void
-SaturationCounter::printConfig(std::ostream& out) {
-	out<< "\t\tSaturation Threshold : " << simu_parameters.saturation_threshold << std::endl;
-	Predictor::printConfig(out);
+SaturationCounter::printConfig(std::ostream& out, string entete ) {
+	out<< entete << ":SaturationThreshold\t" << simu_parameters.saturation_threshold << std::endl;
+	Predictor::printConfig(out, entete);
 };
 
 
-void SaturationCounter::printStats(std::ostream& out)
+void SaturationCounter::printStats(std::ostream& out, string entete)
 {	
 	
 	double migrationNVM = (double) stats_nbMigrationsFromNVM[0];
@@ -147,12 +147,12 @@ void SaturationCounter::printStats(std::ostream& out)
 	double total = migrationNVM+migrationSRAM;
 
 	if(total > 0){
-		out << "Predictor Stats:" << endl;
-		out << "NB Migration :" << total << endl;
-		out << "\t From NVM : " << migrationNVM*100/total << "%" << endl;
-		out << "\t From SRAM : " << migrationSRAM*100/total << "%" << endl;	
+		out << entete << ":PredictorStats:" << endl;
+		out << entete << ":NBMigration\t" << total << endl;
+		out << entete << ":MigrationFromNVM\t" << migrationNVM*100/total << "%" << endl;
+		out << entete << ":MigrationFromSRAM\t" << migrationSRAM*100/total << "%" << endl;	
 	}
-	Predictor::printStats(out);
+	Predictor::printStats(out, entete);
 }
 
 int SaturationCounter::evictPolicy(int set, bool inNVM)

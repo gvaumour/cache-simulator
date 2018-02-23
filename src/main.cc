@@ -50,78 +50,77 @@ int main(int argc , char* argv[]){
 	for(int i = 1; i < argc ; i++)
 	{
 		if(string(argv[i]) == "-p")
-		{
-			i++;
+		{	i++;
 			simu_parameters.policy = string(argv[i]);		
 		}
+		else if(string(argv[i]) == "--debug-flags")
+		{	i++;
+			vector<string> debugflags = split(string(argv[i]) , ',');		
+			for(auto debugflag : debugflags)
+			{
+				if(simulation_debugflags.count(debugflag) != 0)
+					simu_parameters.enable_debugflags.insert(debugflag);
+				else
+				{
+					cout << "Error: Debug flag not recognized : " << debugflag << endl;
+					return 0;					
+				}
+			}
+		}
 		else if(string(argv[i]) == "-n")
-		{
-			i++;
+		{	i++;
 			simu_parameters.nbCores = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--rap-assoc")
-		{
-			i++;
+		{	i++;
 			simu_parameters.rap_assoc = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--rap-sets")
-		{
-			i++;
+		{	i++;
 			simu_parameters.rap_sets = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--window_size")
-		{
-			i++;
+		{	i++;
 			simu_parameters.window_size = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--SRAM-assoc")
-		{
-			i++;
+		{	i++;
 			simu_parameters.sram_assoc = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--PC-bits")
-		{
-			i++;
+		{	i++;
 			simu_parameters.nb_bits = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--MT-size")
-		{
-			i++;
+		{	i++;
 			simu_parameters.sizeMTtags = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--InstructionTh")
-		{
-			i++;
+		{	i++;
 			simu_parameters.cost_threshold = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--SaturationTh")
-		{
-			i++;
+		{	i++;
 			simu_parameters.saturation_threshold = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--LLC-sets")
-		{
-			i++;
+		{	i++;
 			simu_parameters.nb_sets = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--NVM-assoc")
-		{
-			i++;
+		{	i++;
 			simu_parameters.nvm_assoc = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--deadCounter")
-		{
-			i++;
+		{	i++;
 			simu_parameters.deadSaturationCouter = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--prefetchDegree")
-		{
-			i++;
+		{	i++;
 			simu_parameters.prefetchDegree = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--prefetchStreams")
-		{
-			i++;
+		{	i++;
 			simu_parameters.prefetchStreams = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--enablePrefetch")
@@ -159,7 +158,6 @@ int main(int argc , char* argv[]){
 		simu_parameters.enableMigration = true;
 	}
 	
-
 	for(unsigned i = 0 ; i < args.size() ; i++)
 		memory_traces.push_back(args[i]);		
 	
@@ -192,7 +190,7 @@ int main(int argc , char* argv[]){
 		assert(traceWrapper != NULL);
 		
 		Access element;
-		int cpt_access = 0;
+		uint64_t cpt_access = 0;
 		my_system->startWarmup();
 		my_system->stopWarmup();
 		
@@ -202,7 +200,7 @@ int main(int argc , char* argv[]){
 			cpt_access++;
 
 			my_system->handleAccess(element);
-			DPRINTF("TIME::%ld\n",cpt_access);
+			DPRINTF(DebugCache, "TIME::%ld\n",cpt_access);
 			
 			if(cpt_access == WARMUP_WINDOW)
 			{

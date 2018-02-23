@@ -25,19 +25,19 @@ DBAMBPredictor::DBAMBPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray
 	m_RAP_assoc = simu_parameters.rap_assoc;
 	m_RAP_sets = simu_parameters.rap_sets;
 
-	m_RAPtable.clear();
-	m_RAPtable.resize(m_RAP_sets);
+	m_DHPTable.clear();
+	m_DHPTable.resize(m_RAP_sets);
 	
 	for(unsigned i = 0 ; i < m_RAP_sets ; i++)
 	{
-		m_RAPtable[i].resize(m_RAP_assoc);
+		m_DHPTable[i].resize(m_RAP_assoc);
 		
 		
 		for(unsigned j = 0 ; j < m_RAP_assoc ; j++)
 		{
-			m_RAPtable[i][j] = new testRAPEntry();
-			m_RAPtable[i][j]->index = i;
-			m_RAPtable[i][j]->assoc = j;
+			m_DHPTable[i][j] = new DHPEntry();
+			m_DHPTable[i][j]->index = i;
+			m_DHPTable[i][j]->assoc = j;
 		}
 	}
 	/*
@@ -45,9 +45,9 @@ DBAMBPredictor::DBAMBPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray
 		stats_history_SRAM.resize(nbSet);
 	*/
 	
-	DPRINTF("RAPPredictor::Constructor m_RAPtable.size() = %lu , m_RAPtable[0].size() = %lu\n" , m_RAPtable.size() , m_RAPtable[0].size());
+	//DPRINTF("RAPPredictor::Constructor m_DHPTable.size() = %lu , m_DHPTable[0].size() = %lu\n" , m_DHPTable.size() , m_DHPTable[0].size());
 
-	m_rap_policy = new DBAMBLRUPolicy(m_RAP_assoc , m_RAP_sets , m_RAPtable);
+	m_rap_policy = new DBAMBLRUPolicy(m_RAP_assoc , m_RAP_sets , m_DHPTable);
 
 	/* Stats init*/ 
 	stats_nbSwitchDst.clear();
@@ -81,7 +81,7 @@ DBAMBPredictor::~DBAMBPredictor()
 {
 //	myFile.close();
 	
-	for(auto sets : m_RAPtable)
+	for(auto sets : m_DHPTable)
 		for(auto entry : sets)
 			delete entry;
 	if(simu_parameters.printDebug)
@@ -92,24 +92,24 @@ allocDecision
 DBAMBPredictor::allocateInNVM(uint64_t set, Access element)
 {
 
-	DPRINTF("DBAMBPredictor::allocateInNVM set %ld\n" , set);
+	//DPRINTF("DBAMBPredictor::allocateInNVM set %ld\n" , set);
 	
 	if(element.isInstFetch())
 		return ALLOCATE_IN_NVM;
 		
 	
-	testRAPEntry* rap_current = lookup(element.m_pc);
+	DHPEntry* rap_current = lookup(element.m_pc);
 	if(rap_current  == NULL) // Miss in the RAP table
 	{
 		if(!m_isWarmup)
 			stats_RAP_miss++;	
 		
-		DPRINTF("DBAMBPredictor::allocateInNVM Eviction and Installation in the RAP table 0x%lx\n" , element.m_pc);
+		//DPRINTF("DBAMBPredictor::allocateInNVM Eviction and Installation in the RAP table 0x%lx\n" , element.m_pc);
 
 		int index = indexFunction(element.m_pc);
 		int assoc = m_rap_policy->evictPolicy(index);
 		
-		rap_current = m_RAPtable[index][assoc];
+		rap_current = m_DHPTable[index][assoc];
 		
 		/* Dumping stats before erasing the RAP entry */ 
 		if(rap_current->isValid)
@@ -171,13 +171,13 @@ DBAMBPredictor::allocateInNVM(uint64_t set, Access element)
 void 
 DBAMBPredictor::finishSimu()
 {
-	DPRINTF("RAPPredictor::FINISH SIMU\n");
+	//DPRINTF("RAPPredictor::FINISH SIMU\n");
 
 
 	if(m_isWarmup)
 		return;
 		
-	for(auto lines : m_RAPtable)
+	for(auto lines : m_DHPTable)
 	{
 		for(auto entry : lines)
 		{		
@@ -224,7 +224,7 @@ DBAMBPredictor::computeRd(uint64_t set, uint64_t  index , bool inNVM)
 
 
 void
-DBAMBPredictor::dumpDataset(testRAPEntry* entry)
+DBAMBPredictor::dumpDataset(DHPEntry* entry)
 {	/*
 	if(entry->stats_history.size() < 2)
 		return;
@@ -249,7 +249,7 @@ void
 DBAMBPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element, bool isWBrequest = false)
 {
 
-	DPRINTF("DBAMBPredictor::updatePolicy set %ld , index %ld\n" , set, index);
+	//DPRINTF("DBAMBPredictor::updatePolicy set %ld , index %ld\n" , set, index);
 
 	CacheEntry* current = NULL;
 	if(inNVM)
@@ -282,7 +282,7 @@ DBAMBPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access el
 	
 
 	current->policyInfo = m_cpt;
-	testRAPEntry* rap_current = lookup(current->m_pc);
+	DHPEntry* rap_current = lookup(current->m_pc);
 
 
 	if(current->m_pc !=0)
@@ -290,7 +290,7 @@ DBAMBPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access el
 		if(rap_current)
 		{
 
-//			DPRINTF("DBAMBPredictor::updatePolicy Reuse distance of the pc %lx, RD = %d\n", current->m_pc , rd );
+//			//DPRINTF("DBAMBPredictor::updatePolicy Reuse distance of the pc %lx, RD = %d\n", current->m_pc , rd );
 			rap_current->rd_history.push_back(convertRD(rd));
 			rap_current->rw_history.push_back(element.isWrite());		
 			
@@ -329,7 +329,7 @@ DBAMBPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access el
 
 
 void
-DBAMBPredictor::reportAccess(testRAPEntry* rap_current, Access element, CacheEntry* current, bool inNVM, string entete, string reuse_class)
+DBAMBPredictor::reportAccess(DHPEntry* rap_current, Access element, CacheEntry* current, bool inNVM, string entete, string reuse_class)
 {
 	string cl_location = inNVM ? "NVM" : "SRAM";
 	string is_learning = current->isLearning ? "Learning" : "Regular";
@@ -399,7 +399,7 @@ DBAMBPredictor::reportAccess(testRAPEntry* rap_current, Access element, CacheEnt
 }
 
 void
-DBAMBPredictor::reportMigration(testRAPEntry* rap_current, CacheEntry* current, bool fromNVM)
+DBAMBPredictor::reportMigration(DHPEntry* rap_current, CacheEntry* current, bool fromNVM)
 {
 	string cl_location = fromNVM ? "from NVM" : "from SRAM";
 	
@@ -413,13 +413,13 @@ DBAMBPredictor::reportMigration(testRAPEntry* rap_current, CacheEntry* current, 
 }
 
 CacheEntry*
-DBAMBPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* current ,uint64_t set,bool inNVM, uint64_t index, bool isWrite)
+DBAMBPredictor::checkLazyMigration(DHPEntry* rap_current , CacheEntry* current ,uint64_t set,bool inNVM, uint64_t index, bool isWrite)
 {
 	if(rap_current->des == ALLOCATE_IN_NVM && inNVM == false && (simu_parameters.flagTest && !isWrite) )
 	{
 		//Trigger Migration
 		int id_assoc = evictPolicy(set, true);//Select LRU candidate from NVM cache
-		DPRINTF("DBAMBPredictor:: Migration Triggered from SRAM, index %ld, id_assoc %d \n" , index, id_assoc);
+		//DPRINTF("DBAMBPredictor:: Migration Triggered from SRAM, index %ld, id_assoc %d \n" , index, id_assoc);
 
 		CacheEntry* replaced_entry = m_tableNVM[set][id_assoc];
 					
@@ -442,7 +442,7 @@ DBAMBPredictor::checkLazyMigration(testRAPEntry* rap_current , CacheEntry* curre
 	else if( rap_current->des == ALLOCATE_IN_SRAM && inNVM == true)
 	{
 	
-		DPRINTF("DBAMBPredictor::Migration Triggered from NVM\n");
+		//DPRINTF("DBAMBPredictor::Migration Triggered from NVM\n");
 
 		int id_assoc = evictPolicy(set, false);
 		
@@ -505,7 +505,7 @@ DBAMBPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access
 	
 	
 	RD_TYPE reuse_class = RD_NOT_ACCURATE;
-	testRAPEntry* rap_current;
+	DHPEntry* rap_current;
 	/*
 	if(simu_parameters.enableReuseErrorComputation)
 	{
@@ -546,7 +546,7 @@ DBAMBPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access
 
 
 void
-DBAMBPredictor::updateWindow(testRAPEntry* rap_current)
+DBAMBPredictor::updateWindow(DHPEntry* rap_current)
 {
 
 	if(rap_current->cptWindow < simu_parameters.window_size)
@@ -611,8 +611,8 @@ DBAMBPredictor::evictPolicy(int set, bool inNVM)
 		current = m_tableSRAM[set][assoc_victim];		
 	}
 		
-	DPRINTF("DBAMBPredictor::evictPolicy set %d n assoc_victim %d \n" , set , assoc_victim);
-	testRAPEntry* rap_current = lookup(current->m_pc);
+	//DPRINTF("DBAMBPredictor::evictPolicy set %d n assoc_victim %d \n" , set , assoc_victim);
+	DHPEntry* rap_current = lookup(current->m_pc);
 	//We didn't create an entry for this dataset, probably a good reason =) (instruction mainly) 
 	if(rap_current != NULL)
 	{
@@ -707,7 +707,7 @@ DBAMBPredictor::evictPolicy(int set, bool inNVM)
 }
 
 void 
-DBAMBPredictor::determineStatus(testRAPEntry* entry)
+DBAMBPredictor::determineStatus(DHPEntry* entry)
 {
 	if(entry->des == BYPASS_CACHE)
 	{
@@ -827,7 +827,7 @@ DBAMBPredictor::determineStatus(testRAPEntry* entry)
 }
 
 allocDecision
-DBAMBPredictor::convertState(testRAPEntry* rap_current)
+DBAMBPredictor::convertState(DHPEntry* rap_current)
 {
 	RD_TYPE state_rd = rap_current->state_rd;
 	RW_TYPE state_rw = rap_current->state_rw;
@@ -890,26 +890,25 @@ DBAMBPredictor::convertState(testRAPEntry* rap_current)
 
 
 void 
-DBAMBPredictor::printConfig(std::ostream& out)
+DBAMBPredictor::printConfig(std::ostream& out, string entete)
 {
-	out << "\t\tRAP Table Parameters" << endl;
-	out << "\t\t\t- Assoc : " << m_RAP_assoc << endl;
-	out << "\t\t\t- NB Sets : " << m_RAP_sets << endl;
-	out << "\t\t Window size : " << simu_parameters.window_size << endl;
-	out << "\t\t Inacurracy Threshold : " << simu_parameters.rap_innacuracy_th << endl;
+	out << entete << ":DBAMBPredictor:RAPTableAssoc\t" << m_RAP_assoc << endl;
+	out << entete << ":DBAMBPredictor:RAPTableNBSets\t" << m_RAP_sets << endl;
+	out << entete << ":DBAMBPredictor:Windowsize\t" << simu_parameters.window_size << endl;
+	out << entete << ":DBAMBPredictor:InacurracyThreshold\t" << simu_parameters.rap_innacuracy_th << endl;
 
 	string a =  simu_parameters.enableBP ? "TRUE" : "FALSE"; 
-	out << "\t\t Bypass Enable : " << a << endl;
-	out << "\t\t Bypass DEAD COUNTER Saturation : " << simu_parameters.deadSaturationCouter << endl;
-	out << "\t\t Bypass Learning Threshold : " << simu_parameters.learningTH << endl;
+	out << entete << ":DBAMBPredictor:BypassEnable\t" << a << endl;
+	out << entete << ":DBAMBPredictor:DEADCOUNTERSaturation\t" << simu_parameters.deadSaturationCouter << endl;
+	out << entete << ":DBAMBPredictor:LearningThreshold\t" << simu_parameters.learningTH << endl;
 	a =  simu_parameters.enableMigration ? "TRUE" : "FALSE"; 
-	out << "\t\t Lazy Migration Enable : " << a << endl;
+	out << entete << ":DBAMBPredictor:MigrationEnable\t" << a << endl;
 	
-	Predictor::printConfig(out);
+	Predictor::printConfig(out, entete);
 }
 
 void 
-DBAMBPredictor::printStats(std::ostream& out)
+DBAMBPredictor::printStats(std::ostream& out, string entete)
 {	
 
 	
@@ -966,8 +965,8 @@ DBAMBPredictor::printStats(std::ostream& out)
 	if(simu_parameters.enableMigration)
 		out << "\t\tMigration Error\t" << migrationSRAM << endl;		
 	*/
-	out << "DBAMBPredictor.NVM_medium_pred\t" << stats_NVM_medium_pred << endl;
-	out << "DBAMBPredictor.NVM_medium_pred_errors\t" << stats_NVM_medium_pred_errors << endl;
+	out << entete << ":DBAMBPredictor:NVM_medium_pred\t" << stats_NVM_medium_pred << endl;
+	out << entete << ":DBAMBPredictor:NVM_medium_pred_errors\t" << stats_NVM_medium_pred_errors << endl;
 
 //	out << "\tSource of Error, SRAM error" << endl;
 //	out << "\t\tWrong Policy\t" << stats_error_SRAMwrongpolicy << endl;
@@ -989,14 +988,12 @@ DBAMBPredictor::printStats(std::ostream& out)
 	double total = migrationNVM+migrationSRAM;
 
 	if(total > 0){
-		out << "DBAMBPredictor.nb_Migration\t" << total << endl;
-		out << "DBAMBPredictor.nb_Migration_from_NVM\t" << migrationNVM << "\t" << migrationNVM*100/total << "%" << endl;
-		out << "DBAMBPredictor.nb_Migration_from_SRAM\t" << migrationSRAM << "\t" << migrationSRAM*100/total << "%" << endl;
+		out << entete << ":DBAMBPredictor:NBMigration\t" << total << endl;
+		out << entete << ":DBAMBPredictor:MigrationFromNVM\t" << migrationNVM << "\t" << migrationNVM*100/total << "%" << endl;
+		out << entete << ":DBAMBPredictor:MigrationFromSRAM\t" << migrationSRAM << "\t" << migrationSRAM*100/total << "%" << endl;
 	}
-
-
 	
-	Predictor::printStats(out);
+	Predictor::printStats(out, entete);
 }
 
 		
@@ -1015,14 +1012,14 @@ DBAMBPredictor::openNewTimeFrame()
 }
 
 
-testRAPEntry*
+DHPEntry*
 DBAMBPredictor::lookup(uint64_t pc)
 {
 	uint64_t set = indexFunction(pc);
 	for(unsigned i = 0 ; i < m_RAP_assoc ; i++)
 	{
-		if(m_RAPtable[set][i]->m_pc == pc)
-			return m_RAPtable[set][i];
+		if(m_DHPTable[set][i]->m_pc == pc)
+			return m_DHPTable[set][i];
 	}
 	return NULL;
 }
@@ -1071,7 +1068,7 @@ DBAMBPredictor::convertRD(int rd)
 
 /************* Replacement Policy implementation for the test RAP table ********/ 
 
-DBAMBLRUPolicy::DBAMBLRUPolicy(int nbAssoc , int nbSet , std::vector<std::vector<testRAPEntry*> >& rap_entries) :\
+DBAMBLRUPolicy::DBAMBLRUPolicy(int nbAssoc , int nbSet , std::vector<std::vector<DHPEntry*> >& rap_entries) :\
 		DBAMBReplacementPolicy(nbAssoc , nbSet, rap_entries) 
 {
 	m_cpt = 1;

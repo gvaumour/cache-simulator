@@ -149,17 +149,14 @@ void
 Level::printResults(std::ostream& out)
 {
 	out << "************************************************" << endl;
-	out << "Core n°" << m_IDcore << endl;
+//	out << "Core n°" << m_IDcore << endl;
 	if(m_isUnified)
-	{
-		out << "Unified Cache " << endl;
 		m_dcache->printResults(out);
-	}
 	else
 	{
-		out << "Data Cache " << endl;
+//		out << "Data Cache " << endl;
 		m_dcache->printResults(out);
-		out << "Instruction Cache " << endl;
+//		out << "Instruction Cache " << endl;
 		m_icache->printResults(out);
 	}
 }
@@ -168,17 +165,14 @@ void
 Level::printConfig(std::ostream& out)
 {
 	out << "************************************************" << endl;
-	out << "Core n°" << m_IDcore << endl;
+//	out << "Core n°" << m_IDcore << endl;
 	if(m_isUnified)
-	{
-		out << "Unified Cache " << endl;
 		m_dcache->printConfig(out);
-	}
 	else
 	{
-		out << "Data Cache " << endl;
+//		out << "Data Cache " << endl;
 		m_dcache->printConfig(out);
-		out << "Instruction Cache " << endl;
+//		out << "Instruction Cache " << endl;
 		m_icache->printConfig(out);
 	}
 }

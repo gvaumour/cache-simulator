@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdlib.h> 
 #include <string.h>
 #include <map>
+#include <set>
 #include <vector>
 #include <iostream>
 #include <string>
@@ -41,6 +42,8 @@ const char* allocDecision_str[] = {"ALLOCATE_IN_SRAM", "ALLOCATE_IN_NVM" , "BYPA
 
 
 const char* directory_state_str[] = {"SHARED_L1" , "MODIFIED_L1", "EXCLUSIVE_L1", "CLEAN_LLC", "DIRTY_LLC" , "NOT_PRESENT"};
+
+set<string> simulation_debugflags = {"DebugCache", "DebugDBAMB", "DebugHierarchy"};
 
 
 SimuParameters simu_parameters;
@@ -204,7 +207,7 @@ init_default_parameters()
 	simu_parameters.enablePCHistoryTracking = false;
 	
 	simu_parameters.nbCores = 1;
-	simu_parameters.policy = "testRAP";
+	simu_parameters.policy = "DB-AMB";
 
 
 	simu_parameters.saturation_threshold = 2;
@@ -214,14 +217,6 @@ init_default_parameters()
 	simu_parameters.nb_bits = 64;
 
 	simu_parameters.sizeMTtags = simu_parameters.nvm_assoc - simu_parameters.sram_assoc;
-
-//	simu_parameters.deadSaturationCouter = RAP_DEAD_COUNTER_SATURATION;
-//	simu_parameters.rap_innacuracy_th = RAP_INACURACY_TH;
-//	simu_parameters.window_size = RAP_WINDOW_SIZE;
-//	simu_parameters.learningTH = RAP_LEARNING_THRESHOLD;
-//	simu_parameters.enableBP = false;
-//	simu_parameters.enableMigration = false;
-//	simu_parameters.printDebug = false;
 }
 
 

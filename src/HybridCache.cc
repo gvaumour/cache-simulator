@@ -170,7 +170,7 @@ bool
 HybridCache::lookup(Access element)
 {	
 	entete_debug();
-	DPRINTF("Lookup of addr %#lx\n" ,  element.m_address);
+	DPRINTF(DebugCache , "Lookup of addr %#lx\n" ,  element.m_address);
 	return getEntry(element.m_address) != NULL;
 }
 
@@ -186,9 +186,7 @@ HybridCache::handleAccess(Access element)
 	
 	assert(size > 0);
 	
-	#ifdef TEST
-		uint64_t block_addr = bitRemove(address , 0 , m_start_index+1);
-	#endif
+	uint64_t block_addr = bitRemove(address , 0 , m_start_index+1);
 	
 	int id_set = addressToCacheSet(address);
 
@@ -209,7 +207,7 @@ HybridCache::handleAccess(Access element)
 		if(des == BYPASS_CACHE )
 		{
 			entete_debug();
-			DPRINTF("Bypassing the cache for this \n");
+			DPRINTF(DebugCache , "Bypassing the cache for this \n");
 			if(!m_isWarmup)
 				stats_bypass++;
 		}
@@ -231,9 +229,7 @@ HybridCache::handleAccess(Access element)
 			//Deallocate the cache line in the lower levels (inclusive system)
 			if(replaced_entry->isValid){
 				entete_debug();
-				DPRINTF("Invalidation of the cache line : %#lx , id_assoc %d\n" , replaced_entry->address, id_assoc);		
-		
-				
+				DPRINTF(DebugCache , "Invalidation of the cache line : %#lx , id_assoc %d\n" , replaced_entry->address, id_assoc);							
 				//Prevent the cache line from being migrated du to WBs 
 				m_Deallocating = true;
 				//Inform the higher level of the deallocation
@@ -255,7 +251,7 @@ HybridCache::handleAccess(Access element)
 
 			if(inNVM){
 				entete_debug();
-				DPRINTF("It is a Miss ! Block[%#lx] is allocated in the NVM cache : Set=%d, Way=%d\n", block_addr , id_set, id_assoc);
+				DPRINTF(DebugCache , "It is a Miss ! Block[%#lx] is allocated in the NVM cache : Set=%d, Way=%d\n", block_addr , id_set, id_assoc);
 				if(!m_isWarmup)
 				{
 					stats_missNVM[stats_index]++;
@@ -273,7 +269,7 @@ HybridCache::handleAccess(Access element)
 			}
 			else{
 				entete_debug();
-				DPRINTF("It is a Miss ! Block[%#lx] is allocated in the SRAM cache : Set=%d, Way=%d\n",block_addr, id_set, id_assoc);
+				DPRINTF(DebugCache , "It is a Miss ! Block[%#lx] is allocated in the SRAM cache : Set=%d, Way=%d\n",block_addr, id_set, id_assoc);
 				if(!m_isWarmup){				
 					stats_missSRAM[stats_index]++;			
 					stats_hitsSRAM[1]++; // The insertion write 
@@ -298,7 +294,7 @@ HybridCache::handleAccess(Access element)
 		string a = current->isNVM ? "in NVM" : "in SRAM";
 
 		entete_debug();
-		DPRINTF("It is a hit ! Block[%#lx] Found %s Set=%d, Way=%d\n" , block_addr, a.c_str(), id_set, id_assoc);
+		DPRINTF(DebugCache , "It is a hit ! Block[%#lx] Found %s Set=%d, Way=%d\n" , block_addr, a.c_str(), id_set, id_assoc);
 		
 		m_predictor->updatePolicy(id_set , id_assoc, current->isNVM, element , false);
 		
@@ -399,7 +395,7 @@ void
 HybridCache::deallocate(uint64_t block_addr)
 {
 	entete_debug();
-	DPRINTF("DEALLOCATE %#lx\n", block_addr);
+	DPRINTF(DebugCache , "DEALLOCATE %#lx\n", block_addr);
 	map<uint64_t,HybridLocation>::iterator it = m_tag_index.find(block_addr);	
 	
 	if(it != m_tag_index.end()){
@@ -514,7 +510,7 @@ HybridCache::allocate(uint64_t address , int id_set , int id_assoc, bool inNVM, 
 void HybridCache::triggerMigration(int set, int id_assocSRAM, int id_assocNVM , bool fromNVM)
 {
 	entete_debug();
-	DPRINTF("TriggerMigration set %d , id_assocSRAM %d , id_assocNVM %d\n" , set , id_assocSRAM , id_assocNVM);
+	DPRINTF(DebugCache , "TriggerMigration set %d , id_assocSRAM %d , id_assocNVM %d\n" , set , id_assocSRAM , id_assocNVM);
 	CacheEntry* sram_line = m_tableSRAM[set][id_assocSRAM];
 	CacheEntry* nvm_line = m_tableNVM[set][id_assocNVM];
 	
@@ -604,7 +600,7 @@ HybridCache::signalWB(uint64_t addr, bool isKept)
 	if(entry != NULL)
 	{
 		entete_debug();
-		DPRINTF("Invalidation of the block [%#lx]\n" , entry->address);
+		DPRINTF(DebugCache , "Invalidation of the block [%#lx]\n" , entry->address);
 		m_system->signalWB(entry->address , entry->isDirty, isKept);		
 	}
 	
@@ -614,14 +610,14 @@ bool
 HybridCache::receiveInvalidation(uint64_t block_addr)
 {
 	entete_debug();
-	DPRINTF("HERE Receive Invalidation for the block [%#lx] by the LLC\n" , block_addr);
+	DPRINTF(DebugCache , "HERE Receive Invalidation for the block [%#lx] by the LLC\n" , block_addr);
 
 	map<uint64_t,HybridLocation>::iterator p = m_tag_index.find(block_addr);
 	
 	if (p != m_tag_index.end()){
 
 	
-		DPRINTF("Find block [%#lx]\n" , block_addr);
+		DPRINTF(DebugCache , "Find block [%#lx]\n" , block_addr);
 
 		int id_set = blockAddressToCacheSet(block_addr);
 		HybridLocation loc = p->second;
@@ -633,13 +629,13 @@ HybridCache::receiveInvalidation(uint64_t block_addr)
 			entry = m_tableSRAM[id_set][loc.m_way];	
 	
 		entete_debug();
-		DPRINTF("Receive Invalidation for the block [%#lx] by the LLC\n" , entry->address);
+		DPRINTF(DebugCache , "Receive Invalidation for the block [%#lx] by the LLC\n" , entry->address);
 
 		entry->isValid = false;
 		return entry->isDirty;
 	}
 	else{
-		DPRINTF("Didn't find block [%#lx]\n" , block_addr);
+		DPRINTF(DebugCache , "Didn't find block [%#lx]\n" , block_addr);
 		return false;
 	
 	}
@@ -730,104 +726,113 @@ HybridCache::print(ostream& out)
 void
 HybridCache::printConfig(std::ostream& out) 
 {		
-		out << "Cache configuration : " << endl;
-		out << "\t- Size : " << m_cache_size << endl;
-		out << "\t- SRAM ways : " << m_nbSRAMways << endl;
-		out << "\t- NVM ways : " << m_nbNVMways << endl;
-		out << "\t- BlockSize : " << m_blocksize<< " bytes (bits 0 to " << m_start_index << ")" << endl;
-		out << "\t- Sets : " << m_nb_set << " sets (bits " << m_start_index+1 << " to " << m_end_index << ")" << endl;
-		out << "\t- Predictor : " << m_policy << endl;
-		m_predictor->printConfig(out);
-		out << "************************" << endl;
+	string entete = "Cache";
+	if(m_ID != -1){
+		entete+="L1";
+		if(m_isInstructionCache)
+		 	entete += "I";
+		else
+			entete += "D";
+	}
+	else
+		entete+= "LLC";
+
+	out << entete << ":Size\t" << m_cache_size << endl;
+	out << entete << ":SRAMways\t" << m_nbSRAMways << endl;
+	out << entete << ":NVMways\t" << m_nbNVMways << endl;
+	out << entete << ":Blocksize\t" << m_blocksize << endl;
+	out << entete << ":Sets    \t" << m_nb_set << endl;
+	out << entete << ":Predictor\t" << m_policy << endl;
+	m_predictor->printConfig(out,entete);
+	out << "************************" << endl;
 }
 
 
 void 
 HybridCache::printResults(std::ostream& out) 
 {
-		uint64_t total_missSRAM =  stats_missSRAM[0] + stats_missSRAM[1];
-		uint64_t total_missNVM =  stats_missNVM[0] + stats_missNVM[1];
-		uint64_t total_miss = total_missNVM + total_missSRAM;
-		
-		uint64_t total_accessSRAM =  stats_hitsSRAM[0] + stats_hitsSRAM[1];
-		uint64_t total_accessNVM =  stats_hitsNVM[0] + stats_hitsNVM[1];
-		uint64_t total_access = total_accessSRAM + total_accessNVM;
-
-
-		if(total_miss != 0){
-		
-			out << "Results : " << endl;
-			out << "\t- Total access : "<< total_access << endl;
-			out << "\t- Total Hits : " << total_access - total_miss << endl;
-			out << "\t- Total miss : " << total_miss << endl;		
-			out << "\t- Miss Rate : " << (double)(total_miss)*100 / (double)(total_access) << "%"<< endl;
-			out << "\t- Clean Write Back : " << stats_cleanWBNVM + stats_cleanWBSRAM << endl;
-			out << "\t- Dirty Write Back : " << stats_dirtyWBNVM + stats_dirtyWBSRAM << endl;
-			out << "\t- Eviction : " << stats_evict << endl;	
-			out << "\t- Bypass : " << stats_bypass << endl;
-			out << "\t- Dead Migration : " << stats_nbDeadMigration << endl;
-			out << "\t- Ping Migration : " << stats_nbPingMigration << endl;
+	uint64_t total_missSRAM =  stats_missSRAM[0] + stats_missSRAM[1];
+	uint64_t total_missNVM =  stats_missNVM[0] + stats_missNVM[1];
+	uint64_t total_miss = total_missNVM + total_missSRAM;
 	
-			out << endl;
-			if(m_nbNVMways > 0){
-			
-				m_predictor->printStats(out);
-				
-				out << "NVM ways" << endl;
-				out << "\t- NB Read : "<< stats_hitsNVM[0] + stats_migration[true]<< endl;
-				out << "\t- NB Write : "<< stats_hitsNVM[1] + stats_dirtyWBNVM + stats_migration[false] << endl;		
-			}
-		
-			if(m_nbSRAMways > 0){
-				out << "SRAM ways" << endl;
-				out << "\t- NB Read : "<< stats_hitsSRAM[0] + stats_migration[false] << endl;
-				out << "\t- NB Write : "<< stats_hitsSRAM[1] + stats_dirtyWBSRAM + stats_migration[true]<< endl;	
-			}
-			
-			
-			//cout << "************************" << endl;
-			
-			if(m_printStats)
-			{
-				out << "Cache Line Classification" << endl;
-				out << "nbFetchedLines :" << stats_nbFetchedLines << endl;
-				out << "\t - NB Lost lines :\t" << stats_nbLostLine << " (" << \
-					(double)stats_nbLostLine*100/(double)stats_nbFetchedLines << "%)" << endl;
-				out << "\t - NB RO lines :\t" << stats_nbROlines << " (" << \
-					(double)stats_nbROlines*100/(double)stats_nbFetchedLines << "%)\t" << stats_nbROaccess << endl;
-				out << "\t - NB WO lines :\t" << stats_nbWOlines << " (" << \
-					(double)stats_nbWOlines*100/(double)stats_nbFetchedLines << "%)\t" << stats_nbWOaccess << endl;
-				out << "\t - NB RW lines :\t" << stats_nbRWlines << " (" << \
-					(double)stats_nbRWlines*100/(double)stats_nbFetchedLines << "%)\t" << stats_nbRWaccess << endl;
-				out << "\t - NB Almost RO lines :\t" << stats_nbAlmostROlines << " (" << \
-					(double)stats_nbAlmostROlines*100/(double)stats_nbFetchedLines << "%)\t" << stats_nbAlmostROaccess << endl;
-				/*
-				out << "Histogram NB Write" << endl;
-				for(auto p : stats_histo_ratioRW){
-					out << p.first << "\t" << p.second << endl;
-				}*/
-			}
-
-			out << "Instruction Distributions" << endl;
+	uint64_t total_accessSRAM =  stats_hitsSRAM[0] + stats_hitsSRAM[1];
+	uint64_t total_accessNVM =  stats_hitsNVM[0] + stats_hitsNVM[1];
+	uint64_t total_access = total_accessSRAM + total_accessNVM;
 	
-			for(unsigned i = 0 ; i < stats_operations.size() ; i++){
-				if(stats_operations[i] != 0)
-					out << "\t" << memCmd_str[i]  << " : " << stats_operations[i] << endl;
-			}		
+	string entete = "Cache";
+	if(m_ID != -1){
+		entete+="L1";
+		if(m_isInstructionCache)
+		 	entete += "I";
+		else
+			entete += "D";
+	}
+	else
+		entete+= "LLC";
+
+	if(total_miss != 0){
+	
+		out << entete << ":Results" << endl;
+		out << entete << ":TotalAccess\t"<< total_access << endl;
+		out << entete << ":TotalHits\t" << total_access - total_miss << endl;
+		out << entete << ":TotalMiss\t" << total_miss << endl;		
+		out << entete << ":MissRate\t" << (double)(total_miss)*100 / (double)(total_access) << "%"<< endl;
+		out << entete << ":CleanWriteBack\t" << stats_cleanWBNVM + stats_cleanWBSRAM << endl;
+		out << entete << ":DirtyWriteBack\t" << stats_dirtyWBNVM + stats_dirtyWBSRAM << endl;
+		out << entete << ":Eviction\t" << stats_evict << endl;	
+		out << entete << ":Bypass\t" << stats_bypass << endl;
+
+		if(m_nbNVMways > 0){
+			out << entete << ":NVMways:reads\t"<< stats_hitsNVM[0] + stats_migration[true]<< endl;
+			out << entete << ":NVMways:writes\t"<< stats_hitsNVM[1] + stats_dirtyWBNVM + stats_migration[false] << endl;		
+		}
+	
+		if(m_nbSRAMways > 0){
+			out << entete << ":SRAMways:reads\t"<< stats_hitsSRAM[0] + stats_migration[false] << endl;
+			out << entete << ":SRAMways:writes\t"<< stats_hitsSRAM[1] + stats_dirtyWBSRAM + stats_migration[true]<< endl;	
+		}		
+		
+		//cout << "************************" << endl;
+		
+		if(m_printStats)
+		{
+			out << entete << ":BlockClassification" << endl;
+			out << entete << ":FetchedBlocks\t" << stats_nbFetchedLines << endl;
+			out << entete << ":DeadBlocks\t" << stats_nbLostLine << "\t" << \
+				(double)stats_nbLostLine*100/(double)stats_nbFetchedLines << "%" << endl;
+			out << entete << ":ROBlocks\t" << stats_nbROlines << "\t" << \
+				(double)stats_nbROlines*100/(double)stats_nbFetchedLines << "%" << endl;
+			out << entete << ":WOBlocks\t" << stats_nbWOlines << "\t" << \
+				(double)stats_nbWOlines*100/(double)stats_nbFetchedLines << "%" << endl;
+			out << entete << ":RWBlocks\t" << stats_nbRWlines << "\t" << \
+				(double)stats_nbRWlines*100/(double)stats_nbFetchedLines << "%" << endl;
+			/*
+			out << "Histogram NB Write" << endl;
+			for(auto p : stats_histo_ratioRW){
+				out << p.first << "\t" << p.second << endl;
+			}*/
 		}
 
+		out << entete << ":instructionsDistribution" << endl;
 
+		for(unsigned i = 0 ; i < stats_operations.size() ; i++){
+			if(stats_operations[i] != 0)
+				out << entete << ":" << memCmd_str[i]  << "\t" << stats_operations[i] << endl;
+		}
+		m_predictor->printStats(out, entete);
+	
+	}
 }
 
 void
 HybridCache::entete_debug()
 {
-	DPRINTF("CACHE[%d]-", m_ID);
+	DPRINTF(DebugCache , "CACHE[%d]-", m_ID);
 	if(m_isInstructionCache){
-		DPRINTF("I:");	
+		DPRINTF(DebugCache , "I:");	
 	}
 	else{	
-		DPRINTF("D:");
+		DPRINTF(DebugCache , "D:");
 	}
 }
 

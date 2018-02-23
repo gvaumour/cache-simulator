@@ -61,9 +61,11 @@ class Hierarchy
 		uint64_t stats_beginTimeFrame;
 		uint64_t stats_cleanWB_MainMem;
 		uint64_t stats_dirtyWB_MainMem;
+		uint64_t stats_readMainMem;
+		uint64_t stats_writeMainMem;
 
-		uint64_t m_stats_issuedPrefetchs;
-		uint64_t m_stats_hitsPrefetch;
+		uint64_t stats_issuedPrefetchs;
+		uint64_t stats_hitsPrefetch;
 };
 
 //std::ostream& operator<<(std::ostream& out, const Hierarchy& obj);

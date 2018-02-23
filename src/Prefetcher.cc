@@ -15,7 +15,7 @@ SimplePrefetcher::SimplePrefetcher(int prefetchDegree, int streams, bool stop_at
 void
 SimplePrefetcher::generatePrefetch(uint64_t address, bool isHit, bool isInst)
 {
-/*	DPRINTF("SimplePrefetcher::generatePrefetch");
+/*	//DPRINTF("SimplePrefetcher::generatePrefetch");
 	vector<uint64_t> prefetch_addresses = getNextAddress(address);
 	
 	for(auto p : prefetch_addresses)
@@ -45,7 +45,7 @@ SimplePrefetcher::getNextAddress(uint64_t current_address)
 			distance = current_address - m_prev_address[i].addr;
 		}
 	}
-	DPRINTF("SimplePrefetcher::getNextAddress Distance %ld, index %d\n", distance , index);
+	//DPRINTF("SimplePrefetcher::getNextAddress Distance %ld, index %d\n", distance , index);
 	
 	if( !(distance > 0 && distance < PAGE_SIZE) ) //No address within proper distances, create an entry 
 	{
@@ -78,7 +78,7 @@ SimplePrefetcher::getNextAddress(uint64_t current_address)
 			m_prev_address[index_old].isValid = true;
 			m_prev_address[index_old].LRU_info = cpt_time;
 		}
-		DPRINTF("SimplePrefetcher::getNextAddress No Address Generated\n");
+		//DPRINTF("SimplePrefetcher::getNextAddress No Address Generated\n");
 		return prefetch_addresses;
 	}
 	
@@ -89,7 +89,7 @@ SimplePrefetcher::getNextAddress(uint64_t current_address)
 
 	if (stride != 0)
 	{
-		DPRINTF("SimplePrefetcher::getNextAddress Generated prefecth For address %#lx\n", current_address);
+		//DPRINTF("SimplePrefetcher::getNextAddress Generated prefecth For address %#lx\n", current_address);
 
 		for(int i = 0; i < m_prefetchDegree; ++i)
 		{
@@ -97,7 +97,7 @@ SimplePrefetcher::getNextAddress(uint64_t current_address)
 			 // But stay within the page if requested
 			 if (!m_stop_at_page || ((prefetch_address & PAGE_MASK) == (current_address & PAGE_MASK)))
 			    prefetch_addresses.push_back(prefetch_address);
-			DPRINTF("SimplePrefetcher::getNextAddress - %#lx\n",prefetch_address );
+			//DPRINTF("SimplePrefetcher::getNextAddress - %#lx\n",prefetch_address );
 		}
 		
 	}
