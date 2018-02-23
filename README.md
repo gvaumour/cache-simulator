@@ -29,7 +29,8 @@ We need memory traces to feed the simulator. 2 formats are now supported and a p
 
 ## utils applications:
 * traces-pintools : it contains a pintools script to generate compressed memory traces 
-* energy_modeling: contains python scripts to compute the energy consumption and the performance of the cache simulation (based on [CACTI][2]/[NVsim][1] modeling tools) 
+* energy_modeling: contains python scripts to compute the energy consumption and the performance of the cache simulation (based on [CACTI][1]/[NVsim][2] modeling tools) 
 
-[1] http://nvsim.org/wiki/index.php?title=Main_Page
-[2] http://www.hpl.hp.com/research/cacti/
+[1]: http://www.hpl.hp.com/research/cacti/
+[2]: http://nvsim.org/wiki/index.php?title=Main_Page
+
