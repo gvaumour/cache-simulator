@@ -4,7 +4,7 @@ Cache Simulator for Hybrid Cache Evaluation
 
 This project is a cache simulator associated with Pintools. It is currently developped at Uppsala University in the UART group for quick evaluation of different strategies for data placement specially with hybrid cache architecture where the cache is divided into several regions with different memory technologies
 
-This framework is usefull for: 
+This framework is made for: 
 * Evaluation of predictors for hybrid SRAM/NVM cache architecture
 * Evaluation of cache replacement/insertion policies
 * Evaluation of prefetching strategies
@@ -27,6 +27,9 @@ We need memory traces to feed the simulator. 2 formats are now supported and a p
 * Text memory traces for debugging purposes 
 
 
-## Utils applications:
+## utils applications:
 * traces-pintools : it contains a pintools script to generate compressed memory traces 
-* energyModel:
+* energy_modeling: contains python scripts to compute the energy consumption and the performance of the cache simulation (based on [CACTI][2]/[NVsim][1] modeling tools) 
+
+[1] http://nvsim.org/wiki/index.php?title=Main_Page
+[2] http://www.hpl.hp.com/research/cacti/
