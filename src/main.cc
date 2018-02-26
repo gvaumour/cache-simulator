@@ -158,6 +158,12 @@ int main(int argc , char* argv[]){
 		simu_parameters.enableMigration = true;
 	}
 	
+	if((simu_parameters.nvm_assoc == 0 || simu_parameters.sram_assoc == 0) \
+		 && simu_parameters.policy == "DBAMB" )
+		 {
+		 	simu_parameters.policy = "LRU";
+		 }
+	
 	for(unsigned i = 0 ; i < args.size() ; i++)
 		memory_traces.push_back(args[i]);		
 	
