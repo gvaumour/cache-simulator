@@ -137,6 +137,14 @@ class DBAMBLRUPolicy : public DBAMBReplacementPolicy {
 		
 };
 
+class CostFunctionParameters
+{
+	public:
+		CostFunctionParameters(){};
+		std::vector<double> costNVM; 
+		std::vector<double> costSRAM;
+		std::vector<double> costDRAM;
+};
 
 
 class DBAMBPredictor : public Predictor {
@@ -177,10 +185,15 @@ class DBAMBPredictor : public Predictor {
 	protected : 
 		uint64_t m_cpt;
 		int learningTHcpt;
+		
+		/* cost function optimization parameter*/ 
+		std::string m_optTarget;
+		CostFunctionParameters m_costParameters;
 
-		/* RAP Table Handlers	*/
+		/* DHP Table Handlers	*/
 		std::vector< std::vector<DHPEntry*> > m_DHPTable;
 		DBAMBReplacementPolicy* m_rap_policy;
+		
 		unsigned m_RAP_assoc;
 		unsigned m_RAP_sets; 
 		
@@ -204,6 +217,49 @@ class DBAMBPredictor : public Predictor {
 		uint64_t stats_error_SRAMwrongallocation, stats_error_SRAMlearning, stats_error_SRAMwrongpolicy;
 		
 };
+
+
+
+class EnergyParameters: public CostFunctionParameters
+{
+	public: 
+		EnergyParameters() {
+
+			costSRAM = std::vector<double>(2 ,0);
+			costSRAM[READ_ACCESS] = 271.678E-12;
+			costSRAM[WRITE_ACCESS] = 257.436E-12;
+
+			costNVM = std::vector<double>(2 ,0);
+			costNVM[READ_ACCESS] = 236.828E-12;
+			costNVM[WRITE_ACCESS] = 652.278E-12;
+
+			costDRAM = std::vector<double>(2 ,0);
+			costDRAM[READ_ACCESS] = 4.08893E-9;
+			costDRAM[WRITE_ACCESS] = 4.10241E-9;
+
+		};
+};
+
+class PerfParameters: public CostFunctionParameters
+{
+	public: 
+		PerfParameters() {
+
+			costSRAM = std::vector<double>(2 ,0);
+			costSRAM[READ_ACCESS] = 10;
+			costSRAM[WRITE_ACCESS] = 10;
+
+			costNVM = std::vector<double>(2 ,0);
+			costNVM[READ_ACCESS] = 10;
+			costNVM[WRITE_ACCESS] = 37;
+
+			costDRAM = std::vector<double>(2 ,0);
+			costDRAM[READ_ACCESS] = 100;
+			costDRAM[WRITE_ACCESS] = 100;
+		};
+};
+
+
 
 
 

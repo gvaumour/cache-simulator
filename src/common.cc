@@ -172,13 +172,6 @@ StripPath(const char * path)
 }
 
 
-bool 
-isPolicyDynamic(std::string policy)
-{
-	return policy == "Saturation" || policy == "testRAP" || policy == "RAP";
-}
-
-
 void
 init_default_parameters()
 {
@@ -209,7 +202,8 @@ init_default_parameters()
 	simu_parameters.nbCores = 1;
 	simu_parameters.policy = "DBAMB";
 
-
+	simu_parameters.DBAMP_optTarget = "energy";
+	
 	simu_parameters.saturation_threshold = 2;
 
 	simu_parameters.cost_threshold = 50;

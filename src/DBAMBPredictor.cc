@@ -11,8 +11,6 @@ using namespace std;
 static const char* str_RW_status[] = {"DEAD" , "WO", "RO" , "RW", "RW_NOTACC"};
 static const char* str_RD_status[] = {"RD_SHORT" , "RD_MEDIUM", "RD_NOTACC", "UNKOWN"};
 
-static EnergyParameters energy_parameters;
-
 
 ofstream dataset_file;
 int id_DATASET = 0;
@@ -65,6 +63,13 @@ DBAMBPredictor::DBAMBPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray
 	
 //	myFile.open("dead_block_dump.out");
 
+	m_optTarget = simu_parameters.DBAMP_optTarget;
+	assert((m_optTarget == "energy" || m_optTarget == "perf") && "Wrong optimization parameter for the function cost" );
+	if(m_optTarget == "energy")
+		m_costParameters = EnergyParameters();
+	else if(m_optTarget == "perf")
+		m_costParameters = PerfParameters();
+		
 	stats_error_wrongallocation = 0;
 	stats_error_learning = 0;
 	stats_error_wrongpolicy = 0;	
@@ -770,29 +775,29 @@ DBAMBPredictor::determineStatus(DHPEntry* entry)
 //		}
 //	}
 
-	double energySRAM = 0;
-	double energyNVM =0;
+	double costSRAM = 0;
+	double costNVM =0;
 	for(unsigned i = 0 ; i < entry->rd_history.size() ; i++)
 	{
 		bool isWrite = entry->rw_history[i];
 		if(entry->rd_history[i] == RD_NOT_ACCURATE)
 		{			
-				energySRAM += energy_parameters.costDRAM[isWrite] + energy_parameters.costSRAM[isWrite]; 
-				energyNVM += energy_parameters.costDRAM[isWrite] + energy_parameters.costNVM[isWrite];		
+				costSRAM += m_costParameters.costDRAM[isWrite] + m_costParameters.costSRAM[isWrite]; 
+				costNVM += m_costParameters.costDRAM[isWrite] + m_costParameters.costNVM[isWrite];		
 		}
 		else if(entry->rd_history[i] == RD_SHORT)
 		{
-			energySRAM += energy_parameters.costSRAM[isWrite]; 
-			energyNVM += energy_parameters.costNVM[isWrite];
+			costSRAM += m_costParameters.costSRAM[isWrite]; 
+			costNVM += m_costParameters.costNVM[isWrite];
 		}
 		else
 		{
-			energySRAM += energy_parameters.costDRAM[isWrite]; 
-			energyNVM += energy_parameters.costNVM[isWrite];	
+			costSRAM += m_costParameters.costDRAM[isWrite]; 
+			costNVM += m_costParameters.costNVM[isWrite];	
 		}
 	}
 
-	if(energySRAM > energyNVM)
+	if(costSRAM > costNVM)
 		entry->state_rd = (RD_TYPE) RD_MEDIUM;
 	else
 		entry->state_rd = (RD_TYPE) RD_SHORT;
@@ -903,6 +908,7 @@ DBAMBPredictor::printConfig(std::ostream& out, string entete)
 	out << entete << ":DBAMBPredictor:LearningThreshold\t" << simu_parameters.learningTH << endl;
 	a =  simu_parameters.enableMigration ? "TRUE" : "FALSE"; 
 	out << entete << ":DBAMBPredictor:MigrationEnable\t" << a << endl;
+	out << entete << ":DBAMBPredictor:OptTarget\t" << m_optTarget << endl;
 	
 	Predictor::printConfig(out, entete);
 }

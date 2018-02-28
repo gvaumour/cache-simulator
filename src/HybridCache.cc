@@ -782,15 +782,10 @@ HybridCache::printResults(std::ostream& out)
 		out << entete << ":Eviction\t" << stats_evict << endl;	
 		out << entete << ":Bypass\t" << stats_bypass << endl;
 	
-		if(m_nbNVMways > 0){
-			out << entete << ":NVMways:reads\t"<< stats_hitsNVM[0] + stats_migration[true]<< endl;
-			out << entete << ":NVMways:writes\t"<< stats_hitsNVM[1] + stats_dirtyWBNVM + stats_migration[false] << endl;		
-		}
-	
-		if(m_nbSRAMways > 0){
-			out << entete << ":SRAMways:reads\t"<< stats_hitsSRAM[0] + stats_migration[false] << endl;
-			out << entete << ":SRAMways:writes\t"<< stats_hitsSRAM[1] + stats_dirtyWBSRAM + stats_migration[true]<< endl;	
-		}		
+		out << entete << ":NVMways:reads\t"<< stats_hitsNVM[0] + stats_migration[true]<< endl;
+		out << entete << ":NVMways:writes\t"<< stats_hitsNVM[1] + stats_dirtyWBNVM + stats_migration[false] << endl;		
+		out << entete << ":SRAMways:reads\t"<< stats_hitsSRAM[0] + stats_migration[false] << endl;
+		out << entete << ":SRAMways:writes\t"<< stats_hitsSRAM[1] + stats_dirtyWBSRAM + stats_migration[true]<< endl;	
 		
 		//cout << "************************" << endl;
 		

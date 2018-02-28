@@ -83,6 +83,8 @@ struct SimuParameters
 	int cost_threshold;
 
 	int sizeMTtags;
+	
+	std::string DBAMP_optTarget;
 
 	std::set<std::string> enable_debugflags;
 };
@@ -96,7 +98,6 @@ bool readInputArgs(int argc , char* argv[] , int& sizeCache , int& assoc , int& 
 bool isPow2(int x);
 std::string convert_hex(int n);
 const char * StripPath(const char * path);
-bool isPolicyDynamic(std::string policy);
 void init_default_parameters();
 //void DPRINTF(std::string flag, ... );
 
@@ -110,4 +111,4 @@ extern std::set<std::string> simulation_debugflags;
 
 extern SimuParameters simu_parameters;
 
-#endif 
+#endif

@@ -146,27 +146,27 @@ costMigration =  fromNVMmigration + fromSRAMmigration;
 totalConso = SRAMconso + NVMconso + memoryConso + nvsp_tableConso + costMigration;
   
 print "Dynamic Conso\t" + str(totalConso) 
-print "\tSRAM Read\t" + str(SRAMconsoRead) + "\t" +  str(SRAMconsoRead*100/totalConso) + "%" 
-print "\tSRAM Write\t" + str(SRAMconsoWrite) + "\t" +  str(SRAMconsoWrite*100/totalConso) + "%" 
-print "\tNVM Read\t" + str(NVMconsoRead) + "\t" + str(NVMconsoRead*100/totalConso) + "%" 
-print "\tNVM Write\t" + str(NVMconsoWrite) + "\t" + str(NVMconsoWrite*100/totalConso) + "%" 
-print "\tMigration\t" + str(costMigration) + "\t" + str(costMigration*100/totalConso) + "%" 
-print "\tNVSPTable\t" + str(nvsp_tableConso) + "\t" + str(nvsp_tableConso*100/totalConso) + "%" 
-print "\tMainMemo\t" + str(memoryConso) + "\t" + str(memoryConso*100/totalConso) + "%" 
+print "\tSRAM Read\t" + '%1.3e' % (SRAMconsoRead) + "\t" + '%02.1f' % (SRAMconsoRead*100/totalConso) + "%" 
+print "\tSRAM Write\t" + '%1.3e' % (SRAMconsoWrite) + "\t" + '%02.1f' % (SRAMconsoWrite*100/totalConso) + "%" 
+print "\tNVM Read\t"  + '%1.3e' % (NVMconsoRead) + "\t" + '%02.1f' % (NVMconsoRead*100/totalConso) + "%" 
+print "\tNVM Write\t"  + '%1.3e' % (NVMconsoWrite) + "\t" + '%02.1f' % (NVMconsoWrite*100/totalConso) + "%" 
+print "\tMigration\t"  + '%1.3e' % (costMigration) + "\t" + '%02.1f' % (costMigration*100/totalConso) + "%" 
+print "\tNVSPTable\t"  + '%1.3e' % (nvsp_tableConso) + "\t"+ '%02.1f' % (nvsp_tableConso*100/totalConso) + "%" 
+print "\tMainMemo\t"  + '%1.3e' % (memoryConso) + "\t" + '%02.1f' % (memoryConso*100/totalConso) + "%" 
 	
 costNVMerror =  nbNVMWrite * costNVM[WRITE_ACCESS];
 costSRAMerror =  nbSRAMErrors * DRAM_read;
 	
 print "**********" 
 print "Relative Cost Errors :" 
-print "Error NVM\t" + str(costNVMerror) + "\t" + str(costNVMerror*100/totalConso) + "%" 
-print "Error SRAM\t" + str(costSRAMerror) + "\t" + str(costSRAMerror*100/totalConso) + "%" 
+print "Error NVM\t"+ '%1.3e' % (costNVMerror) + "\t" + '%02.1f' % (costNVMerror*100/totalConso) + "%" 
+print "Error SRAM\t" + '%1.3e' %(costSRAMerror) + "\t" + '%02.1f' % (costSRAMerror*100/totalConso) + "%" 
 
 #Compute the cost of the migration overhead
 if predictor == "DBAM" or predictor == "Saturation":
 	print "**********" 
 	print "Migration cost\t" + str(costMigration) + "\t" + str(costMigration*100/totalConso) + "%"
 	print "Decomposed as:" 
-	print "\tFrom NVM\t" + str(fromNVMmigration) + "\t" + str(fromNVMmigration*100/costMigration)
-	print "\tFrom SRAM\t" + str(fromSRAMmigration) + "\t" + str(fromSRAMmigration*100/costMigration)
-	
+	print "\tFrom NVM\t" + '%1.3e' % (fromNVMmigration) + "\t" + str(fromNVMmigration*100/costMigration)
+	print "\tFrom SRAM\t" + '%1.3e' % (fromSRAMmigration) + "\t" + str(fromSRAMmigration*100/costMigration)
+	 
