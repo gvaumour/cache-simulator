@@ -49,6 +49,8 @@ void APMPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 		m_tableSRAM[set][index]->saturation_counter = SATURATION_TH;	
 	
 	}
+
+	Predictor::insertionPolicy(set , index , inNVM , element);
 	
 	m_cpt++;
 }

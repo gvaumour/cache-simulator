@@ -129,6 +129,7 @@ void SaturationCounter::insertionPolicy(uint64_t set, uint64_t index, bool inNVM
 	
 	}
 	
+	Predictor::insertionPolicy(set , index , inNVM , element);
 	m_cpt++;
 }
 

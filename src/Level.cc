@@ -156,6 +156,7 @@ Level::printResults(std::ostream& out)
 	{
 //		out << "Data Cache " << endl;
 		m_dcache->printResults(out);
+		out << "******" << endl;
 //		out << "Instruction Cache " << endl;
 		m_icache->printResults(out);
 	}
@@ -172,6 +173,7 @@ Level::printConfig(std::ostream& out)
 	{
 //		out << "Data Cache " << endl;
 		m_dcache->printConfig(out);
+		out << "******" << endl;
 //		out << "Instruction Cache " << endl;
 		m_icache->printConfig(out);
 	}

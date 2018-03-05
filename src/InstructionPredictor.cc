@@ -92,6 +92,7 @@ void InstructionPredictor::insertionPolicy(uint64_t set, uint64_t index, bool in
 	else
 		current->cost_value = READ_VALUE;
 	
+	Predictor::insertionPolicy(set , index , inNVM , element);
 	m_cpt++;
 }
 

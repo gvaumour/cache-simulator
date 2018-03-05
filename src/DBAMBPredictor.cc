@@ -544,6 +544,7 @@ DBAMBPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access
 		reportAccess(rap_current, element, current, inNVM, "INSERTION",  str_RD_status[reuse_class]);
 	}
 	
+	Predictor::insertionPolicy(set , index , inNVM , element);
 	m_cpt++;
 }
 

@@ -182,7 +182,7 @@ DynamicSaturation::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 		m_tableSRAM[set][index]->saturation_counter = 0;	
 	
 	}
-	
+	Predictor::insertionPolicy(set , index , inNVM , element);
 	m_cpt++;
 }
 

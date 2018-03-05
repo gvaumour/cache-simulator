@@ -2,7 +2,12 @@ import os
 import re
 import sys
 
-timing_values = { 'LLC' : { 'SRAM' : {'reads' : 15 , 'writes' : 15}, 'NVM' : {'reads' : 15, 'writes' : 70}, 'Time' : 0}, \
+#timing_values = { 'LLC' : { 'SRAM' : {'reads' : 15 , 'writes' : 15}, 'NVM' : {'reads' : 15, 'writes' : 70}, 'Time' : 0}, \
+#		  'L1I' : {'SRAM' : {'reads' : 1 , 'writes' : 1} , 'NVM' : {'reads' : 2, 'writes' : 2} , 'Time' : 0}, \
+#		  'L1D' :  {'SRAM' : {'reads' : 1 , 'writes' : 1} , 'NVM' : {'reads' : 2, 'writes' : 2}, 'Time' : 0}, \
+#	 	  'DRAM' : {'Read' : 100 , 'Write' : 100 , 'Time' : 0} };
+
+timing_values = { 'LLC' : { 'SRAM' : {'reads' : 10 , 'writes' : 10}, 'NVM' : {'reads' : 10, 'writes' : 37}, 'Time' : 0}, \
 		  'L1I' : {'SRAM' : {'reads' : 1 , 'writes' : 1} , 'NVM' : {'reads' : 2, 'writes' : 2} , 'Time' : 0}, \
 		  'L1D' :  {'SRAM' : {'reads' : 1 , 'writes' : 1} , 'NVM' : {'reads' : 2, 'writes' : 2}, 'Time' : 0}, \
 	 	  'DRAM' : {'Read' : 100 , 'Write' : 100 , 'Time' : 0} };
