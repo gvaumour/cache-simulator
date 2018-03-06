@@ -212,7 +212,7 @@ init_default_parameters()
 	
 	simu_parameters.nb_bits = 64;
 
-	simu_parameters.sizeMTtags = simu_parameters.nvm_assoc - simu_parameters.sram_assoc;
+	simu_parameters.sizeMTtags = 4;//simu_parameters.nvm_assoc - simu_parameters.sram_assoc;
 }
 
 
