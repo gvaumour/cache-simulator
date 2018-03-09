@@ -85,6 +85,10 @@ struct SimuParameters
 	int sizeMTtags;
 	
 	std::string DBAMP_optTarget;
+	
+	bool readDatasetFile;
+	bool writeDatasetFile;
+	std::string datasetFile;
 
 	std::set<std::string> enable_debugflags;
 };

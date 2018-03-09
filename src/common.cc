@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <sstream>
 
 #include "common.hh"
-
+#include "DBAMBPredictor.hh"
 
 using namespace std;
 
@@ -185,10 +185,10 @@ init_default_parameters()
 	simu_parameters.rap_innacuracy_th = 0.9;
 	simu_parameters.learningTH = 20;
 	
-//	simu_parameters.sram_assoc = 4;
-//	simu_parameters.nvm_assoc = 12;
-	simu_parameters.sram_assoc = 16;
-	simu_parameters.nvm_assoc = 0;
+	simu_parameters.sram_assoc = 4;
+	simu_parameters.nvm_assoc = 12;
+//	simu_parameters.sram_assoc = 16;
+//	simu_parameters.nvm_assoc = 0;
 	simu_parameters.nb_sets = 1024;
 
 	simu_parameters.rap_assoc = 128;
@@ -213,6 +213,10 @@ init_default_parameters()
 	simu_parameters.nb_bits = 64;
 
 	simu_parameters.sizeMTtags = 4;//simu_parameters.nvm_assoc - simu_parameters.sram_assoc;
+	
+	simu_parameters.readDatasetFile = false;
+	simu_parameters.writeDatasetFile = false;
+	simu_parameters.datasetFile = RAP_DATASET_FIRSTALLOC;
 }
 
 

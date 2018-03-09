@@ -142,6 +142,14 @@ int main(int argc , char* argv[]){
 			simu_parameters.flagTest = true;
 			cout << "Flag Test Enable" << endl;		
 		}
+		else if(string(argv[i]) == "--readDatasetFile")
+		{
+			i++;
+			simu_parameters.readDatasetFile = true;
+			simu_parameters.datasetFile = string(argv[i]);		
+		}
+		else if(string(argv[i]) == "--writeDatasetFile")
+			simu_parameters.writeDatasetFile = true;
 		else if(string(argv[i]) == "--enableDebug")
 		{
 			cout << "Debug enable "<< endl;		
