@@ -189,7 +189,7 @@ init_default_parameters()
 	simu_parameters.nvm_assoc = 12;
 //	simu_parameters.sram_assoc = 16;
 //	simu_parameters.nvm_assoc = 0;
-	simu_parameters.nb_sets = 1024;
+	simu_parameters.nb_sets = 2048;
 
 	simu_parameters.rap_assoc = 128;
 	simu_parameters.rap_sets = 128;
