@@ -84,6 +84,8 @@ struct SimuParameters
 
 	int sizeMTtags;
 	
+	float ratio_RWcost;
+	
 	std::string DBAMP_optTarget;
 	
 	bool readDatasetFile;

@@ -209,7 +209,9 @@ init_default_parameters()
 	simu_parameters.saturation_threshold = 2;
 	
 	simu_parameters.cost_threshold = 50;
-	
+
+	simu_parameters.ratio_RWcost = -1;
+		
 	simu_parameters.nb_bits = 64;
 
 	simu_parameters.sizeMTtags = 4;//simu_parameters.nvm_assoc - simu_parameters.sram_assoc;

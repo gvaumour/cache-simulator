@@ -91,6 +91,10 @@ int main(int argc , char* argv[]){
 		{	i++;
 			simu_parameters.nb_bits = atoi(argv[i]);
 		}
+		else if(string(argv[i]) == "--ratio-RWcost")
+		{	i++;
+			simu_parameters.ratio_RWcost = atof(argv[i]);
+		}
 		else if(string(argv[i]) == "--MT-size")
 		{	i++;
 			simu_parameters.sizeMTtags = atoi(argv[i]);

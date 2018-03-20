@@ -93,7 +93,10 @@ DBAMBPredictor::DBAMBPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray
 		m_costParameters = EnergyParameters();
 	else if(m_optTarget == "perf")
 		m_costParameters = PerfParameters();
-		
+	
+	if(simu_parameters.ratio_RWcost != -1)
+		m_costParameters.costNVM[WRITE_ACCESS] = m_costParameters.costNVM[READ_ACCESS]*simu_parameters.ratio_RWcost;
+	
 	stats_error_wrongallocation = 0;
 	stats_error_learning = 0;
 	stats_error_wrongpolicy = 0;	
@@ -940,18 +943,24 @@ DBAMBPredictor::convertState(DHPEntry* rap_current)
 void 
 DBAMBPredictor::printConfig(std::ostream& out, string entete)
 {
-	out << entete << ":DBAMBPredictor:RAPTableAssoc\t" << m_RAP_assoc << endl;
-	out << entete << ":DBAMBPredictor:RAPTableNBSets\t" << m_RAP_sets << endl;
-	out << entete << ":DBAMBPredictor:Windowsize\t" << simu_parameters.window_size << endl;
-	out << entete << ":DBAMBPredictor:InacurracyThreshold\t" << simu_parameters.rap_innacuracy_th << endl;
+	entete +=":DBAMBPredictor:";
+	
+	out << entete << "DHPTableAssoc\t" << m_RAP_assoc << endl;
+	out << entete << "DHPTableNBSets\t" << m_RAP_sets << endl;
+	out << entete << "Windowsize\t" << simu_parameters.window_size << endl;
+	out << entete << "InacurracyThreshold\t" << simu_parameters.rap_innacuracy_th << endl;
 
 	string a =  simu_parameters.enableBP ? "TRUE" : "FALSE"; 
-	out << entete << ":DBAMBPredictor:BypassEnable\t" << a << endl;
-	out << entete << ":DBAMBPredictor:DEADCOUNTERSaturation\t" << simu_parameters.deadSaturationCouter << endl;
-	out << entete << ":DBAMBPredictor:LearningThreshold\t" << simu_parameters.learningTH << endl;
+	out << entete << "BypassEnable\t" << a << endl;
+	out << entete << "DEADCOUNTERSaturation\t" << simu_parameters.deadSaturationCouter << endl;
+	out << entete << "LearningThreshold\t" << simu_parameters.learningTH << endl;
 	a =  simu_parameters.enableMigration ? "TRUE" : "FALSE"; 
-	out << entete << ":DBAMBPredictor:MigrationEnable\t" << a << endl;
-	out << entete << ":DBAMBPredictor:OptTarget\t" << m_optTarget << endl;
+	out << entete << "MigrationEnable\t" << a << endl;
+	out << entete << "OptTarget\t" << m_optTarget << endl;
+	if(simu_parameters.ratio_RWcost != -1)
+		out << entete << "CostRWRatio\t" << simu_parameters.ratio_RWcost << endl;
+	out << entete << "CostReadNVM\t" << m_costParameters.costNVM[READ_ACCESS] << endl;
+	out << entete << "CostWriteNVM\t" << m_costParameters.costNVM[WRITE_ACCESS] << endl;
 	
 	Predictor::printConfig(out, entete);
 }
