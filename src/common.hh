@@ -86,6 +86,8 @@ struct SimuParameters
 	
 	float ratio_RWcost;
 	
+	bool simulate_conflicts;
+	
 	std::string DBAMP_optTarget;
 	
 	bool readDatasetFile;

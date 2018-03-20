@@ -211,6 +211,8 @@ init_default_parameters()
 	simu_parameters.cost_threshold = 50;
 
 	simu_parameters.ratio_RWcost = -1;
+	
+	simu_parameters.simulate_conflicts = false;
 		
 	simu_parameters.nb_bits = 64;
 
