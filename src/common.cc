@@ -208,7 +208,7 @@ init_default_parameters()
 	
 	simu_parameters.saturation_threshold = 2;
 	
-	simu_parameters.cost_threshold = 50;
+	simu_parameters.cost_threshold = -5;
 
 	simu_parameters.ratio_RWcost = -1;
 	

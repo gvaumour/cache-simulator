@@ -47,7 +47,8 @@ costDRAMWrite = 4.10241E-9;
 ########################################################
  
 predictor="";
- 
+ratio=-1;
+
 with open(config_file) as f:
 	for line in f:
 	
@@ -66,7 +67,12 @@ with open(config_file) as f:
 		m = re.search('CacheLLC:DBAMBPredictor:RAPTableNBSets\s(\d+)', line);
 		if m != None:
 			dhp_table_sets = int(m.group(1));
+		m = re.search('CacheLLC:DBAMBPredictor:CostRWRatio\s(\d+)', line);
+		if m != None:
+			ratio = int(m.group(1));
 
+if ratio != -1:
+	costNVM[WRITE_ACCESS] = ratio * costNVM[READ_ACCESS];
 
 DRAM_read,DRAM_write = 0,0;
 nbFromSRAMmigration,nbFromNVMmigration = 0,0
