@@ -87,10 +87,6 @@ int main(int argc , char* argv[]){
 		{	i++;
 			simu_parameters.sram_assoc = atoi(argv[i]);
 		}
-		else if(string(argv[i]) == "--PC-bits")
-		{	i++;
-			simu_parameters.nb_bits = atoi(argv[i]);
-		}
 		else if(string(argv[i]) == "--ratio-RWcost")
 		{	i++;
 			simu_parameters.ratio_RWcost = atof(argv[i]);
@@ -141,7 +137,19 @@ int main(int argc , char* argv[]){
 			simu_parameters.enableReuseErrorComputation = true;
 		else if(string(argv[i]) == "--DBAMB-optTarget")
 		{	i++;
-			simu_parameters.DBAMP_optTarget = string(argv[i]);		
+			simu_parameters.DBAMB_optTarget = string(argv[i]);		
+		}
+		else if(string(argv[i]) == "--DBAMB-signature")
+		{	i++;
+			simu_parameters.DBAMB_signature = string(argv[i]);		
+		}
+		else if(string(argv[i]) == "--DBAMB-addr-beginBits")
+		{	i++;
+			simu_parameters.DBAMB_begin_bit = atoi(argv[i]);		
+		}
+		else if(string(argv[i]) == "--DBAMB-addr-endBits")
+		{	i++;
+			simu_parameters.DBAMB_end_bit = atoi(argv[i]);		
 		}
 		else if(string(argv[i]) == "--flagTest")
 		{
@@ -174,6 +182,17 @@ int main(int argc , char* argv[]){
 	{
 		simu_parameters.enableBP = true;
 		simu_parameters.enableMigration = true;
+	}
+	
+	if(simu_parameters.DBAMB_signature == "addr")
+	{
+		simu_parameters.DBAMB_begin_bit = 20;
+		simu_parameters.DBAMB_end_bit = 40;
+	}
+	else if(simu_parameters.DBAMB_signature == "first_pc")
+	{
+		simu_parameters.DBAMB_begin_bit = 0;
+		simu_parameters.DBAMB_end_bit = 64;
 	}
 	
 	if((simu_parameters.nvm_assoc == 0 || simu_parameters.sram_assoc == 0) )

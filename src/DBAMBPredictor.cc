@@ -92,7 +92,7 @@ DBAMBPredictor::DBAMBPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray
 	
 //	myFile.open("dead_block_dump.out");
 
-	m_optTarget = simu_parameters.DBAMP_optTarget;
+	m_optTarget = simu_parameters.DBAMB_optTarget;
 	assert((m_optTarget == "energy" || m_optTarget == "perf") && "Wrong optimization parameter for the function cost" );
 	if(m_optTarget == "energy")
 		m_costParameters = EnergyParameters();
@@ -134,8 +134,9 @@ DBAMBPredictor::allocateInNVM(uint64_t set, Access element)
 	if(element.isInstFetch())
 		return ALLOCATE_IN_NVM;
 		
+	uint64_t signature = hashingSignature(element);
 	
-	DHPEntry* rap_current = lookup(element.m_pc);
+	DHPEntry* rap_current = lookup(signature);
 	if(rap_current  == NULL) // Miss in the DHP table, create the entry
 	{
 		if(!m_isWarmup)
@@ -143,7 +144,7 @@ DBAMBPredictor::allocateInNVM(uint64_t set, Access element)
 		
 		//DPRINTF("DBAMBPredictor::allocateInNVM Eviction and Installation in the RAP table 0x%lx\n" , element.m_pc);
 
-		int index = indexFunction(element.m_pc);
+		int index = indexFunction(signature);
 		int assoc = m_rap_policy->evictPolicy(index);
 		
 		rap_current = m_DHPTable[index][assoc];
@@ -161,16 +162,16 @@ DBAMBPredictor::allocateInNVM(uint64_t set, Access element)
 
 		rap_current->initEntry(element);
 		rap_current->id = id_DATASET++;
-		rap_current->m_pc = element.m_pc;
-		dataset_file << "ID Dataset:" << rap_current->id << "\t" << element.m_pc << endl;
+		rap_current->signature = signature;
+		dataset_file << "ID Dataset:" << rap_current->id << "\t" << signature << endl;
 
 
 		if(simu_parameters.readDatasetFile)
 		{
-			if(m_firstAlloc_datasets.count(rap_current->m_pc) != 0){
-				cout << "Dataset PC=0x" << std::hex << rap_current->m_pc << std::dec << " alloc = " << allocDecision_str[m_firstAlloc_datasets[rap_current->m_pc][0]] << endl;
-				rap_current->des = m_firstAlloc_datasets[rap_current->m_pc][0];
-				m_firstAlloc_datasets[rap_current->m_pc].erase(m_firstAlloc_datasets[rap_current->m_pc].begin());
+			if(m_firstAlloc_datasets.count(signature) != 0){
+				cout << "Dataset PC=0x" << std::hex << signature << std::dec << " alloc = " << allocDecision_str[m_firstAlloc_datasets[signature][0]] << endl;
+				rap_current->des = m_firstAlloc_datasets[signature][0];
+				m_firstAlloc_datasets[signature].erase(m_firstAlloc_datasets[signature].begin());
 			}
 		}
 	}
@@ -331,45 +332,41 @@ DBAMBPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access el
 	
 
 	current->policyInfo = m_cpt;
-	DHPEntry* rap_current = lookup(current->m_pc);
+	uint64_t signature = hashingSignature(element);
+	DHPEntry* rap_current = lookup(signature);
 
-
-	if(current->m_pc !=0)
-	{	
-		if(rap_current)
-		{
+	if(rap_current)
+	{
 
 //			//DPRINTF("DBAMBPredictor::updatePolicy Reuse distance of the pc %lx, RD = %d\n", current->m_pc , rd );
-			rap_current->rd_history.push_back(convertRD(rd));
-			rap_current->rw_history.push_back(element.isWrite());		
+		rap_current->rd_history.push_back(convertRD(rd));
+		rap_current->rw_history.push_back(element.isWrite());		
+		
+		//A learning cl shows some reuse so we quit dead state 
+		if(current->isLearning)
+		{
+			// Reset the window 
+			RW_TYPE old_rw = rap_current->state_rw;
+			RD_TYPE old_rd = rap_current->state_rd;
 			
-			//A learning cl shows some reuse so we quit dead state 
-			if(current->isLearning)
-			{
-				// Reset the window 
-				RW_TYPE old_rw = rap_current->state_rw;
-				RD_TYPE old_rd = rap_current->state_rd;
-				
-				rap_current->des = ALLOCATE_PREEMPTIVELY;
-				rap_current->state_rd = RD_NOT_ACCURATE;
-				rap_current->state_rw = RW_NOT_ACCURATE;
-				rap_current->dead_counter = 0;
-	
-				if(!m_isWarmup)
-					stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
-				
-				dataset_file << "Dataset n°" << rap_current->id << ": Reuse detected on a learning Cl, switching to learning state" << endl;
-			}
-			else
-			{
-				updateWindow(rap_current);
+			rap_current->des = ALLOCATE_PREEMPTIVELY;
+			rap_current->state_rd = RD_NOT_ACCURATE;
+			rap_current->state_rw = RW_NOT_ACCURATE;
+			rap_current->dead_counter = 0;
+
+			if(!m_isWarmup)
+				stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
 			
-				reportAccess(rap_current , element, current, current->isNVM, "UPDATE", str_RD_status[convertRD(rd)]);
-				if(simu_parameters.enableMigration && element.enableMigration )
-					current = checkLazyMigration(rap_current , current , set , inNVM , index, element.isWrite());
-			}
-			
-		}	
+			dataset_file << "Dataset n°" << rap_current->id << ": Reuse detected on a learning Cl, switching to learning state" << endl;
+		}
+		else
+		{
+			updateWindow(rap_current);
+		
+			reportAccess(rap_current , element, current, current->isNVM, "UPDATE", str_RD_status[convertRD(rd)]);
+			if(simu_parameters.enableMigration && element.enableMigration )
+				current = checkLazyMigration(rap_current , current , set , inNVM , index, element.isWrite());
+		}
 	}
 	
 	m_cpt++;
@@ -564,8 +561,10 @@ DBAMBPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access
 			stats_history_SRAM[set].push_front(pair<uint64_t, uint64_t>(m_cpt, current->address));	
 		}			
 	}*/
-		
-	if( (rap_current= lookup(current->m_pc) ) != NULL )
+	uint64_t signature = hashingSignature(element);
+	current->signature = signature;
+	
+	if( (rap_current= lookup(signature) ) != NULL )
 	{
 
 		/* Set the flag of learning cache line when bypassing */
@@ -630,7 +629,7 @@ DBAMBPredictor::updateWindow(DHPEntry* rap_current)
 			rap_current->des = convertState(rap_current);
 			if(old_alloc == ALLOCATE_PREEMPTIVELY &&  simu_parameters.writeDatasetFile)
 			{	
-				firstAlloc_dataset_file << std::hex << "0x" << rap_current->m_pc << std::dec << "\t" << rap_current->des << endl;	
+				firstAlloc_dataset_file << std::hex << "0x" << rap_current->signature << std::dec << "\t" << rap_current->des << endl;	
 			}
 		}
 		else{
@@ -668,7 +667,7 @@ DBAMBPredictor::evictPolicy(int set, bool inNVM)
 	}
 		
 	//DPRINTF("DBAMBPredictor::evictPolicy set %d n assoc_victim %d \n" , set , assoc_victim);
-	DHPEntry* rap_current = lookup(current->m_pc);
+	DHPEntry* rap_current = lookup(current->signature);
 	//We didn't create an entry for this dataset, probably a good reason =) (instruction mainly) 
 	if(rap_current != NULL)
 	{
@@ -966,6 +965,9 @@ DBAMBPredictor::printConfig(std::ostream& out, string entete)
 		out << entete << "CostRWRatio\t" << simu_parameters.ratio_RWcost << endl;
 	out << entete << "CostReadNVM\t" << m_costParameters.costNVM[READ_ACCESS] << endl;
 	out << entete << "CostWriteNVM\t" << m_costParameters.costNVM[WRITE_ACCESS] << endl;
+	out << entete << "HashingFunction\t" << simu_parameters.DBAMB_signature << endl;
+	out << entete << "HashingBeginBit\t" << simu_parameters.DBAMB_begin_bit << endl;
+	out << entete << "HashingEndBit\t" << simu_parameters.DBAMB_end_bit << endl;
 	
 	Predictor::printConfig(out, entete);
 }
@@ -1076,15 +1078,32 @@ DBAMBPredictor::openNewTimeFrame()
 
 
 DHPEntry*
-DBAMBPredictor::lookup(uint64_t pc)
+DBAMBPredictor::lookup(uint64_t signature)
 {
-	uint64_t set = indexFunction(pc);
+	uint64_t set = indexFunction(signature);
 	for(unsigned i = 0 ; i < m_RAP_assoc ; i++)
 	{
-		if(m_DHPTable[set][i]->m_pc == pc)
+		if(m_DHPTable[set][i]->signature == signature)
 			return m_DHPTable[set][i];
 	}
 	return NULL;
+}
+
+
+
+uint64_t
+DBAMBPredictor::hashingSignature(Access element)
+{
+	if(simu_parameters.DBAMB_signature == "first_pc")
+	{
+		return bitSelect( element.m_pc, simu_parameters.DBAMB_begin_bit , simu_parameters.DBAMB_end_bit);
+	}
+	else if(simu_parameters.DBAMB_signature == "addr")
+	{
+		return bitSelect(element.m_address , simu_parameters.DBAMB_begin_bit , simu_parameters.DBAMB_end_bit);
+	}
+	assert(true && "Wrong hashing signature parameter\n");
+	return 0;
 }
 
 uint64_t 
@@ -1164,7 +1183,6 @@ DBAMBLRUPolicy::evictPolicy(int set)
 	}
 	return smallest_index;
 }
-
 
 
 

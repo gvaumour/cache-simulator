@@ -59,8 +59,7 @@ struct SimuParameters
 	int sram_assoc;
 	int nvm_assoc;
 	int nb_sets;
-	int nb_bits;
-
+	
 	int rap_assoc;
 	int rap_sets;
 	
@@ -88,7 +87,10 @@ struct SimuParameters
 	
 	bool simulate_conflicts;
 	
-	std::string DBAMP_optTarget;
+	std::string DBAMB_optTarget;
+	std::string DBAMB_signature;
+	int DBAMB_begin_bit;
+	int DBAMB_end_bit;
 	
 	bool readDatasetFile;
 	bool writeDatasetFile;
@@ -99,6 +101,8 @@ struct SimuParameters
 
 std::vector<std::string> split(std::string s, char delimiter);
 uint64_t bitRemove(uint64_t address , unsigned int small, unsigned int big);
+uint64_t bitSelect(uint64_t address , unsigned small , unsigned big);
+
 uint64_t hexToInt(std::string adresse_hex);
 uint64_t hexToInt1(const char* adresse_hex);
 

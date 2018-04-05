@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <bitset>
 
 #include "common.hh"
 #include "DBAMBPredictor.hh"
@@ -61,6 +62,18 @@ split(string s, char delimiter){
 		result.push_back( field );
   }
   return result;
+}
+
+uint64_t 
+bitSelect(uint64_t address , unsigned small , unsigned big)
+{
+	std::bitset<64> b(address);
+	for(int i = big+1 ; i < 64 ; i++)
+		b.reset(i);
+	
+	b >>= small;
+	
+	return b.to_ullong();	
 }
 
 
@@ -180,10 +193,18 @@ init_default_parameters()
 	simu_parameters.flagTest = true;	
 	simu_parameters.printDebug = false;
 	
-	simu_parameters.deadSaturationCouter = 3;
+	simu_parameters.simulate_conflicts = false;
+	
+	simu_parameters.prefetchDegree = 2;
+	simu_parameters.prefetchStreams = 16; 
+	simu_parameters.enablePrefetch = false;
+
+
+	/********* DBAMB Config *************/ 
 	simu_parameters.window_size = 20; 
 	simu_parameters.rap_innacuracy_th = 0.9;
 	simu_parameters.learningTH = 20;
+	simu_parameters.deadSaturationCouter = 3;
 	
 	simu_parameters.sram_assoc = 4;
 	simu_parameters.nvm_assoc = 12;
@@ -194,33 +215,29 @@ init_default_parameters()
 	simu_parameters.rap_assoc = 128;
 	simu_parameters.rap_sets = 128;
 	
-	simu_parameters.prefetchDegree = 2;
-	simu_parameters.prefetchStreams = 16; 
-	simu_parameters.enablePrefetch = false;
-
-	simu_parameters.enableReuseErrorComputation = false;
-	simu_parameters.enablePCHistoryTracking = false;
-	
-	simu_parameters.nbCores = 1;
-	simu_parameters.policy = "DBAMB";
-
-	simu_parameters.DBAMP_optTarget = "energy";
-	
-	simu_parameters.saturation_threshold = 2;
-	
-	simu_parameters.cost_threshold = -5;
-
 	simu_parameters.ratio_RWcost = -1;
-	
-	simu_parameters.simulate_conflicts = false;
-		
-	simu_parameters.nb_bits = 64;
-
 	simu_parameters.sizeMTtags = 4;//simu_parameters.nvm_assoc - simu_parameters.sram_assoc;
 	
 	simu_parameters.readDatasetFile = false;
 	simu_parameters.writeDatasetFile = false;
 	simu_parameters.datasetFile = RAP_DATASET_FIRSTALLOC;
+
+	simu_parameters.DBAMB_optTarget = "energy";
+	simu_parameters.DBAMB_signature = "first_pc";
+	
+	simu_parameters.DBAMB_begin_bit = 0;
+	simu_parameters.DBAMB_end_bit = 64;
+	
+	simu_parameters.enableReuseErrorComputation = false;
+	simu_parameters.enablePCHistoryTracking = false;
+	/***************************************/ 
+	
+	simu_parameters.nbCores = 1;
+	simu_parameters.policy = "DBAMB";
+
+	simu_parameters.saturation_threshold = 2;	
+	simu_parameters.cost_threshold = -5;
+
 }
 
 

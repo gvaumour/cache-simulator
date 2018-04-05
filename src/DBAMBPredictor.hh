@@ -35,7 +35,7 @@ class DHPEntry
 		void initEntry(Access element) {
 		 	cpts =  std::vector<int>(NUM_RW_TYPE,0);
 		 	lastWrite = 0;
-		 	m_pc = -1;
+		 	signature = 0;
 		 	des = ALLOCATE_PREEMPTIVELY;
 		 					
 		 	policyInfo = 0;
@@ -61,8 +61,8 @@ class DHPEntry
 		int id;
 		int lastWrite;
 		
-		/* PC of the dataset */
-		uint64_t m_pc; 
+		/* Signature of the dataset */
+		uint64_t signature; 
 		
 		allocDecision des;
 
@@ -168,6 +168,7 @@ class DBAMBPredictor : public Predictor {
 
 		void reportAccess(DHPEntry* rap_current, Access element, CacheEntry* current, bool inNVM, std::string entete, std::string reuse_class);
 		void reportMigration(DHPEntry* rap_current, CacheEntry* current, bool fromNVM);
+		uint64_t hashingSignature(Access element);
 
 	protected : 
 		uint64_t m_cpt;

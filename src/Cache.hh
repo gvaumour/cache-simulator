@@ -150,6 +150,7 @@ class CacheEntry{
 			justMigrate = false;
 			value = 0;
 			cost_value = 0;
+			signature = 0;
 			last_time_access = 0;
 			coherence_state = COHERENCE_INVALID;
 		}
@@ -172,6 +173,7 @@ class CacheEntry{
 		bool isDirty;
 		uint64_t address;
 		uint64_t m_pc;
+		uint64_t signature;
 		uint64_t value;
 		uint64_t last_time_access;
 		

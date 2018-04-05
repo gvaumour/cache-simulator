@@ -43,10 +43,7 @@ MemoryTrace::MemoryTrace(string trace) : m_trace(trace), m_isOpen(false)
 
 uint64_t MemoryTrace::compressPC(uint64_t pc)
 {
-	if(simu_parameters.nb_bits == 64)
-		return pc;
-	else
-		return bitRemove(pc , simu_parameters.nb_bits, 64);
+	return pc;
 }
 
 
