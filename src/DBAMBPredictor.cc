@@ -58,12 +58,17 @@ DBAMBPredictor::DBAMBPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray
 	if(simu_parameters.printDebug)
 		dataset_file.open(RAP_TEST_OUTPUT_DATASETS);
 
-	if(simu_parameters.writeDatasetFile || simu_parameters.readDatasetFile){
-		firstAlloc_dataset_file.open(simu_parameters.datasetFile);
-			
-	}
-	if(simu_parameters.readDatasetFile)
+	if(simu_parameters.writeDatasetFile)
 	{
+		firstAlloc_dataset_file = fstream( simu_parameters.datasetFile , std::fstream::out);		
+		assert(firstAlloc_dataset_file.is_open() && "Cannot open the datasetFile");
+	} 		
+	else if(simu_parameters.readDatasetFile)
+	{
+
+		firstAlloc_dataset_file = fstream( simu_parameters.datasetFile , std::fstream::in);		
+		assert(firstAlloc_dataset_file.is_open() && "Cannot open the datasetFile");
+
 		vector<string> split_line;
 		string line;
 		while(getline(firstAlloc_dataset_file,line))

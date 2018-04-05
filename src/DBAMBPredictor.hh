@@ -17,20 +17,6 @@
 #define RAP_MIGRATION_STATS "rap_migration_stats.out"
 #define RAP_DATASET_FIRSTALLOC "rap_firstAlloc_dataset.out"
 
-#ifndef ENABLE_LAZY_MIGRATION
-	#define ENABLE_LAZY_MIGRATION true
-#endif
-
-//#define ENABLE_BYPASS true
-//#define RAP_DEAD_COUNTER_SATURATION 3
-//#define RAP_LEARNING_THRESHOLD 20
-//#define RAP_WINDOW_SIZE 20
-//#define RAP_INACURACY_TH 0.7
-
-//#define TEST_RAP_TABLE_ASSOC 128
-//#define TEST_RAP_TABLE_SET 128
-
-
 #define INDEX_READ 0
 #define INDEX_WRITE 1
 
