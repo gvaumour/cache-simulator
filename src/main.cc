@@ -184,16 +184,16 @@ int main(int argc , char* argv[]){
 		simu_parameters.enableMigration = true;
 	}
 	
-	if(simu_parameters.DBAMB_signature == "addr")
-	{
-		simu_parameters.DBAMB_begin_bit = 20;
-		simu_parameters.DBAMB_end_bit = 40;
-	}
-	else if(simu_parameters.DBAMB_signature == "first_pc")
-	{
-		simu_parameters.DBAMB_begin_bit = 0;
-		simu_parameters.DBAMB_end_bit = 64;
-	}
+//	if(simu_parameters.DBAMB_signature == "addr")
+//	{
+//		simu_parameters.DBAMB_begin_bit = 20;
+//		simu_parameters.DBAMB_end_bit = 40;
+//	}
+//	else if(simu_parameters.DBAMB_signature == "first_pc")
+//	{
+//		simu_parameters.DBAMB_begin_bit = 0;
+//		simu_parameters.DBAMB_end_bit = 64;
+//	}
 	
 	if((simu_parameters.nvm_assoc == 0 || simu_parameters.sram_assoc == 0) )
 	 {
