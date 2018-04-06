@@ -95,6 +95,8 @@ struct SimuParameters
 	bool readDatasetFile;
 	bool writeDatasetFile;
 	std::string datasetFile;
+	
+	bool traceLLC;
 
 	std::set<std::string> enable_debugflags;
 };
@@ -117,6 +119,8 @@ extern uint64_t cpt_time;
 extern int start_debug;
 
 extern const char* memCmd_str[];
+extern const char* str_RW_status[];
+extern const char* str_RD_status[];
 extern const char* allocDecision_str[];
 extern const char* directory_state_str[];
 extern std::set<std::string> simulation_debugflags;

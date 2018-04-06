@@ -47,6 +47,10 @@ const char* directory_state_str[] = {"SHARED_L1" , "MODIFIED_L1", "EXCLUSIVE_L1"
 set<string> simulation_debugflags = {"DebugCache", "DebugDBAMB", "DebugHierarchy", "DebugFUcache"};
 
 
+const char* str_RW_status[] = {"DEAD" , "WO", "RO" , "RW", "RW_NOTACC"};
+const char* str_RD_status[] = {"RD_SHORT" , "RD_MEDIUM", "RD_NOTACC", "UNKOWN"};
+
+
 SimuParameters simu_parameters;
 
 
@@ -238,6 +242,7 @@ init_default_parameters()
 	simu_parameters.saturation_threshold = 2;	
 	simu_parameters.cost_threshold = -5;
 
+	simu_parameters.traceLLC = false;
 }
 
 

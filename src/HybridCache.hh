@@ -77,6 +77,8 @@ class HybridCache {
 		void finishSimu();
 		void openNewTimeFrame();
 		
+		RD_TYPE classifyRD(int set , int index);
+		
 		void startWarmup();
 		void stopWarmup();
 		

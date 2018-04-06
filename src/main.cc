@@ -87,6 +87,10 @@ int main(int argc , char* argv[]){
 		{	i++;
 			simu_parameters.sram_assoc = atoi(argv[i]);
 		}
+		else if(string(argv[i]) == "--NVM-assoc")
+		{	i++;
+			simu_parameters.nvm_assoc = atoi(argv[i]);
+		}
 		else if(string(argv[i]) == "--ratio-RWcost")
 		{	i++;
 			simu_parameters.ratio_RWcost = atof(argv[i]);
@@ -107,10 +111,6 @@ int main(int argc , char* argv[]){
 		{	i++;
 			simu_parameters.nb_sets = atoi(argv[i]);
 		}
-		else if(string(argv[i]) == "--NVM-assoc")
-		{	i++;
-			simu_parameters.nvm_assoc = atoi(argv[i]);
-		}
 		else if(string(argv[i]) == "--deadCounter")
 		{	i++;
 			simu_parameters.deadSaturationCouter = atoi(argv[i]);
@@ -125,6 +125,8 @@ int main(int argc , char* argv[]){
 		}
 		else if(string(argv[i]) == "--enablePrefetch")
 			simu_parameters.enablePrefetch = true;
+		else if(string(argv[i]) == "--traceLLC")
+			simu_parameters.traceLLC = true;
 		else if(string(argv[i]) == "--enablePCHistoryTracking")
 			simu_parameters.enablePCHistoryTracking = true;
 		else if(string(argv[i]) == "--enableBP")

@@ -8,8 +8,7 @@
 
 using namespace std;
 
-static const char* str_RW_status[] = {"DEAD" , "WO", "RO" , "RW", "RW_NOTACC"};
-static const char* str_RD_status[] = {"RD_SHORT" , "RD_MEDIUM", "RD_NOTACC", "UNKOWN"};
+
 
 
 ofstream dataset_file;
@@ -363,7 +362,7 @@ DBAMBPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access el
 		{
 			updateWindow(rap_current);
 		
-			reportAccess(rap_current , element, current, current->isNVM, "UPDATE", str_RD_status[convertRD(rd)]);
+			reportAccess(rap_current , element, current, current->isNVM, string("UPDATE"), string(str_RD_status[convertRD(rd)]));
 			if(simu_parameters.enableMigration && element.enableMigration )
 				current = checkLazyMigration(rap_current , current , set , inNVM , index, element.isWrite());
 		}

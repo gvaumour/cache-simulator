@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <iostream>
 #include <assert.h>
 #include <math.h>
+#include <zlib.h>
 
 #include "HybridCache.hh"
 #include "Cache.hh"
@@ -37,9 +38,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "DBAMBPredictor.hh"
 //#include "RAPPredictor_opt.hh"
 
+#define LLC_TRACE_BUFFER_SIZE 50
+
 using namespace std;
 
 
+gzFile LLC_trace;
 
 HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc , int blocksize , int nbNVMways, string policy, Level* system){
 
@@ -133,6 +137,9 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		ofstream file_history_cache("LLC_PC_History.out", std::ofstream::trunc); //Create the file
 		file_history_cache.close(); 
 	}
+	
+	if(simu_parameters.traceLLC && m_ID == -1)
+		LLC_trace = gzopen("LLC_trace.out", "wb8");
 }
 
 HybridCache::HybridCache(const HybridCache& a) : HybridCache(a.getID(), a.isInstCache(),\
@@ -164,6 +171,12 @@ HybridCache::finishSimu()
 		}
 	}
 	m_predictor->finishSimu();
+	
+	if(simu_parameters.traceLLC && m_ID == -1)
+	{
+		gzclose(LLC_trace);
+	}
+
 }
 
 bool
@@ -180,6 +193,7 @@ HybridCache::handleAccess(Access element)
 	uint64_t address = element.m_address;
 	bool isWrite = element.isWrite();
  	int size = element.m_size;
+	RD_TYPE rd_type = RD_NOT_ACCURATE;
 	
 	if(!m_isWarmup)
 		stats_operations[element.m_type]++;
@@ -229,7 +243,7 @@ HybridCache::handleAccess(Access element)
 			//Deallocate the cache line in the lower levels (inclusive system)
 			if(replaced_entry->isValid){
 				entete_debug();
-				DPRINTF(DebugCache , "Invalidation of the cache line : %#lx , id_assoc %d\n" , replaced_entry->address, id_assoc);							
+				DPRINTF(DebugCache , "Invalidation of the cache line : %#lx , id_assoc %d\n" , replaced_entry->address,id_assoc);
 				//Prevent the cache line from being migrated du to WBs 
 				m_Deallocating = true;
 				//Inform the higher level of the deallocation
@@ -241,13 +255,22 @@ HybridCache::handleAccess(Access element)
 				
 				if(!m_isWarmup)
 					stats_evict++;
+		
+				if(simu_parameters.traceLLC && m_ID == -1)
+				{
+					string line =  "EVICT " + replaced_entry->address;
+					cout << "Writing to LLC_trace.out: " <<  line << endl;
+					gzwrite(LLC_trace, line.c_str() , LLC_TRACE_BUFFER_SIZE);	
+				}
 			}
 
 
+			
 			deallocate(replaced_entry);
 			allocate(address , id_set , id_assoc, inNVM, element.m_pc, element.isPrefetch());			
 			m_predictor->insertionPolicy(id_set , id_assoc , inNVM, element);
 			
+
 
 			if(inNVM){
 				entete_debug();
@@ -323,8 +346,19 @@ HybridCache::handleAccess(Access element)
 		
 		
 		current->m_compilerHints = element.m_compilerHints;
+		rd_type = classifyRD(id_set , id_assoc);
+		
 	}
 	
+	if(simu_parameters.traceLLC && m_ID == -1)
+	{
+		string access = element.isWrite() ? "WRITE" : "READ";
+		string data_type = element.isInstFetch() ? "INST" : "DATA";
+		string line = data_type + " " + access + " " + str_RD_status[rd_type];
+		line += " 0x" + convert_hex(element.m_address) + " 0x" + convert_hex(element.m_pc);  
+		cout << "Writing to LLC_trace.out: " <<  line << endl;
+		gzwrite(LLC_trace, line.c_str() , LLC_TRACE_BUFFER_SIZE);	
+	}
 }
 
 
@@ -458,7 +492,19 @@ HybridCache::handleWB(uint64_t block_addr, bool isDirty)
 				stats_dirtyWBNVM++;
 			else
 				stats_dirtyWBSRAM++;
-	
+			
+		
+			if(simu_parameters.traceLLC && m_ID == -1)
+			{
+				RD_TYPE rd_type = classifyRD(id_set , loc.m_way);
+				string access = element.isWrite() ? "READ" : "WRITE";
+				string data_type = element.isInstFetch() ? "INST" : "DATA";
+				string line = data_type + " " + access + " " + str_RD_status[rd_type];
+				line += " 0x" + convert_hex(block_addr) + " 0x0";  
+				cout << "Writing to LLC_trace.out: " <<  line << endl;
+				gzwrite(LLC_trace, line.c_str() , LLC_TRACE_BUFFER_SIZE);	
+			}
+		
 		}
 		else{
 			// Clean WB does not modify the state of the cache line 
@@ -467,6 +513,9 @@ HybridCache::handleWB(uint64_t block_addr, bool isDirty)
 			else 
 				stats_cleanWBSRAM++;			
 		}
+		
+
+	
 		if(simu_parameters.enablePCHistoryTracking && m_printStats)
 			current->pc_history.push_back(1);
 
@@ -698,7 +747,32 @@ HybridCache::openNewTimeFrame()
 	if(!m_isWarmup)
 		m_predictor->openNewTimeFrame();
 }
+
+RD_TYPE
+HybridCache::classifyRD(int set , int index)
+{
+	vector<CacheEntry*> line;
+	int64_t ref_rd;
 	
+	line = m_tableSRAM[set];
+	ref_rd = m_tableSRAM[set][index]->policyInfo;
+	
+	int position = 0;
+	
+	/* Determine the position of the cache line in the LRU stack */
+	for(unsigned i = 0 ; i < line.size() ; i ++)
+	{
+		if(line[i]->policyInfo > ref_rd)
+			position++;
+	}	
+
+	if(position < 4)
+		return RD_SHORT;
+	else
+		return RD_MEDIUM;
+}
+
+
 bool
 HybridCache::isPrefetchBlock(uint64_t addr)
 {
