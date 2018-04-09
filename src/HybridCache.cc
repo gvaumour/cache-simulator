@@ -359,7 +359,7 @@ HybridCache::handleAccess(Access element)
 		string access = element.isWrite() ? "WRITE" : "READ";
 		string data_type = element.isInstFetch() ? "INST" : "DATA";
 		string line = data_type + " " + access + " " + str_RD_status[rd_type];
-		line += " 0x" + convert_hex(element.m_address) + " 0x" + convert_hex(element.m_pc);  
+		line += " 0x" + convert_hex(block_addr) + " 0x" + convert_hex(element.m_pc);  
 		//cout << "Writing to LLC_trace.out: " <<  line << endl;
 		gzwrite(LLC_trace, line.c_str() , LLC_TRACE_BUFFER_SIZE);	
 	}
