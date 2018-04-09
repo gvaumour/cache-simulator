@@ -242,6 +242,16 @@ HybridCache::handleAccess(Access element)
 				
 			//Deallocate the cache line in the lower levels (inclusive system)
 			if(replaced_entry->isValid){
+
+
+				if(simu_parameters.traceLLC && m_ID == -1)
+				{
+					string line =  "EVICT " + convert_hex(replaced_entry->address);
+					//cout << "Writing to LLC_trace.out: " <<  line << endl;
+					gzwrite(LLC_trace, line.c_str() , LLC_TRACE_BUFFER_SIZE);	
+				}
+
+
 				entete_debug();
 				DPRINTF(DebugCache , "Invalidation of the cache line : %#lx , id_assoc %d\n" , replaced_entry->address,id_assoc);
 				//Prevent the cache line from being migrated du to WBs 
@@ -256,12 +266,6 @@ HybridCache::handleAccess(Access element)
 				if(!m_isWarmup)
 					stats_evict++;
 		
-				if(simu_parameters.traceLLC && m_ID == -1)
-				{
-					string line =  "EVICT " + replaced_entry->address;
-					cout << "Writing to LLC_trace.out: " <<  line << endl;
-					gzwrite(LLC_trace, line.c_str() , LLC_TRACE_BUFFER_SIZE);	
-				}
 			}
 
 
@@ -356,7 +360,7 @@ HybridCache::handleAccess(Access element)
 		string data_type = element.isInstFetch() ? "INST" : "DATA";
 		string line = data_type + " " + access + " " + str_RD_status[rd_type];
 		line += " 0x" + convert_hex(element.m_address) + " 0x" + convert_hex(element.m_pc);  
-		cout << "Writing to LLC_trace.out: " <<  line << endl;
+		//cout << "Writing to LLC_trace.out: " <<  line << endl;
 		gzwrite(LLC_trace, line.c_str() , LLC_TRACE_BUFFER_SIZE);	
 	}
 }
@@ -497,11 +501,9 @@ HybridCache::handleWB(uint64_t block_addr, bool isDirty)
 			if(simu_parameters.traceLLC && m_ID == -1)
 			{
 				RD_TYPE rd_type = classifyRD(id_set , loc.m_way);
-				string access = element.isWrite() ? "READ" : "WRITE";
-				string data_type = element.isInstFetch() ? "INST" : "DATA";
-				string line = data_type + " " + access + " " + str_RD_status[rd_type];
+				string line = "DATA WRITE " + string(str_RD_status[rd_type]);
 				line += " 0x" + convert_hex(block_addr) + " 0x0";  
-				cout << "Writing to LLC_trace.out: " <<  line << endl;
+				//cout << "Writing to LLC_trace.out: " <<  line << endl;
 				gzwrite(LLC_trace, line.c_str() , LLC_TRACE_BUFFER_SIZE);	
 			}
 		
