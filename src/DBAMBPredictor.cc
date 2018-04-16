@@ -43,6 +43,23 @@ DBAMBPredictor::DBAMBPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray
 	if(simu_parameters.enableReuseErrorComputation)
 		stats_history_SRAM.resize(nbSet);
 	*/
+
+	if(simu_parameters.DBAMB_signature.find("B") !=std::string::npos)
+	{	
+		vector<string> split_line = split(simu_parameters.DBAMB_signature , 'B');
+	
+		if(split_line.size() != 0)
+		{
+			for(auto byte : split_line)
+				m_hashingBytes.push_back(atoi(byte.c_str()));
+			
+			for(auto byte : m_hashingBytes)
+				cout << "Hashing Function - Byte : " << byte << "B" << endl;
+	
+		}
+
+	}
+
 	
 	//DPRINTF("RAPPredictor::Constructor m_DHPTable.size() = %lu , m_DHPTable[0].size() = %lu\n" , m_DHPTable.size() , m_DHPTable[0].size());
 
@@ -57,6 +74,7 @@ DBAMBPredictor::DBAMBPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray
 	if(simu_parameters.printDebug)
 		dataset_file.open(RAP_TEST_OUTPUT_DATASETS);
 
+	/*
 	if(simu_parameters.writeDatasetFile)
 	{
 		firstAlloc_dataset_file.open( simu_parameters.datasetFile , std::fstream::out);		
@@ -83,13 +101,10 @@ DBAMBPredictor::DBAMBPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray
 				m_firstAlloc_datasets.insert(pair<uint64_t,vector<allocDecision> >( pc , vector<allocDecision>()));
 			m_firstAlloc_datasets[pc].push_back(des);
 		}
-	}
+	}*/
 	
 	stats_nbMigrationsFromNVM.push_back(vector<int>(2,0));
-//	stats_switchDecision.clear();
-//	stats_switchDecision.push_back(vector<vector<int>>(3 , vector<int>(3,0)));	
-	
-//	myFile.open("dead_block_dump.out");
+
 
 	m_optTarget = simu_parameters.DBAMB_optTarget;
 	assert((m_optTarget == "energy" || m_optTarget == "perf") && "Wrong optimization parameter for the function cost" );
@@ -1089,11 +1104,30 @@ DBAMBPredictor::lookup(uint64_t signature)
 }
 
 
+uint64_t
+DBAMBPredictor::hashingFunction(Access element)
+{	
+	string total = buildHash( element.m_address , element.m_pc);
+//	string sig = string(1, total[m_hashingFirstByte]) + string( 1,total[m_hashingSecondByte]) + string(1,total[m_hashingByte]);
+	string sig ="";
+	for(unsigned i = 0 ; i < m_hashingBytes.size() ; i++)
+	{
+		assert(m_hashingBytes[i] < 16 && "Error on the hashing function bytes selection");
+		sig += string(1, total[m_hashingBytes[i]]);
+	}
+	return hexToInt(sig);
+}
+
+
 
 uint64_t
 DBAMBPredictor::hashingSignature(Access element)
 {
-	if(simu_parameters.DBAMB_signature == "first_pc")
+	if(m_hashingBytes.size() != 0)
+	{			
+		return hashingFunction(element);		
+	}
+	else if(simu_parameters.DBAMB_signature == "first_pc")
 	{
 		return bitSelect( element.m_pc, simu_parameters.DBAMB_begin_bit , simu_parameters.DBAMB_end_bit);
 	}
@@ -1104,6 +1138,7 @@ DBAMBPredictor::hashingSignature(Access element)
 	assert(true && "Wrong hashing signature parameter\n");
 	return 0;
 }
+
 
 uint64_t 
 DBAMBPredictor::indexFunction(uint64_t pc)

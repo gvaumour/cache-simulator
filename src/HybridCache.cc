@@ -350,8 +350,9 @@ HybridCache::handleAccess(Access element)
 		
 		
 		current->m_compilerHints = element.m_compilerHints;
-		rd_type = classifyRD(id_set , id_assoc);
-		
+	
+		if(simu_parameters.traceLLC && m_ID == -1)
+			rd_type = classifyRD(id_set , id_assoc);	
 	}
 	
 	if(simu_parameters.traceLLC && m_ID == -1)
@@ -754,20 +755,23 @@ RD_TYPE
 HybridCache::classifyRD(int set , int index)
 {
 	vector<CacheEntry*> line;
-	int64_t ref_rd;
+	int64_t ref_rd = m_tableSRAM[set][index]->policyInfo;
 	
 	line = m_tableSRAM[set];
-	ref_rd = m_tableSRAM[set][index]->policyInfo;
 	
 	int position = 0;
 	
+	//cout << "classifyRD, set = " << set  << " index = " << index << " ref_rd = " << m_tableSRAM[set][index]->policyInfo << endl;
 	/* Determine the position of the cache line in the LRU stack */
 	for(unsigned i = 0 ; i < line.size() ; i ++)
 	{
-		if(line[i]->policyInfo > ref_rd)
+	//	cout << "\tPolicy info = " << line[i]->policyInfo << endl;
+
+		if(line[i]->policyInfo < ref_rd && line[i]->isValid)
 			position++;
 	}	
 
+	//cout << "Position = " << position << endl;
 	if(position < 4)
 		return RD_SHORT;
 	else

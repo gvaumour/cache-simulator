@@ -30,9 +30,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include "common.hh"
 #include "DBAMBPredictor.hh"
+#include "Cache.hh"
 
 using namespace std;
-
 
 uint64_t cpt_time;
 
@@ -44,7 +44,7 @@ const char* allocDecision_str[] = {"ALLOCATE_IN_SRAM", "ALLOCATE_IN_NVM" , "BYPA
 
 const char* directory_state_str[] = {"SHARED_L1" , "MODIFIED_L1", "EXCLUSIVE_L1", "CLEAN_LLC", "DIRTY_LLC" , "NOT_PRESENT"};
 
-set<string> simulation_debugflags = {"DebugCache", "DebugDBAMB", "DebugHierarchy", "DebugFUcache"};
+set<string> simulation_debugflags = {"DebugCache", "DebugDBAMB", "DebugHierarchy", "DebugFUcache" , "all"};
 
 
 const char* str_RW_status[] = {"DEAD" , "WO", "RO" , "RW", "RW_NOTACC"};
@@ -160,6 +160,26 @@ readInputArgs(int argc , char* argv[] , int& sizeCache , int& assoc , int& block
 		return false;
 	}		
 	return true;
+}
+
+
+string buildHash(uint64_t a, uint64_t p)
+{
+	stringstream ss;
+	ss << std::hex << a;
+   	string addr = ss.str();
+
+	while(addr.size() < 8)
+		addr = string(1,'0') + addr;
+			
+	stringstream ss1;
+	ss1 << std::hex << p;
+   	string pc = ss1.str();	
+
+	while(pc.size() < 8)
+		pc = string(1,'0') + pc;
+
+	return addr + pc;
 }
 
 bool			

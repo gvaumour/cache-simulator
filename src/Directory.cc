@@ -15,6 +15,7 @@ void
 DirectoryEntry::print()
 {
 
+	/*
 	#ifdef TEST
 	
 		string type = isInst ? "INST" : "DATA";
@@ -27,7 +28,7 @@ DirectoryEntry::print()
 		for(auto p : nodeTrackers)		
 			cout << p << ",";			
 		cout << std::endl;
-	#endif
+	#endif*/
 }
 
 Directory::Directory()

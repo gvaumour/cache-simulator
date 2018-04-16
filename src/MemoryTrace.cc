@@ -118,7 +118,6 @@ TextTrace::readNext(Access& element)
 	if(!getline(m_textTrace , line)){
 		return false;
 	}
-	
 	if(line.empty())
 		return false;
 	
@@ -135,7 +134,6 @@ TextTrace::readNext(Access& element)
 	addr.erase( remove(addr.begin(), addr.end(), '#'), addr.end());
 	addr.erase( remove(addr.begin(), addr.end(), '!'), addr.end());
 
-	
 	element.m_address = hexToInt(addr);
 	int operation = atoi(split_line[1].c_str());		
 	element.m_size = atoi(split_line[2].c_str());		

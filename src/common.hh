@@ -45,6 +45,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 	Hold utilitary functions 
 */
 
+
 struct SimuParameters
 {
 	bool enableBP;
@@ -113,7 +114,8 @@ bool isPow2(int x);
 std::string convert_hex(int n);
 const char * StripPath(const char * path);
 void init_default_parameters();
-//void DPRINTF(std::string flag, ... );
+std::string buildHash(uint64_t a, uint64_t p);
+
 
 extern uint64_t cpt_time;
 extern int start_debug;

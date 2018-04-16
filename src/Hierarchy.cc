@@ -25,7 +25,7 @@ Hierarchy::Hierarchy(const Hierarchy& a)
 
 Hierarchy::Hierarchy(string policy, int nbCores)
 {
-	ConfigCache L1Dataconfig (32768, 2 , BLOCK_SIZE , "LRU", 0);
+	ConfigCache L1Dataconfig (32768, 1 , BLOCK_SIZE , "LRU", 0);
 	vector<ConfigCache> firstLevel;
 	firstLevel.push_back(L1Dataconfig);
 

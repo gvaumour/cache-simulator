@@ -169,6 +169,7 @@ class DBAMBPredictor : public Predictor {
 		void reportAccess(DHPEntry* rap_current, Access element, CacheEntry* current, bool inNVM, std::string entete, std::string reuse_class);
 		void reportMigration(DHPEntry* rap_current, CacheEntry* current, bool fromNVM);
 		uint64_t hashingSignature(Access element);
+		uint64_t hashingFunction(Access element);
 
 	protected : 
 		uint64_t m_cpt;
@@ -187,15 +188,17 @@ class DBAMBPredictor : public Predictor {
 		
 		unsigned m_RAP_assoc;
 		unsigned m_RAP_sets; 
+
+		std::vector<int> m_hashingBytes;
+	
+		/* Stats */
 		
 		unsigned stats_RAP_miss;
 		unsigned stats_RAP_hits;
 
 		unsigned stats_NVM_medium_pred_errors;
 		unsigned stats_NVM_medium_pred;
-
-
-		/* Stats */
+				
 //		std::vector< std::vector< std::vector<int> > > stats_switchDecision;		
 		std::vector<double> stats_nbSwitchDst;
 		std::vector< std::vector<int> > stats_ClassErrors;
