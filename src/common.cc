@@ -226,27 +226,24 @@ init_default_parameters()
 
 	/********* DBAMB Config *************/ 
 	simu_parameters.window_size = 20; 
-	simu_parameters.rap_innacuracy_th = 0.9;
 	simu_parameters.learningTH = 20;
 	simu_parameters.deadSaturationCouter = 3;
 	
 	simu_parameters.sram_assoc = 4;
 	simu_parameters.nvm_assoc = 12;
-//	simu_parameters.sram_assoc = 16;
-//	simu_parameters.nvm_assoc = 0;
 	simu_parameters.nb_sets = 2048;
 
 	simu_parameters.rap_assoc = 128;
 	simu_parameters.rap_sets = 128;
 	
 	simu_parameters.ratio_RWcost = -1;
-	simu_parameters.sizeMTtags = 4;//simu_parameters.nvm_assoc - simu_parameters.sram_assoc;
+	simu_parameters.sizeMTtags = 4;
 	
 	simu_parameters.readDatasetFile = false;
 	simu_parameters.writeDatasetFile = false;
 	simu_parameters.datasetFile = RAP_DATASET_FIRSTALLOC;
 
-	simu_parameters.DBAMB_optTarget = "energy";
+	simu_parameters.optTarget = EnergyParameters();
 	simu_parameters.DBAMB_signature = "first_pc";
 	
 	simu_parameters.DBAMB_begin_bit = 0;
@@ -254,6 +251,13 @@ init_default_parameters()
 	
 	simu_parameters.enableReuseErrorComputation = false;
 	simu_parameters.enablePCHistoryTracking = false;
+	/***************************************/ 
+
+	/********* Perceptron Config *************/ 	
+	simu_parameters.criteriaTable_size = 256;
+	simu_parameters.perceptron_criterias = { "Addr_LSB", "Addr_MSB", "PC_LSB", "PC_MSB"};
+	simu_parameters.perceptron_confidence_counter = 32;
+	simu_parameters.perceptron_windowSize = 16;	
 	/***************************************/ 
 	
 	simu_parameters.nbCores = 1;

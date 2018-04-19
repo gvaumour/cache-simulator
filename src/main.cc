@@ -137,9 +137,14 @@ int main(int argc , char* argv[]){
 			simu_parameters.simulate_conflicts = true;
 		else if(string(argv[i]) == "--enableReuseError")
 			simu_parameters.enableReuseErrorComputation = true;
-		else if(string(argv[i]) == "--DBAMB-optTarget")
+		else if(string(argv[i]) == "--Predictor-optTarget")
 		{	i++;
-			simu_parameters.DBAMB_optTarget = string(argv[i]);		
+			string m_optTarget = string(argv[i]);
+			assert((m_optTarget == "energy" || m_optTarget == "perf") && "Wrong optimization parameter for the function cost" );
+			if(m_optTarget == "energy")
+				simu_parameters.optTarget = EnergyParameters();
+			else if(m_optTarget == "perf")
+				simu_parameters.optTarget = PerfParameters();
 		}
 		else if(string(argv[i]) == "--DBAMB-signature")
 		{	i++;

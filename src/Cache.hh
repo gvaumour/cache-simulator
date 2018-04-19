@@ -24,6 +24,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <vector>
 #include <ostream>
 
+#define READ_ACCESS 0
+#define WRITE_ACCESS 1
+
+
 enum MemCmd{
 	INST_READ,
 	INST_PREFETCH,
@@ -199,9 +203,6 @@ class CacheEntry{
 };
 
 
-#define READ_ACCESS 0
-#define WRITE_ACCESS 1
-
 typedef std::vector<std::vector<CacheEntry*> > DataArray;
 
 
@@ -222,7 +223,53 @@ class ConfigCache{
 		bool m_printStats;
 };
 
+class CostFunctionParameters
+{
+	public:
+		CostFunctionParameters(){};
+		std::vector<double> costNVM; 
+		std::vector<double> costSRAM;
+		std::vector<double> costDRAM;
+};
 
+class EnergyParameters: public CostFunctionParameters
+{
+	public: 
+		EnergyParameters() {
+
+			costSRAM = std::vector<double>(2 ,0);
+			costSRAM[READ_ACCESS] = 271.678E-12;
+			costSRAM[WRITE_ACCESS] = 257.436E-12;
+
+			costNVM = std::vector<double>(2 ,0);
+			costNVM[READ_ACCESS] = 236.828E-12;
+			costNVM[WRITE_ACCESS] = 652.278E-12;
+
+			costDRAM = std::vector<double>(2 ,0);
+			costDRAM[READ_ACCESS] = 4.08893E-9;
+			costDRAM[WRITE_ACCESS] = 4.10241E-9;
+
+		};
+};
+
+class PerfParameters: public CostFunctionParameters
+{
+	public: 
+		PerfParameters() {
+
+			costSRAM = std::vector<double>(2 ,0);
+			costSRAM[READ_ACCESS] = 10;
+			costSRAM[WRITE_ACCESS] = 10;
+
+			costNVM = std::vector<double>(2 ,0);
+			costNVM[READ_ACCESS] = 10;
+			costNVM[WRITE_ACCESS] = 37;
+
+			costDRAM = std::vector<double>(2 ,0);
+			costDRAM[READ_ACCESS] = 100;
+			costDRAM[WRITE_ACCESS] = 100;
+		};
+};
 
 
 

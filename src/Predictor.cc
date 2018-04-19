@@ -371,7 +371,16 @@ Predictor::reportMiss(uint64_t block_addr , int id_set)
 		}
 	 }
 	/************************************************************/ 
+	bool sram_error = hitInMissingTags(block_addr, id_set);
+	if( sram_error ) 
+		stats_SRAM_errors[stats_SRAM_errors.size()-1]++;
+	
+	return sram_error;
+}
 
+bool 
+Predictor::hitInMissingTags(uint64_t block_addr, int id_set)
+{
 	/* Check if the block is in the missing tag array */ 
 	if(m_trackError && !m_isWarmup){
 		//An error in the SRAM part is a block that miss in the SRAM array 
@@ -381,14 +390,13 @@ Predictor::reportMiss(uint64_t block_addr , int id_set)
 			if(m_missing_tags[id_set][i]->addr == block_addr && m_missing_tags[id_set][i]->isValid)
 			{
 				////DPRINTF("BasePredictor::checkMissingTags Found SRAM error as %#lx is present in MT tag %i \n", block_addr ,i);  
-				stats_SRAM_errors[stats_SRAM_errors.size()-1]++;
 				return true;
 			}
 		}	
 	}
 	return false;
+	
 }
-
 
 void
 Predictor::openNewTimeFrame()

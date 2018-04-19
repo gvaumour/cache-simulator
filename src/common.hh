@@ -24,6 +24,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdint.h>
 #include <string>
 
+#include "Cache.hh"
+
 #define DPRINTF(FLAG, ...) if(simu_parameters.enable_debugflags.count(#FLAG) != 0) {printf(__VA_ARGS__);} 
 
 #define CONFIG_FILE "config.ini"
@@ -48,47 +50,49 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 struct SimuParameters
 {
-	bool enableBP;
-	bool enableMigration;
-	
 	bool printDebug;
-	
+	std::set<std::string> enable_debugflags;
+
+	int sram_assoc;	
+	int nbCores;
+	int nvm_assoc;
+	int nb_sets;
+	std::vector<std::string> memory_traces;
+
+	std::string policy;
+
+	bool simulate_conflicts;
+	bool traceLLC;
+
+	bool enablePrefetch;
+	int prefetchDegree;
+	int prefetchStreams;
+
+	/*** DBAMB Parameters */ 	
+	bool enableReuseErrorComputation;
+	bool enablePCHistoryTracking;
+
+	float rap_innacuracy_th;
 	int deadSaturationCouter;
 	int window_size;
 	int learningTH;
-	
-	int sram_assoc;
-	int nvm_assoc;
-	int nb_sets;
+
+	bool enableBP;
+	bool enableMigration;
 	
 	int rap_assoc;
 	int rap_sets;
 	
 	bool flagTest;
 
-	bool enablePrefetch;
-	int prefetchDegree;
-	int prefetchStreams;
-	
-	bool enableReuseErrorComputation;
-	bool enablePCHistoryTracking;
-
-	float rap_innacuracy_th;
-	
-	std::vector<std::string> memory_traces;
-	int nbCores;
-	std::string policy;
-
 	int saturation_threshold;
 	int cost_threshold;
 
 	int sizeMTtags;
 	
-	float ratio_RWcost;
+	float ratio_RWcost;	
 	
-	bool simulate_conflicts;
-	
-	std::string DBAMB_optTarget;
+	CostFunctionParameters optTarget;
 	std::string DBAMB_signature;
 	int DBAMB_begin_bit;
 	int DBAMB_end_bit;
@@ -96,10 +100,12 @@ struct SimuParameters
 	bool readDatasetFile;
 	bool writeDatasetFile;
 	std::string datasetFile;
+	/******************************/ 
 	
-	bool traceLLC;
-
-	std::set<std::string> enable_debugflags;
+	std::vector<std::string> perceptron_criterias;
+	int perceptron_confidence_counter;
+	int perceptron_windowSize;
+	int criteriaTable_size;
 };
 
 std::vector<std::string> split(std::string s, char delimiter);

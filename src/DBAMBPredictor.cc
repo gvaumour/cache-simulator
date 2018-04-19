@@ -105,13 +105,7 @@ DBAMBPredictor::DBAMBPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray
 	
 	stats_nbMigrationsFromNVM.push_back(vector<int>(2,0));
 
-
-	m_optTarget = simu_parameters.DBAMB_optTarget;
-	assert((m_optTarget == "energy" || m_optTarget == "perf") && "Wrong optimization parameter for the function cost" );
-	if(m_optTarget == "energy")
-		m_costParameters = EnergyParameters();
-	else if(m_optTarget == "perf")
-		m_costParameters = PerfParameters();
+	m_costParameters = simu_parameters.optTarget;
 	
 	if(simu_parameters.ratio_RWcost != -1)
 		m_costParameters.costNVM[WRITE_ACCESS] = m_costParameters.costNVM[READ_ACCESS]*simu_parameters.ratio_RWcost;
@@ -662,8 +656,6 @@ DBAMBPredictor::updateWindow(DHPEntry* rap_current)
 int
 DBAMBPredictor::evictPolicy(int set, bool inNVM)
 {	
-
-		
 	int assoc_victim = -1;
 	assert(m_replacementPolicyNVM_ptr != NULL);
 	assert(m_replacementPolicySRAM_ptr != NULL);

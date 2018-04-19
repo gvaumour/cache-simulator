@@ -46,7 +46,7 @@ class Predictor{
 
 		virtual int evictPolicy(int set, bool inNVM) =0;
 		virtual void printConfig(std::ostream& out, std::string entete) ;
-		virtual void finishSimu() = 0;
+		virtual void finishSimu() { };
 		virtual void printStats(std::ostream& out, std::string entete);
 		virtual void openNewTimeFrame();
 
@@ -59,6 +59,9 @@ class Predictor{
 		void migrationRecording();
 		void evictRecording(int id_set , int id_assoc , bool inNVM);
 		void updateFUcaches(uint64_t block_addr, bool inNVM);
+
+		bool hitInMissingTags(uint64_t block_addr, int set);
+
 
 	protected : 		
 		DataArray& m_tableSRAM;
