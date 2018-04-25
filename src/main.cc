@@ -159,6 +159,10 @@ int main(int argc , char* argv[]){
 		{	i++;
 			simu_parameters.perceptron_threshold_bypass = atoi(argv[i]);		
 		}
+		else if(string(argv[i]) == "--Perceptron-BPLearning")
+		{	i++;
+			simu_parameters.perceptron_threshold_learning = atoi(argv[i]);		
+		}
 		else if(string(argv[i]) == "--DBAMB-addr-beginBits")
 		{	i++;
 			simu_parameters.DBAMB_begin_bit = atoi(argv[i]);		

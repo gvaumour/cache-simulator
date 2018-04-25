@@ -138,7 +138,8 @@ SRAMconsoWrite = (nbSRAMWrite - nbFromNVMmigration) * costSRAM[WRITE_ACCESS];
 SRAMconso = SRAMconsoRead + SRAMconsoWrite;
 
 #Cost of the Main Memory
-memoryConso = costDRAMRead * (DRAM_read + nbBypass);
+#memoryConso = costDRAMRead * (DRAM_read + nbBypass);
+memoryConso = costDRAMRead * (DRAM_read);
 memoryConso += costDRAMWrite * (DRAM_write); 
 
 #nvsp_tableConso = RAPTableCost * (nbSRAMRead + nbSRAMWrite + nbNVMRead + nbNVMWrite + nbBypass);
