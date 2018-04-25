@@ -102,6 +102,7 @@ PerceptronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 		}
 		setPrediction(entry);
 	}
+	Predictor::updatePolicy(set , index , inNVM , element , isWBrequest);
 }
 
 void
@@ -114,6 +115,7 @@ PerceptronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, A
 	if(current->isLearning)
 		setPrediction(current);
 	
+	Predictor::insertionPolicy(set , index , inNVM , element);
 	//updatePolicy(set , index, inNVM, element, false);
 }
 
@@ -169,6 +171,7 @@ int PerceptronPredictor::evictPolicy(int set, bool inNVM)
 			stats_nbDeadLine[stats_nbDeadLine.size()-1]++;
 	}
 	
+	evictRecording(set , assoc_victim , inNVM);	
 	return assoc_victim;
 }
 
@@ -250,6 +253,8 @@ PerceptronPredictor::openNewTimeFrame()
 {
 	stats_nbBPrequests.push_back(0);
 	stats_nbDeadLine.push_back(0);
+	
+	Predictor::openNewTimeFrame();
 }
 
 int hashingAddr_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
