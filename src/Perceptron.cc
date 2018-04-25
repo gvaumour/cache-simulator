@@ -10,7 +10,6 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 	Predictor(nbAssoc , nbSet , nbNVMways , SRAMtable , NVMtable , cache)
 {	
 	m_tableSize = simu_parameters.perceptron_table_size;
-
 	m_features.clear();
 
 	for(auto feature : simu_parameters.perceptron_features)
@@ -37,6 +36,7 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 		}
 	}
 
+	m_cpt = 0;
 	stats_nbBPrequests = vector<uint64_t>(1, 0);
 	stats_nbDeadLine = vector<uint64_t>(1, 0);
 }
@@ -88,6 +88,7 @@ PerceptronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 {
 
 	CacheEntry *entry = get_entry(set , index , inNVM);
+	entry->policyInfo = m_cpt++;
 	if(entry->isLearning)
 	{
 		if( entry->perceptron_BPpred > -simu_parameters.perceptron_threshold_learning || !entry->predictedReused)
@@ -108,6 +109,7 @@ PerceptronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, A
 {
 
 	CacheEntry* current = get_entry(set , index , inNVM);
+	current->policyInfo = m_cpt++;
 
 	if(current->isLearning)
 		setPrediction(current);
@@ -149,7 +151,6 @@ int PerceptronPredictor::evictPolicy(int set, bool inNVM)
 		assoc_victim = m_replacementPolicySRAM_ptr->evictPolicy(set);
 		current = m_tableSRAM[set][assoc_victim];		
 	}
-
 
 	if(current->isValid && current->isLearning)
 	{	

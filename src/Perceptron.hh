@@ -46,7 +46,8 @@ class PerceptronPredictor : public Predictor {
 		std::vector<hashing_function> m_features_hash;
 		std::vector<std::string> m_criterias_names;
 		int m_tableSize;
-		
+
+		uint64_t m_cpt;		
 		
 		/* Stats */ 
 		std::vector<uint64_t> stats_nbBPrequests;
