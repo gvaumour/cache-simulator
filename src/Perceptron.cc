@@ -14,26 +14,17 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 
 	for(auto feature : simu_parameters.perceptron_features)
 	{
+		m_features.push_back( new FeatureTable(m_tableSize, feature));
 		if(feature == "PC_LSB")
-		{
-			m_features.push_back( new FeatureTable(m_tableSize, feature));
 			m_features_hash.push_back(hashingPC_LSB);		
-		}
 		else if(feature == "PC_MSB")
-		{
-			m_features.push_back( new FeatureTable(m_tableSize, feature));
 			m_features_hash.push_back(hashingPC_MSB);				
-		}
 		else if(feature == "Addr_LSB")
-		{
-			m_features.push_back( new FeatureTable(m_tableSize, feature));
 			m_features_hash.push_back(hashingAddr_LSB);						
-		}
+		else if(feature == "Addr_LSB1")
+			m_features_hash.push_back(hashingAddr_LSB1);						
 		else if(feature == "Addr_MSB")
-		{
-			m_features.push_back( new FeatureTable(m_tableSize, feature));
 			m_features_hash.push_back(hashingAddr_MSB);	
-		}
 	}
 
 	m_cpt = 0;
@@ -257,12 +248,16 @@ PerceptronPredictor::openNewTimeFrame()
 	Predictor::openNewTimeFrame();
 }
 
+int hashingAddr_LSB1(uint64_t addr , uint64_t missPC , uint64_t currentPC)
+{
+	return (addr^currentPC) % 256;
+}
+
 int hashingAddr_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
 {
 	return bitSelect(addr , 0 , 7);
 
 //	Addr << "cout " << std::hex << addr << " Current PC = " << currentPC << " : " << ( (missPC)^currentPC) % 256 << endl;
-//	return (addr^currentPC) % 256;
 }
 
 int hashingAddr_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)

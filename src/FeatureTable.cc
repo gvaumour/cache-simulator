@@ -115,18 +115,7 @@ FeatureTable::increaseConfidence(int index)
 void
 FeatureTable::recordEvict(int index , bool hasBeenReused)
 {
-	FeatureEntry* feature_entry = lookup(index);
-	if(!feature_entry)
-		return;
-	if(hasBeenReused)
-	{
-	}
-	else			
-	{
-		feature_entry->bypass_counter++;
-		if(feature_entry->bypass_counter > simu_parameters.perceptron_counter_size)
-			feature_entry->bypass_counter = simu_parameters.perceptron_counter_size;	
-	}
+
 }
 
 int
