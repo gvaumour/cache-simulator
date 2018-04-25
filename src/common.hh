@@ -57,6 +57,8 @@ struct SimuParameters
 	int nbCores;
 	int nvm_assoc;
 	int nb_sets;
+	int nb_sampled_sets;
+	
 	std::vector<std::string> memory_traces;
 
 	std::string policy;
@@ -102,10 +104,12 @@ struct SimuParameters
 	std::string datasetFile;
 	/******************************/ 
 	
-	std::vector<std::string> perceptron_criterias;
-	int perceptron_confidence_counter;
+	std::vector<std::string> perceptron_features;
+	int perceptron_counter_size;
 	int perceptron_windowSize;
-	int criteriaTable_size;
+	int perceptron_threshold_bypass;
+	int perceptron_threshold_learning;
+	int perceptron_table_size;
 };
 
 std::vector<std::string> split(std::string s, char delimiter);

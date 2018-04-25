@@ -33,8 +33,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "ReplacementPolicy.hh"
 #include "SaturationPredictor.hh"
 #include "InstructionPredictor.hh"
-#include "DynamicSaturation.hh"
-#include "CompilerPredictor.hh"
+//#include "DynamicSaturation.hh"
+//#include "CompilerPredictor.hh"
 #include "DBAMBPredictor.hh"
 #include "Perceptron.hh"
 //#include "RAPPredictor_opt.hh"
@@ -87,10 +87,6 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		 m_predictor = new LRUPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM, this);	
 	else if(m_policy == "Saturation")
 		 m_predictor = new SaturationCounter(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
-	else if(m_policy == "DynamicSaturation")
-		 m_predictor = new DynamicSaturation(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
-	else if(m_policy == "Compiler")
-		 m_predictor = new CompilerPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "Instruction")
 		 m_predictor = new InstructionPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "Perceptron")
@@ -100,7 +96,24 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 	else {
 		assert(false && "Cannot initialize predictor for HybridCache");
 	}
-			
+	
+	if(m_ID == -1)
+	{
+		int constituency = m_nb_set / simu_parameters.nb_sampled_sets;
+		int index = 0;
+		for(int i = 0 ; i+index < m_nb_set; i += constituency)
+		{
+			for(int j = 0 ; j < m_nbSRAMways ; j++)
+				m_tableSRAM[i+index][j]->isLearning = true;
+
+			for(int j = 0 ; j < m_nbNVMways ; j++)
+				m_tableNVM[i+index][j]->isLearning = true;
+
+			index = (index+1)%constituency;
+		}
+	}
+	
+	
 	m_start_index = log2(blocksize)-1;
 	m_end_index = log2(m_blocksize) + log2(m_nb_set);
 	
@@ -490,6 +503,7 @@ HybridCache::handleWB(uint64_t block_addr, bool isDirty)
 			element.m_type = MemCmd::DIRTY_WRITEBACK;
 			element.m_compilerHints = current->m_compilerHints;
 			element.enableMigration = !m_Deallocating;
+			element.m_pc = m_system->getActualPC();
 			
 			current->nbWrite++;
 			
@@ -853,7 +867,7 @@ HybridCache::printResults(std::ostream& out)
 	else
 		entete+= "LLC";
 
-	if(total_miss != 0){
+	if(total_access != 0 || stats_bypass > 0){
 	
 		out << entete << ":Results" << endl;
 		out << entete << ":TotalAccess\t"<< total_access << endl;
@@ -902,6 +916,13 @@ HybridCache::printResults(std::ostream& out)
 		m_predictor->printStats(out, entete);
 	
 	}
+}
+
+
+uint64_t
+HybridCache::getActualPC()
+{
+	return m_system->getActualPC();
 }
 
 void

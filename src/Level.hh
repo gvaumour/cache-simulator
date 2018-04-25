@@ -43,6 +43,8 @@ class Level{
 		bool isPrefetchBlock(uint64_t block_addr);
 		
 		CacheEntry* getEntry(uint64_t addr);
+	
+		uint64_t getActualPC();
 		
 	protected:
 		HybridCache* m_dcache;

@@ -150,6 +150,10 @@ int main(int argc , char* argv[]){
 		{	i++;
 			simu_parameters.DBAMB_signature = string(argv[i]);		
 		}
+		else if(string(argv[i]) == "--Perceptron-BPThreshold")
+		{	i++;
+			simu_parameters.perceptron_threshold_bypass = atoi(argv[i]);		
+		}
 		else if(string(argv[i]) == "--DBAMB-addr-beginBits")
 		{	i++;
 			simu_parameters.DBAMB_begin_bit = atoi(argv[i]);		
@@ -202,7 +206,7 @@ int main(int argc , char* argv[]){
 //		simu_parameters.DBAMB_end_bit = 64;
 //	}
 	
-	if((simu_parameters.nvm_assoc == 0 || simu_parameters.sram_assoc == 0) )
+	if( (simu_parameters.nvm_assoc == 0 || simu_parameters.sram_assoc == 0) && simu_parameters.policy != "Perceptron" )
 	 {
 	 	simu_parameters.policy = "LRU";
 	 }

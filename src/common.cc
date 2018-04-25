@@ -223,15 +223,15 @@ init_default_parameters()
 	simu_parameters.prefetchStreams = 16; 
 	simu_parameters.enablePrefetch = false;
 
+	simu_parameters.sram_assoc = 16;
+	simu_parameters.nvm_assoc = 0;
+	simu_parameters.nb_sets = 2048;
+	simu_parameters.nb_sampled_sets = 64;
 
 	/********* DBAMB Config *************/ 
 	simu_parameters.window_size = 20; 
 	simu_parameters.learningTH = 20;
 	simu_parameters.deadSaturationCouter = 3;
-	
-	simu_parameters.sram_assoc = 4;
-	simu_parameters.nvm_assoc = 12;
-	simu_parameters.nb_sets = 2048;
 
 	simu_parameters.rap_assoc = 128;
 	simu_parameters.rap_sets = 128;
@@ -254,14 +254,17 @@ init_default_parameters()
 	/***************************************/ 
 
 	/********* Perceptron Config *************/ 	
-	simu_parameters.criteriaTable_size = 256;
-	simu_parameters.perceptron_criterias = { "Addr_LSB", "Addr_MSB", "PC_LSB", "PC_MSB"};
-	simu_parameters.perceptron_confidence_counter = 32;
+	simu_parameters.perceptron_table_size = 256;
+//	simu_parameters.perceptron_features = { "Addr_LSB", "Addr_MSB", "PC_LSB", "PC_MSB"};
+	simu_parameters.perceptron_features = { "PC_LSB"};
+	simu_parameters.perceptron_counter_size = 32;
 	simu_parameters.perceptron_windowSize = 16;	
+	simu_parameters.perceptron_threshold_bypass = 3;
+	simu_parameters.perceptron_threshold_learning = 11;
 	/***************************************/ 
 	
 	simu_parameters.nbCores = 1;
-	simu_parameters.policy = "DBAMB";
+	simu_parameters.policy = "Perceptron";
 
 	simu_parameters.saturation_threshold = 2;	
 	simu_parameters.cost_threshold = -5;

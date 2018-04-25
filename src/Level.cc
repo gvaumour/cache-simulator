@@ -207,3 +207,9 @@ Level::print(std::ostream& out)
 	printResults(out);
 }
 
+
+uint64_t
+Level::getActualPC()
+{
+	return m_system->getActualPC();
+}

@@ -14,7 +14,6 @@
 class Level;
 class Access;
 
-
 class Hierarchy
 {
 
@@ -36,13 +35,12 @@ class Hierarchy
 
 		void startWarmup();
 		void stopWarmup();
-
-
 		
 		/** Accessors functions */
 		unsigned getNbLevel() const { return m_nbLevel;};
 		std::string getConfigFile() const { return m_configFile;};
 		Directory* getDirectory() { return m_directory;};
+		uint64_t getActualPC(){ return m_currentInst;};
 
 	protected:
 	
@@ -54,10 +52,12 @@ class Hierarchy
 		unsigned int m_nbLevel;
 		unsigned int m_nbCores;
 		std::string m_configFile;
+		uint64_t m_currentInst;
 		
 		std::vector<ConfigCache> readConfigFile(std::string configFile);
 
 		int m_start_index;
+		
 		uint64_t stats_beginTimeFrame;
 		uint64_t stats_cleanWB_MainMem;
 		uint64_t stats_dirtyWB_MainMem;

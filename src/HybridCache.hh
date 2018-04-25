@@ -27,7 +27,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include "Cache.hh"
 #include "Predictor.hh"
-#include "Hierarchy.hh"
+#include "Level.hh"
 #include "common.hh"
 
 class Level;
@@ -97,6 +97,7 @@ class HybridCache {
 		bool isInstCache() const {return m_isInstructionCache;};
 		bool isPrefetchBlock(uint64_t block_addr);
 		void resetPrefetchFlag(uint64_t block_addr);
+		uint64_t getActualPC();
 
 	private :
 	

@@ -225,6 +225,7 @@ Hierarchy::handleAccess(Access element)
 	uint64_t block_addr = bitRemove(addr , 0 , m_start_index+1);
 	int id_thread = (int) element.m_idthread;
 	int id_core = convertThreadIDtoCore(id_thread);
+	m_currentInst = element.m_pc; 
 	
 	assert(id_core < (int)m_nbCores);	
 	

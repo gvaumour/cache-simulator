@@ -6,65 +6,19 @@
 #include <list>
 #include <ostream>
 
+#include "FeatureTable.hh"
 #include "Predictor.hh"
 #include "common.hh"
 #include "HybridCache.hh"
 #include "Cache.hh"
 
+#define FILE_OUTPUT_BYPASS "perceptron_bypass.out"
+
 class Predictor;
 class HybridCache;
 
 
-typedef int (*hashing_function)(CacheEntry*); 
-
-class CriteriaEntry
-{
-	public: 
-		CriteriaEntry() { initEntry(); isValid = false; };
-		
-		void initEntry() {
-		 	cpts =  std::vector< std::vector<int> >(NUM_RW_TYPE, std::vector<int>(NUM_RD_TYPE, 0));
-		 					
-			isValid = true;
-			cptWindow = 0;			
-			dead_counter = 0;
-			cptBypassLearning = 0;
-			allocation_counter = 0;
-			des = ALLOCATE_PREEMPTIVELY;
-		 };
-		
-		void updateDatasetState();
-		
-		std::vector< std::vector<int> > cpts;
-
-		int cptBypassLearning;		
-		int cptWindow;
-		
-		bool isValid;
-		int dead_counter;
-		
-		int allocation_counter;
-		allocDecision des;
-};
-
-
-class CriteriaTable
-{
-
-	public: 
-		CriteriaTable( int size, int (*hashing)(CacheEntry*) , std::string name);
-		~CriteriaTable();
-
-		CriteriaEntry* lookup(CacheEntry*);
-		int getAllocationPrediction(int set , Access element);
-		void updateEntry(CacheEntry* entry, Access element, RD_TYPE rd);
-		
-	private:
-		int m_size;
-		std::string m_name;
-		std::vector<CriteriaEntry*> m_table;
-		hashing_function m_hash;
-};		
+typedef int (*hashing_function)(uint64_t , uint64_t , uint64_t); 
 
 class PerceptronPredictor : public Predictor {
 
@@ -79,26 +33,32 @@ class PerceptronPredictor : public Predictor {
 		void evictRecording( int id_set , int id_assoc , bool inNVM);
 		void printStats(std::ostream& out, std::string entete);
 		void printConfig(std::ostream& out, std::string entete);
-		void openNewTimeFrame() {};
+		void openNewTimeFrame();
 		void finishSimu() {};
 		RD_TYPE classifyRD(int set , int index , bool inNVM);
-		
+		void setPrediction(CacheEntry* current);
 		CacheEntry* get_entry(uint64_t set , uint64_t index , bool inNVM);
 				
 	protected : 
 
-		/* CriteriaTable Handlers */
-		std::vector<CriteriaTable*> m_criterias;
+		/* FeatureTable Handlers */
+		std::vector<FeatureTable*> m_features;
+		std::vector<hashing_function> m_features_hash;
 		std::vector<std::string> m_criterias_names;
 		int m_tableSize;
+		
+		
+		/* Stats */ 
+		std::vector<uint64_t> stats_nbBPrequests;
+		std::vector<uint64_t> stats_nbDeadLine;
 		
 };
 
 
-int hashingAddr_MSB(CacheEntry* entry);
-int hashingAddr_LSB(CacheEntry* entry);
-int hashingPC_MSB(CacheEntry* entry);
-int hashingPC_LSB(CacheEntry* entry);
+int hashingAddr_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
+int hashingAddr_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
+int hashingPC_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
+int hashingPC_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
 
 #endif
 
