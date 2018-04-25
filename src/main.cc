@@ -150,6 +150,11 @@ int main(int argc , char* argv[]){
 		{	i++;
 			simu_parameters.DBAMB_signature = string(argv[i]);		
 		}
+		else if(string(argv[i]) == "--Perceptron-Features")
+		{	i++;
+			simu_parameters.perceptron_features.clear();
+			simu_parameters.perceptron_features = split(string(argv[i]) , ',');
+		}
 		else if(string(argv[i]) == "--Perceptron-BPThreshold")
 		{	i++;
 			simu_parameters.perceptron_threshold_bypass = atoi(argv[i]);		

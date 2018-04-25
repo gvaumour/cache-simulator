@@ -256,7 +256,7 @@ init_default_parameters()
 	/********* Perceptron Config *************/ 	
 	simu_parameters.perceptron_table_size = 256;
 //	simu_parameters.perceptron_features = { "Addr_LSB", "Addr_MSB", "PC_LSB", "PC_MSB"};
-	simu_parameters.perceptron_features = { "PC_LSB"};
+	simu_parameters.perceptron_features = { "PC_LSB" , "Addr_LSB"};
 	simu_parameters.perceptron_counter_size = 32;
 	simu_parameters.perceptron_windowSize = 16;	
 	simu_parameters.perceptron_threshold_bypass = 3;

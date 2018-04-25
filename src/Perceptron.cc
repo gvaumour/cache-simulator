@@ -253,16 +253,16 @@ PerceptronPredictor::openNewTimeFrame()
 
 int hashingAddr_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
 {
-//	return bitSelect(addr , 0 , 7);
+	return bitSelect(addr , 0 , 7);
 
 //	Addr << "cout " << std::hex << addr << " Current PC = " << currentPC << " : " << ( (missPC)^currentPC) % 256 << endl;
-	return (addr^currentPC) % 256;
+//	return (addr^currentPC) % 256;
 }
 
 int hashingAddr_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
 {
-//	return bitSelect(addr , 20 , 27);
-	return ( (addr>>7)^currentPC) % 256;
+	return bitSelect(addr , 20 , 27);
+//	return ( (addr>>7)^currentPC) % 256;
 }
 
 int
@@ -276,8 +276,8 @@ hashingPC_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
 int
 hashingPC_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
 {
-//	return bitSelect(missPC , 40 , 47);
-	return ( (missPC>>7)^currentPC) % 256;
+	return bitSelect(missPC , 40 , 47);
+//	return ( (missPC>>7)^currentPC) % 256;
 }
 
 
