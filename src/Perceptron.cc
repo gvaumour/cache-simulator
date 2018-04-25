@@ -54,26 +54,25 @@ PerceptronPredictor::allocateInNVM(uint64_t set, Access element)
 //	if(element.isInstFetch())
 //		return ALLOCATE_IN_NVM;
 
-	int sum_prediction = 0;
-
-	int actual_pc = m_cache->getActualPC();
 	
 	// All the set is a learning/sampled set independantly of its way or SRAM/NVM alloc
 	bool isLearning = m_tableSRAM[set][0]->isLearning; 
 	
-	//Predict if we should bypass
-	for(unsigned i = 0 ; i < m_features.size(); i++)
-	{
-		int hash = m_features_hash[i](element.m_address , element.m_pc , actual_pc);
-		sum_prediction += m_features[i]->getBypassPrediction(hash);
-	}
-
 	if(isLearning)
 	{
 		return ALLOCATE_IN_SRAM;
 	}
 	else
 	{	
+		//Predict if we should bypass
+		int sum_prediction = 0;
+		int actual_pc = m_cache->getActualPC();
+		for(unsigned i = 0 ; i < m_features.size(); i++)
+		{
+			int hash = m_features_hash[i](element.m_address , element.m_pc , actual_pc);
+			sum_prediction += m_features[i]->getBypassPrediction(hash);
+		}
+	
 		if(sum_prediction > simu_parameters.perceptron_threshold_bypass)
 		{
 			stats_nbBPrequests[stats_nbBPrequests.size()-1]++;
@@ -82,16 +81,6 @@ PerceptronPredictor::allocateInNVM(uint64_t set, Access element)
 		else
 			return ALLOCATE_IN_SRAM;		
 	}
-	// Decide to allocate to SRAM or NVM 
-	/*sum_prediction = 0;
-	for(auto feature: m_features)
-		sum_prediction += feature->getAllocationPrediction(set , element);
-
-	if(sum_prediction >= 0)
-		return ALLOCATE_IN_NVM;
-	else 
-		return ALLOCATE_IN_SRAM;
-	*/
 }
 
 void
@@ -171,7 +160,7 @@ int PerceptronPredictor::evictPolicy(int set, bool inNVM)
 			for(unsigned i =  0 ; i < m_features.size() ; i++)
 			{
 				int hash = m_features_hash[i](current->address , current->m_pc , actual_pc);
-				m_features[i]->increaseConfidence(hash);
+ 				m_features[i]->increaseConfidence(hash);
 			}
 		}
 		

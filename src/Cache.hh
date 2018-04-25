@@ -134,6 +134,7 @@ class CacheEntry{
 	public :
 		CacheEntry() { 
 			isNVM = false;
+			isLearning = false;
 			initEntry();
 		};
 
@@ -143,7 +144,6 @@ class CacheEntry{
 			isDirty = false;
 			lastWrite = false;
 			predictedReused = false;
-			isLearning = false;
 			isPrefetch = false;
 			address = 0;
 			policyInfo = 0; 

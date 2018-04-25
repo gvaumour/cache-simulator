@@ -17,8 +17,6 @@ class FeatureEntry
 		 					
 			isValid = true;
 			cptWindow = 0;			
-			dead_counter = 0;
-			cptBypassLearning = 0;
 			allocation_counter = 0;
 			bypass_counter = 0;
 			des = ALLOCATE_PREEMPTIVELY;
@@ -28,12 +26,10 @@ class FeatureEntry
 		
 		std::vector< std::vector<int> > cpts;
 
-		int cptBypassLearning;		
 		int cptWindow;
 		
 		bool isValid;
-		int dead_counter;
-		
+				
 		int allocation_counter;
 		int bypass_counter;
 		allocDecision des;
