@@ -18,21 +18,27 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 	{
 		m_features.push_back( new FeatureTable(m_tableSize, feature));
 		if(feature == "MissPC_LSB")
-			m_features_hash.push_back(hashingPC_LSB);		
+			m_features_hash.push_back(hashingMissPC_LSB);		
+		else if(feature == "MissPC_LSB1")
+			m_features_hash.push_back(hashingMissPC_LSB1);				
 		else if(feature == "MissPC_MSB")
-			m_features_hash.push_back(hashingPC_MSB);				
+			m_features_hash.push_back(hashingMissPC_MSB);				
+
 		else if(feature == "Addr_LSB")
 			m_features_hash.push_back(hashingAddr_LSB);						
 		else if(feature == "Addr_LSB1")
 			m_features_hash.push_back(hashingAddr_LSB1);						
 		else if(feature == "Addr_MSB")
 			m_features_hash.push_back(hashingAddr_MSB);	
+
 		else if(feature == "MissCounter")
 			m_features_hash.push_back(hashing_MissCounter);	
-		else if(feature == "currentPC")
-			m_features_hash.push_back(hashing_currentPC);	
 		else if(feature == "MissCounter1")
 			m_features_hash.push_back(hashing_MissCounter1);	
+
+		else if(feature == "currentPC")
+			m_features_hash.push_back(hashing_currentPC);	
+
 	}
 
 	miss_counter = 0;
@@ -268,13 +274,12 @@ PerceptronPredictor::openNewTimeFrame()
 
 int hashingAddr_LSB1(uint64_t addr , uint64_t missPC , uint64_t currentPC)
 {
-	return (addr^currentPC) % 256;
+	return ( bitSelect(addr , 6 , 13)^currentPC) % 256;
 }
 
 int hashingAddr_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
 {
-	return bitSelect(addr , 0 , 7);
-
+	return bitSelect(addr , 6 , 13);
 //	Addr << "cout " << std::hex << addr << " Current PC = " << currentPC << " : " << ( (missPC)^currentPC) % 256 << endl;
 }
 
@@ -285,17 +290,22 @@ int hashingAddr_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
 }
 
 int
-hashingPC_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
+hashingMissPC_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
 {
 	return bitSelect(missPC , 0 , 7);
-//	cout << "MissPC " << std::hex << missPC << " Current PC = " << currentPC << " : " << ( (missPC)^currentPC) % 256 << endl;
-//	return ( (missPC)^currentPC) % 256;
 }
 
 int
-hashingPC_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
+hashingMissPC_LSB1(uint64_t addr , uint64_t missPC , uint64_t currentPC)
 {
-	return bitSelect(missPC , 40 , 47);
+	return ( bitSelect(missPC , 0 , 7)^currentPC)%256;
+}
+
+
+int
+hashingMissPC_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
+{
+	return bitSelect(missPC , 20 , 27);
 //	return ( (missPC>>7)^currentPC) % 256;
 }
 

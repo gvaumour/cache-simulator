@@ -59,10 +59,14 @@ class PerceptronPredictor : public Predictor {
 int hashingAddr_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
 int hashingAddr_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
 int hashingAddr_LSB1(uint64_t addr , uint64_t missPC , uint64_t currentPC);
-int hashingPC_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
-int hashingPC_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
+
+int hashingMissPC_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
+int hashingMissPC_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
+int hashingMissPC_LSB1(uint64_t addr , uint64_t missPC , uint64_t currentPC);
+
 int hashing_MissCounter(uint64_t addr, uint64_t missPC, uint64_t currentPC);
 int hashing_MissCounter1(uint64_t addr, uint64_t missPC, uint64_t currentPC);
+
 int hashing_currentPC(uint64_t addr, uint64_t missPC, uint64_t currentPC);
 
 #endif
