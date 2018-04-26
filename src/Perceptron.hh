@@ -61,6 +61,8 @@ int hashingAddr_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
 int hashingAddr_LSB1(uint64_t addr , uint64_t missPC , uint64_t currentPC);
 int hashingPC_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
 int hashingPC_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
+int hashing_MissCounter(uint64_t addr, uint64_t missPC, uint64_t currentPC);
+int hashing_MissCounter1(uint64_t addr, uint64_t missPC, uint64_t currentPC);
 
 #endif
 

@@ -6,6 +6,8 @@
 
 using namespace std;
 
+int miss_counter;
+
 PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) :\
 	Predictor(nbAssoc , nbSet , nbNVMways , SRAMtable , NVMtable , cache)
 {	
@@ -25,8 +27,14 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 			m_features_hash.push_back(hashingAddr_LSB1);						
 		else if(feature == "Addr_MSB")
 			m_features_hash.push_back(hashingAddr_MSB);	
+		else if(feature == "MissCounter")
+			m_features_hash.push_back(hashing_MissCounter);	
+		else if(feature == "MissCounter1")
+			m_features_hash.push_back(hashing_MissCounter1);	
 	}
 
+	miss_counter = 0;
+	
 	m_cpt = 0;
 	stats_nbBPrequests = vector<uint64_t>(1, 0);
 	stats_nbDeadLine = vector<uint64_t>(1, 0);
@@ -45,6 +53,9 @@ PerceptronPredictor::allocateInNVM(uint64_t set, Access element)
 //	if(element.isInstFetch())
 //		return ALLOCATE_IN_NVM;
 
+	miss_counter++;
+	if(miss_counter > 256)
+		miss_counter = 256;
 	
 	// All the set is a learning/sampled set independantly of its way or SRAM/NVM alloc
 	bool isLearning = m_tableSRAM[set][0]->isLearning; 
@@ -93,6 +104,11 @@ PerceptronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 		}
 		setPrediction(entry);
 	}
+
+	miss_counter--;
+	if(miss_counter < 0)
+		miss_counter = 0;
+
 	Predictor::updatePolicy(set , index , inNVM , element , isWBrequest);
 }
 
@@ -176,16 +192,16 @@ PerceptronPredictor::evictRecording( int id_set , int id_assoc , bool inNVM)
 void 
 PerceptronPredictor::printStats(std::ostream& out, std::string entete) { 
 
-	ofstream file(FILE_OUTPUT_BYPASS);
+	//ofstream file(FILE_OUTPUT_BYPASS);
 
 	uint64_t total_BP = 0, total_DeadLines = 0;
 	for(unsigned i = 0 ; i < stats_nbBPrequests.size() ; i++ )
 	{
 		total_BP+= stats_nbBPrequests[i];		
 		total_DeadLines += stats_nbDeadLine[i];
-		file << stats_nbBPrequests[i] << "\t" << stats_nbDeadLine[i] << endl;
+	//	file << stats_nbBPrequests[i] << "\t" << stats_nbDeadLine[i] << endl;
 	}
-	file.close();
+	//file.close();
 	
 	out << entete << ":PerceptronPredictor:NBBypass\t" << total_BP << endl;
 	out << entete << ":PerceptronPredictor:TotalDeadLines\t" << total_DeadLines << endl;
@@ -280,5 +296,18 @@ hashingPC_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
 	return bitSelect(missPC , 40 , 47);
 //	return ( (missPC>>7)^currentPC) % 256;
 }
+
+int 
+hashing_MissCounter(uint64_t addr, uint64_t missPC, uint64_t currentPC)
+{
+	return miss_counter;
+}
+
+int 
+hashing_MissCounter1(uint64_t addr, uint64_t missPC, uint64_t currentPC)
+{
+	return (miss_counter^currentPC)%256;
+}
+
 
 
