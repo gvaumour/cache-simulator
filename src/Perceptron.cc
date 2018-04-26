@@ -54,8 +54,8 @@ PerceptronPredictor::allocateInNVM(uint64_t set, Access element)
 //		return ALLOCATE_IN_NVM;
 
 	miss_counter++;
-	if(miss_counter > 256)
-		miss_counter = 256;
+	if(miss_counter > 255)
+		miss_counter = 255;
 	
 	// All the set is a learning/sampled set independantly of its way or SRAM/NVM alloc
 	bool isLearning = m_tableSRAM[set][0]->isLearning; 
