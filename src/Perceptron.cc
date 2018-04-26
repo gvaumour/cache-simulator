@@ -17,9 +17,9 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 	for(auto feature : simu_parameters.perceptron_features)
 	{
 		m_features.push_back( new FeatureTable(m_tableSize, feature));
-		if(feature == "PC_LSB")
+		if(feature == "MissPC_LSB")
 			m_features_hash.push_back(hashingPC_LSB);		
-		else if(feature == "PC_MSB")
+		else if(feature == "MissPC_MSB")
 			m_features_hash.push_back(hashingPC_MSB);				
 		else if(feature == "Addr_LSB")
 			m_features_hash.push_back(hashingAddr_LSB);						
@@ -29,6 +29,8 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 			m_features_hash.push_back(hashingAddr_MSB);	
 		else if(feature == "MissCounter")
 			m_features_hash.push_back(hashing_MissCounter);	
+		else if(feature == "currentPC")
+			m_features_hash.push_back(hashing_currentPC);	
 		else if(feature == "MissCounter1")
 			m_features_hash.push_back(hashing_MissCounter1);	
 	}
@@ -307,6 +309,12 @@ int
 hashing_MissCounter1(uint64_t addr, uint64_t missPC, uint64_t currentPC)
 {
 	return (miss_counter^currentPC)%256;
+}
+
+int 
+hashing_currentPC(uint64_t addr, uint64_t missPC, uint64_t currentPC)
+{
+	return (currentPC)%256;
 }
 
 
