@@ -37,7 +37,9 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 			m_features_hash.push_back(hashing_MissCounter1);	
 
 		else if(feature == "currentPC")
-			m_features_hash.push_back(hashing_currentPC);	
+			m_features_hash.push_back(hashing_currentPC);
+		else
+			assert(false && "Error while initializing the features , wrong name\n");
 
 	}
 
@@ -149,6 +151,7 @@ PerceptronPredictor::setPrediction(CacheEntry* current)
 		current->predictedReused = false;
 	else
 		current->predictedReused = true;	
+
 }
 
 int PerceptronPredictor::evictPolicy(int set, bool inNVM)
@@ -268,8 +271,20 @@ PerceptronPredictor::openNewTimeFrame()
 {
 	stats_nbBPrequests.push_back(0);
 	stats_nbDeadLine.push_back(0);
+
+	for(auto feature : m_features)
+		feature->openNewTimeFrame();
 	
 	Predictor::openNewTimeFrame();
+}
+
+void 
+PerceptronPredictor::finishSimu()
+{
+	for(auto feature : m_features)
+		feature->finishSimu();
+
+	Predictor::finishSimu();
 }
 
 int hashingAddr_LSB1(uint64_t addr , uint64_t missPC , uint64_t currentPC)

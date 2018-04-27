@@ -155,6 +155,8 @@ int main(int argc , char* argv[]){
 			simu_parameters.perceptron_features.clear();
 			simu_parameters.perceptron_features = split(string(argv[i]) , ',');
 		}
+		else if(string(argv[i]) == "--Perceptron-drawFeatureMaps")
+			simu_parameters.perceptron_drawFeatureMaps = true;		
 		else if(string(argv[i]) == "--Perceptron-BPThreshold")
 		{	i++;
 			simu_parameters.perceptron_threshold_bypass = atoi(argv[i]);		

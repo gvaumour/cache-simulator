@@ -47,6 +47,8 @@ class FeatureTable
 		int getAllocationPrediction(int index);
 		int getBypassPrediction(int index);
 
+		void openNewTimeFrame();
+		void finishSimu();
 		void recordEvict(int index , bool hasBeenReused);		
 		void recordAccess(int index, Access element, RD_TYPE rd);
 
@@ -57,6 +59,9 @@ class FeatureTable
 		int m_size;
 		std::string m_name;
 		std::vector<FeatureEntry*> m_table;
+		std::vector< std::vector<int> > stats_heatmap;
+		std::vector< std::vector<int> > stats_frequencymap;
+		std::vector< std::vector<int> > stats_history_buffer;
 };		
 
 

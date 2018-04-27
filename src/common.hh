@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define CONFIG_FILE "config.ini"
 #define OUTPUT_FILE "results.out"
 
-#define PREDICTOR_TIME_FRAME 1E5
+#define PREDICTOR_TIME_FRAME 3E5
 
 #define ONE_MB 1048576
 #define TWO_MB 2*ONE_MB
@@ -110,6 +110,7 @@ struct SimuParameters
 	int perceptron_threshold_bypass;
 	int perceptron_threshold_learning;
 	int perceptron_table_size;
+	bool perceptron_drawFeatureMaps;
 };
 
 std::vector<std::string> split(std::string s, char delimiter);
@@ -125,6 +126,8 @@ std::string convert_hex(int n);
 const char * StripPath(const char * path);
 void init_default_parameters();
 std::string buildHash(uint64_t a, uint64_t p);
+void writeBMPimage(std::string image_name , int width , int height , std::vector< std::vector<int> > red,\
+				 std::vector< std::vector<int> > blue, std::vector< std::vector<int> > green );
 
 
 extern uint64_t cpt_time;

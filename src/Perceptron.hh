@@ -34,7 +34,7 @@ class PerceptronPredictor : public Predictor {
 		void printStats(std::ostream& out, std::string entete);
 		void printConfig(std::ostream& out, std::string entete);
 		void openNewTimeFrame();
-		void finishSimu() {};
+		void finishSimu();
 		RD_TYPE classifyRD(int set , int index , bool inNVM);
 		void setPrediction(CacheEntry* current);
 		CacheEntry* get_entry(uint64_t set , uint64_t index , bool inNVM);

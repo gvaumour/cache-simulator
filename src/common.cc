@@ -1,21 +1,3 @@
-/** 
-Copyright (C) 2016 Gregory Vaumourin
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-**/
-
 #include <stdint.h>
 #include <assert.h>
 #include <stdlib.h> 
@@ -209,6 +191,71 @@ StripPath(const char * path)
 }
 
 
+void writeBMPimage(std::string image_name , int width , int height , vector< vector<int> > red, vector< vector<int> > blue, vector< vector<int> > green )
+{
+	FILE *f;
+	unsigned char *img = NULL;
+	int w = width;
+	int h = height;
+	int filesize = 54 + 3*w*h;
+
+	img = (unsigned char *)malloc(3*w*h);
+	memset(img,0,3*w*h);
+	unsigned char r,g,b;
+	int x,y;
+	
+	for(int i=0; i<w; i++)
+	{
+	    for(int j=0; j<h; j++)
+	    {
+		x=i; y=(h-1)-j;
+		r = red[i][j];
+		g = green[i][j];
+		b = blue[i][j];
+		/*
+		r = red[i][j]*255;
+		g = green[i][j]*255;
+		b = blue[i][j]*255;*/
+		if (r > 255) r=255;
+		if (g > 255) g=255;
+		if (b > 255) b=255;
+		img[(x+y*w)*3+2] = (unsigned char)(r);
+		img[(x+y*w)*3+1] = (unsigned char)(g);
+		img[(x+y*w)*3+0] = (unsigned char)(b);
+	    }
+	}
+
+	unsigned char bmpfileheader[14] = {'B','M', 0,0,0,0, 0,0, 0,0, 54,0,0,0};
+	unsigned char bmpinfoheader[40] = {40,0,0,0, 0,0,0,0, 0,0,0,0, 1,0, 24,0};
+	unsigned char bmppad[3] = {0,0,0};
+
+	bmpfileheader[ 2] = (unsigned char)(filesize    );
+	bmpfileheader[ 3] = (unsigned char)(filesize>> 8);
+	bmpfileheader[ 4] = (unsigned char)(filesize>>16);
+	bmpfileheader[ 5] = (unsigned char)(filesize>>24);
+
+	bmpinfoheader[ 4] = (unsigned char)(       w    );
+	bmpinfoheader[ 5] = (unsigned char)(       w>> 8);
+	bmpinfoheader[ 6] = (unsigned char)(       w>>16);
+	bmpinfoheader[ 7] = (unsigned char)(       w>>24);
+	bmpinfoheader[ 8] = (unsigned char)(       h    );
+	bmpinfoheader[ 9] = (unsigned char)(       h>> 8);
+	bmpinfoheader[10] = (unsigned char)(       h>>16);
+	bmpinfoheader[11] = (unsigned char)(       h>>24);
+
+	f = fopen(image_name.c_str(),"wb");
+	fwrite(bmpfileheader,1,14,f);
+	fwrite(bmpinfoheader,1,40,f);
+	for(int i=0; i<h; i++)
+	{
+	    fwrite(img+(w*(h-i-1)*3),3,w,f);
+	    fwrite(bmppad,1,(4-(w*3)%4)%4,f);
+	}
+
+	free(img);
+	fclose(f);
+}
+
 void
 init_default_parameters()
 {
@@ -256,11 +303,12 @@ init_default_parameters()
 	/********* Perceptron Config *************/ 	
 	simu_parameters.perceptron_table_size = 256;
 //	simu_parameters.perceptron_features = { "Addr_LSB", "Addr_MSB", "PC_LSB", "PC_MSB"};
-	simu_parameters.perceptron_features = { "PC_LSB" , "Addr_LSB"};
+	simu_parameters.perceptron_features = { "MissPC_LSB"};
 	simu_parameters.perceptron_counter_size = 32;
 	simu_parameters.perceptron_windowSize = 16;	
 	simu_parameters.perceptron_threshold_bypass = 3;
 	simu_parameters.perceptron_threshold_learning = 11;
+	simu_parameters.perceptron_drawFeatureMaps = false;
 	/***************************************/ 
 	
 	simu_parameters.nbCores = 1;
