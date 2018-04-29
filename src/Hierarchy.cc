@@ -175,6 +175,7 @@ Hierarchy::signalWB(uint64_t addr, bool isDirty , bool isKept, int idcore)
 void 
 Hierarchy::finishSimu()
 {
+	cout << "\tSimulation done, finishing up ..." << endl;
 	for(unsigned j = 0 ; j < m_private_caches.size() ; j++)
 	{
 		m_private_caches[j]->finishSimu();
@@ -349,9 +350,13 @@ Hierarchy::handleAccess(Access element)
 			prefetchAddress(request);
 		}
 	}	 
-
+	
 	if( (cpt_time - stats_beginTimeFrame) > PREDICTOR_TIME_FRAME)
+	{
 		openNewTimeFrame();
+//		cout << "TimeFrame " << i++ << endl;
+		stats_beginTimeFrame = cpt_time;	
+	}
 	
 	DPRINTF(DebugHierarchy, "HIERARCHY::End of handleAccess\n");
 }
@@ -361,13 +366,9 @@ void
 Hierarchy::openNewTimeFrame()
 {
 		for(unsigned i = 0 ; i < m_private_caches.size() ; i++)
-		{
 			m_private_caches[i]->openNewTimeFrame();
-		}
-		
+
 		m_LLC->openNewTimeFrame();
-		
-		stats_beginTimeFrame = cpt_time;
 }
 
 void

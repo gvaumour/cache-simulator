@@ -7,6 +7,9 @@
 using namespace std;
 
 int miss_counter;
+//ofstream dump_file(FILE_DUMP_PERCEPTRON);
+//int WATCHED_INDEX = 121;
+
 
 PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) :\
 	Predictor(nbAssoc , nbSet , nbNVMways , SRAMtable , NVMtable , cache)
@@ -48,6 +51,10 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 	m_cpt = 0;
 	stats_nbBPrequests = vector<uint64_t>(1, 0);
 	stats_nbDeadLine = vector<uint64_t>(1, 0);
+	stats_missCounter = vector<int>();
+	stats_nbMiss = 0;
+	stats_nbHits = 0;
+	
 }
 
 
@@ -62,7 +69,7 @@ PerceptronPredictor::allocateInNVM(uint64_t set, Access element)
 {
 //	if(element.isInstFetch())
 //		return ALLOCATE_IN_NVM;
-
+	stats_nbMiss++;
 	miss_counter++;
 	if(miss_counter > 255)
 		miss_counter = 255;
@@ -114,7 +121,8 @@ PerceptronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 		}
 		setPrediction(entry);
 	}
-
+	
+	stats_nbHits++;
 	miss_counter--;
 	if(miss_counter < 0)
 		miss_counter = 0;
@@ -203,16 +211,18 @@ PerceptronPredictor::evictRecording( int id_set , int id_assoc , bool inNVM)
 void 
 PerceptronPredictor::printStats(std::ostream& out, std::string entete) { 
 
-	//ofstream file(FILE_OUTPUT_BYPASS);
-
 	uint64_t total_BP = 0, total_DeadLines = 0;
 	for(unsigned i = 0 ; i < stats_nbBPrequests.size() ; i++ )
 	{
 		total_BP+= stats_nbBPrequests[i];		
 		total_DeadLines += stats_nbDeadLine[i];
-	//	file << stats_nbBPrequests[i] << "\t" << stats_nbDeadLine[i] << endl;
 	}
-	//file.close();
+
+	ofstream file(FILE_OUTPUT_PERCEPTRON);	
+	for(unsigned i = 0; i < stats_missCounter.size() ; i++)
+		file << stats_missCounter[i] << endl;
+
+	file.close();
 	
 	out << entete << ":PerceptronPredictor:NBBypass\t" << total_BP << endl;
 	out << entete << ":PerceptronPredictor:TotalDeadLines\t" << total_DeadLines << endl;
@@ -271,6 +281,9 @@ PerceptronPredictor::openNewTimeFrame()
 {
 	stats_nbBPrequests.push_back(0);
 	stats_nbDeadLine.push_back(0);
+	
+	stats_missCounter.push_back( miss_counter );
+	stats_nbHits = 0, stats_nbMiss = 0;
 
 	for(auto feature : m_features)
 		feature->openNewTimeFrame();
@@ -281,6 +294,7 @@ PerceptronPredictor::openNewTimeFrame()
 void 
 PerceptronPredictor::finishSimu()
 {
+	
 	for(auto feature : m_features)
 		feature->finishSimu();
 

@@ -20,7 +20,7 @@ OBJ= $(subst src/, obj-intel64/,  $(SRC:.cc=.o))
 $(EXEC) : $(OBJ) Makefile 
 	$(CPP) -o $(EXEC) $(OBJ) $(LDFLAGS)
 
-obj-intel64/%.o :  src/%.cc src/%.hh Makefile src/common.hh src/common.cc src/Cache.hh
+obj-intel64/%.o :  src/%.cc src/%.hh Makefile src/common.hh src/Cache.hh
 	$(CPP) $(FLAGS) -c $< -o $@
 	
 $(EXEC_RELEASE) : $(EXEC)	

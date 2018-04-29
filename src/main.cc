@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <assert.h>
 #include <string>
 #include <zlib.h>
+#include <iomanip>
 #include <signal.h>
 #include <unistd.h>
 
@@ -206,17 +207,6 @@ int main(int argc , char* argv[]){
 		simu_parameters.enableMigration = true;
 	}
 	
-//	if(simu_parameters.DBAMB_signature == "addr")
-//	{
-//		simu_parameters.DBAMB_begin_bit = 20;
-//		simu_parameters.DBAMB_end_bit = 40;
-//	}
-//	else if(simu_parameters.DBAMB_signature == "first_pc")
-//	{
-//		simu_parameters.DBAMB_begin_bit = 0;
-//		simu_parameters.DBAMB_end_bit = 64;
-//	}
-	
 	if( (simu_parameters.nvm_assoc == 0 || simu_parameters.sram_assoc == 0) && simu_parameters.policy != "Perceptron" )
 	 {
 	 	simu_parameters.policy = "LRU";
@@ -227,6 +217,7 @@ int main(int argc , char* argv[]){
 	
 	if(argc == 1)
 		memory_traces.push_back(DEFAULT_TRACE);
+	
 	
 	
 	/* The Control C signal handler setup */
@@ -246,6 +237,9 @@ int main(int argc , char* argv[]){
 		cout << "\t - " << memory_trace << endl;
 	
 	int id_trace = 0;
+	string loading_bar = "";
+	uint64_t step = 300E6/30;
+
 	for(auto memory_trace : memory_traces)
 	{
 		cout << "\tRunning Trace: " << memory_trace << " ... " <<  endl;
@@ -263,19 +257,22 @@ int main(int argc , char* argv[]){
 			cpt_time++;
 			cpt_access++;
 
+			if( (cpt_time-1) % step == 0)
+			{
+				cout << "\tSimulation Progress [" << std::left << setw(30) << setfill(' ') \
+					<< loading_bar << "] " << setw(2) << loading_bar.size()*100/30 << "%\r";
+				fflush(stdout);
+				loading_bar += "#";				
+			}
+
+
 			my_system->handleAccess(element);
 			DPRINTF(DebugCache, "TIME::%ld\n",cpt_access);
 			
-			if(cpt_access == WARMUP_WINDOW)
-			{
-				cout << "\t\tFinished the warmup phase" << endl;			
-				my_system->stopWarmup();
-			}
-			
 		}
+		cout << endl;
 		traceWrapper->close();
 		free(traceWrapper);
-		
 		if(!mergingResults)
 		{
 			my_system->finishSimu();	

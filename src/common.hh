@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define CONFIG_FILE "config.ini"
 #define OUTPUT_FILE "results.out"
 
-#define PREDICTOR_TIME_FRAME 3E5
+#define PREDICTOR_TIME_FRAME 1E5
 
 #define ONE_MB 1048576
 #define TWO_MB 2*ONE_MB

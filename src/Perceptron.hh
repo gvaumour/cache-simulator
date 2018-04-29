@@ -12,8 +12,8 @@
 #include "HybridCache.hh"
 #include "Cache.hh"
 
-#define FILE_OUTPUT_BYPASS "perceptron_bypass.out"
-
+#define FILE_OUTPUT_PERCEPTRON "output_perceptron.out"
+#define FILE_DUMP_PERCEPTRON "dump_perceptron.out"
 class Predictor;
 class HybridCache;
 
@@ -52,7 +52,8 @@ class PerceptronPredictor : public Predictor {
 		/* Stats */ 
 		std::vector<uint64_t> stats_nbBPrequests;
 		std::vector<uint64_t> stats_nbDeadLine;
-		
+		std::vector<int> stats_missCounter;
+		uint64_t stats_nbMiss, stats_nbHits;
 };
 
 

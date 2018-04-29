@@ -1,8 +1,9 @@
+#include <cmath>
 #include <string>
 #include <assert.h>
 #include <vector>
 #include <map>
-#include <ostream>
+#include <fstream>
 #include <iostream>
 
 #include "FeatureTable.hh"
@@ -100,7 +101,7 @@ FeatureTable::getBypassPrediction(int index)
 {
 	int result = lookup(index)->bypass_counter;
 	
-	if(simu_parameters.perceptron_drawFeatureMaps)	
+	if(simu_parameters.perceptron_drawFeatureMaps)
 		stats_history_buffer[index].push_back(result);
 			
 	return result;
@@ -166,7 +167,7 @@ FeatureTable::openNewTimeFrame()
 			avg = sum / (int)stats_history_buffer[i].size();		
 		}
 		else 
-			avg = 0;
+			avg = stats_heatmap[i].empty() ? 0 : stats_heatmap[i].back() ;
 
 		stats_heatmap[i].push_back(avg);
 		stats_frequencymap[i].push_back(stats_history_buffer[i].size());
@@ -185,29 +186,42 @@ FeatureTable::finishSimu()
 		
 	int height = m_size;
 	int width = stats_heatmap[0].size();
-	
+
+
+	if(width > IMG_WIDTH)
+	{
+		stats_heatmap = resize_image(stats_heatmap);
+		stats_frequencymap = resize_image(stats_frequencymap);	
+		width = stats_heatmap[0].size();
+	}	
 	vector< vector<int> > red = vector< vector<int> >(width, vector<int>(height, 0));
 	vector< vector<int> > blue  = red;
 	vector< vector<int> > green = red;
-
+	
+	ofstream file_output(string(m_name+"_heatmap.txt"));
+	
 	for(unsigned i = 0 ; i < stats_heatmap.size(); i++)
 	{
+		file_output << "Index " << i << "\t";
 		for(unsigned j = 0 ; j < stats_heatmap[i].size(); j++)
 		{
 			int value = stats_heatmap[i][j];
+			file_output << stats_heatmap[i][j] << ",";
+			
 			if(value >= 0)
 			{
-				red[j][255-i] = 255;
-				blue[j][255-i] = 255 - 255 * value / 32;			
-				green[j][255-i] =  255 - 255 * value / 32; 
+				red[j][i] = 255;
+				blue[j][i] = 255 - 255 * value / 32;			
+				green[j][i] =  255 - 255 * value / 32; 
 			}
 			else
 			{
-				blue[j][255-i] = 255;
-				red[j][255-i] = 255 - 255 * -value / 32;
-				green[j][255-i] = 255 - 255 * -value / 32; 
+				blue[j][i] = 255;
+				red[j][i] = 255 - 255 * -value / 32;
+				green[j][i] = 255 - 255 * -value / 32; 
 			}
 		}
+		file_output << endl;
 	}
 
 	writeBMPimage(string("heatmap_" + m_name + ".bmp") , width , height , red, blue, green );
@@ -219,16 +233,51 @@ FeatureTable::finishSimu()
 		for(unsigned j = 0 ; j < stats_frequencymap[i].size(); j++)
 		{
 			int value = stats_frequencymap[i][j];
-			if(value > 5)
-				value = 5;
+			if(value > 20)
+				value = 20;
 
 				
-			red[j][255-i] = 255;
-			blue[j][255-i] = 255 - 255 * value / 5;			
-			green[j][255-i] = 255 - 255 * value / 5; 
+			red[j][i] = 255;
+			blue[j][i] = 255 - 255 * value / 5;			
+			green[j][i] = 255 - 255 * value / 5; 
 		}
 	}
 
 	writeBMPimage(string("frequencymap_" + m_name + ".bmp") , width , height , red, blue, green );
 	
 }
+
+vector< vector<int> > 
+FeatureTable::resize_image(vector< vector<int> >& img)
+{
+
+	int width =img[0].size();
+
+	vector<vector<int > > result = vector< vector<int> >(m_size , vector<int>());
+	int factor = ceil ( (double)width / (double) IMG_WIDTH );
+
+	for(unsigned i = 0 ; i < img.size() ; i++)
+	{
+		for(unsigned j = 0 ; j < img[i].size() ; j+= factor)
+		{
+			int index = factor + j >= img[i].size() ? img[i].size() : factor+j; 
+			int sum = 0;
+			for(int k = j ; k < index; k++)
+				sum += img[i][k];
+				
+//			cout << "result[" << i << "].push_back " << sum << " / " << factor << " = " <<  sum / factor << endl;
+			result[i].push_back(sum / factor);
+		}
+	}	
+	return result;
+}
+
+
+
+
+
+
+
+
+
+

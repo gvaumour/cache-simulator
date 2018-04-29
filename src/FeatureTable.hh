@@ -7,6 +7,8 @@
 #include "Cache.hh"
 #include "common.hh"
 
+#define IMG_WIDTH 2000
+
 class FeatureEntry
 {
 	public: 
@@ -54,6 +56,9 @@ class FeatureTable
 
 		void decreaseConfidence(int index);
 		void increaseConfidence(int index);
+		
+		std::vector< std::vector<int> > resize_image(std::vector< std::vector<int> >& img);
+
 		
 	private:
 		int m_size;

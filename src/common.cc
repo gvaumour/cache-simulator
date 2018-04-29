@@ -194,34 +194,33 @@ StripPath(const char * path)
 void writeBMPimage(std::string image_name , int width , int height , vector< vector<int> > red, vector< vector<int> > blue, vector< vector<int> > green )
 {
 	FILE *f;
+	int factor = 4;
 	unsigned char *img = NULL;
 	int w = width;
-	int h = height;
+	int h = height*factor;
 	int filesize = 54 + 3*w*h;
 
 	img = (unsigned char *)malloc(3*w*h);
 	memset(img,0,3*w*h);
 	unsigned char r,g,b;
-	int x,y;
+	int a = 0;
 	
-	for(int i=0; i<w; i++)
+	for(int i=0; i<width; i++)
 	{
-	    for(int j=0; j<h; j++)
+	    a = 0;
+	    for(int j=0; j<height; j++)
 	    {
-		x=i; y=(h-1)-j;
 		r = red[i][j];
 		g = green[i][j];
 		b = blue[i][j];
-		/*
-		r = red[i][j]*255;
-		g = green[i][j]*255;
-		b = blue[i][j]*255;*/
-		if (r > 255) r=255;
-		if (g > 255) g=255;
-		if (b > 255) b=255;
-		img[(x+y*w)*3+2] = (unsigned char)(r);
-		img[(x+y*w)*3+1] = (unsigned char)(g);
-		img[(x+y*w)*3+0] = (unsigned char)(b);
+		
+		for(int k = 0 ; k < factor;k++)
+		{
+			img[(i+a*w)*3+2] = (unsigned char)(r);
+			img[(i+a*w)*3+1] = (unsigned char)(g);
+			img[(i+a*w)*3+0] = (unsigned char)(b);
+			a++;
+		}
 	    }
 	}
 
@@ -303,7 +302,7 @@ init_default_parameters()
 	/********* Perceptron Config *************/ 	
 	simu_parameters.perceptron_table_size = 256;
 //	simu_parameters.perceptron_features = { "Addr_LSB", "Addr_MSB", "PC_LSB", "PC_MSB"};
-	simu_parameters.perceptron_features = { "MissPC_LSB"};
+	simu_parameters.perceptron_features = { "MissCounter1"};
 	simu_parameters.perceptron_counter_size = 32;
 	simu_parameters.perceptron_windowSize = 16;	
 	simu_parameters.perceptron_threshold_bypass = 3;
