@@ -143,7 +143,7 @@ class CacheEntry{
 			isValid = false; 
 			isDirty = false;
 			lastWrite = false;
-			predictedReused = false;
+			
 			isPrefetch = false;
 			address = 0;
 			policyInfo = 0; 
@@ -153,7 +153,6 @@ class CacheEntry{
 			nbWrite = 0;
 			m_compilerHints = 0;
 			justMigrate = false;
-			perceptron_BPpred = 0;
 			value = 0;
 			cost_value = 0;
 			signature = 0;
@@ -186,7 +185,7 @@ class CacheEntry{
 		int policyInfo;
 		int m_compilerHints;
 		bool isNVM;
-		int perceptron_BPpred;
+		std::vector<int> perceptron_BPpred;
 		
 		int nbWrite;
 		int nbRead;
@@ -199,7 +198,7 @@ class CacheEntry{
 		//field used only by the RAP predictor
 		bool isLearning;
 		bool isPrefetch;
-		bool predictedReused;
+		std::vector<bool> predictedReused;
 		bool justMigrate;
 		std::vector<uint64_t> pc_history;
 

@@ -16,7 +16,8 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 {	
 	m_tableSize = simu_parameters.perceptron_table_size;
 	m_features.clear();
-
+	m_criterias_names = simu_parameters.perceptron_features;
+	
 	for(auto feature : simu_parameters.perceptron_features)
 	{
 		m_features.push_back( new FeatureTable(m_tableSize, feature));
@@ -45,9 +46,8 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 			assert(false && "Error while initializing the features , wrong name\n");
 
 	}
-
-	miss_counter = 0;
 	
+	miss_counter = 0;
 	m_cpt = 0;
 	stats_nbBPrequests = vector<uint64_t>(1, 0);
 	stats_nbDeadLine = vector<uint64_t>(1, 0);
@@ -110,16 +110,16 @@ PerceptronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 	entry->policyInfo = m_cpt++;
 	if(entry->isLearning)
 	{
-		if( entry->perceptron_BPpred > -simu_parameters.perceptron_threshold_learning || !entry->predictedReused)
-		{		
-			uint64_t actual_pc = m_cache->getActualPC();
-			for(unsigned i = 0 ; i < m_features.size() ; i++)
+		for(unsigned i = 0 ; i < m_features.size() ; i++)
+		{
+			if( entry->perceptron_BPpred[i] > -simu_parameters.perceptron_threshold_learning || !entry->predictedReused[i])
 			{
-				int hash = m_features_hash[i](entry->address , entry->m_pc , actual_pc);
+				int hash = m_features_hash[i](entry->address , entry->m_pc ,  m_cache->getActualPC());
 				m_features[i]->decreaseConfidence(hash);
 			}
 		}
 		setPrediction(entry);
+
 	}
 	
 	stats_nbHits++;
@@ -147,18 +147,18 @@ PerceptronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, A
 void 
 PerceptronPredictor::setPrediction(CacheEntry* current)
 {
-	uint64_t actual_pc = m_cache->getActualPC();
 	int bp_pred=0;
 	for(unsigned i = 0 ; i < m_features.size() ; i++)
 	{
-		int hash = m_features_hash[i](current->address , current->m_pc , actual_pc);
-		bp_pred += m_features[i]->getBypassPrediction(hash);
+		int hash = m_features_hash[i](current->address , current->m_pc , m_cache->getActualPC());
+		bp_pred = m_features[i]->getBypassPrediction(hash);
+		current->perceptron_BPpred[i] = bp_pred;
+		if(bp_pred > simu_parameters.perceptron_threshold_bypass)
+			current->predictedReused[i] = false;
+		else
+			current->predictedReused[i] = true;
 	}
-	current->perceptron_BPpred = bp_pred;
-	if(bp_pred > simu_parameters.perceptron_threshold_bypass)
-		current->predictedReused = false;
-	else
-		current->predictedReused = true;	
+	
 
 }
 
@@ -182,14 +182,13 @@ int PerceptronPredictor::evictPolicy(int set, bool inNVM)
 
 	if(current->isValid && current->isLearning)
 	{	
-		uint64_t actual_pc = m_cache->getActualPC();
-
-		if(current->predictedReused || current->perceptron_BPpred < simu_parameters.perceptron_threshold_learning)
+		for(unsigned i =  0 ; i < m_features.size() ; i++)
 		{
-			for(unsigned i =  0 ; i < m_features.size() ; i++)
+			if(current->predictedReused[i] || current->perceptron_BPpred[i] < simu_parameters.perceptron_threshold_learning)
 			{
-				int hash = m_features_hash[i](current->address , current->m_pc , actual_pc);
+				int hash = m_features_hash[i](current->address , current->m_pc , m_cache->getActualPC());
  				m_features[i]->increaseConfidence(hash);
+		
 			}
 		}
 		
@@ -236,7 +235,8 @@ PerceptronPredictor::printStats(std::ostream& out, std::string entete) {
 void PerceptronPredictor::printConfig(std::ostream& out, std::string entete) { 
 
 	out << entete << ":Perceptron:TableSize\t" << m_tableSize << endl; 
-	out << entete << ":Perceptron:BPThreshold\t" << simu_parameters.perceptron_threshold_bypass  << endl; 
+	out << entete << ":Perceptron:BPThreshold\t" << simu_parameters.perceptron_threshold_bypass  << endl;
+	out << entete << ":Perceptron:LearningThreshold\t" << simu_parameters.perceptron_threshold_learning << endl; 
 	out << entete << ":Perceptron:NBFeatures\t" << simu_parameters.perceptron_features.size() << endl; 
 	for(auto p : simu_parameters.perceptron_features)
 		out << entete << ":PerceptronFeatures\t" << p << endl;
