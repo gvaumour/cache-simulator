@@ -323,13 +323,13 @@ int hashingAddr_LSB1(uint64_t addr , uint64_t missPC , uint64_t currentPC)
 
 int hashingAddr_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
 {
-	return bitSelect(addr , 6 , 13);
+	return bitSelect(addr , 18 , 25);
 //	Addr << "cout " << std::hex << addr << " Current PC = " << currentPC << " : " << ( (missPC)^currentPC) % 256 << endl;
 }
 
 int hashingAddr_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
 {
-	return bitSelect(addr , 20 , 27);
+	return bitSelect(addr , 26 , 33);
 //	return ( (addr>>7)^currentPC) % 256;
 }
 

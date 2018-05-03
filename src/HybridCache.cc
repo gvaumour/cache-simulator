@@ -121,7 +121,7 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 	
 	m_start_index = log2(blocksize)-1;
 	m_end_index = log2(m_blocksize) + log2(m_nb_set);
-	
+
 	stats_missSRAM = vector<uint64_t>(2 , 0);
 	stats_hitsSRAM = vector<uint64_t>(2 , 0);
 	stats_cleanWBSRAM = 0;
