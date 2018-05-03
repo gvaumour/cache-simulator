@@ -257,7 +257,7 @@ int main(int argc , char* argv[]){
 			cpt_time++;
 			cpt_access++;
 
-			if( (cpt_time-1) % step == 0)
+			if( ((cpt_time-1) % step == 0) || cpt_time == 300E6)
 			{
 				cout << "\tSimulation Progress [" << std::left << setw(30) << setfill(' ') \
 					<< loading_bar << "] " << setw(2) << loading_bar.size()*100/30 << "%\r";

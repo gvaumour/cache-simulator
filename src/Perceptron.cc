@@ -7,7 +7,7 @@
 using namespace std;
 
 int miss_counter;
-//ofstream dump_file(FILE_DUMP_PERCEPTRON);
+ofstream dump_file(FILE_DUMP_PERCEPTRON);
 //int WATCHED_INDEX = 121;
 
 
@@ -116,10 +116,14 @@ PerceptronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 			{
 				int hash = m_features_hash[i](entry->address , entry->m_pc ,  m_cache->getActualPC());
 				m_features[i]->decreaseConfidence(hash);
+				/*if(hash == 2)
+				{
+					dump_file << cpt_time << " : Feature : " << m_criterias_names[i] << " , Decrement confidence, " \
+						 << m_features[i]->getBypassPrediction(hash)  << endl; 				
+				}*/
 			}
 		}
 		setPrediction(entry);
-
 	}
 	
 	stats_nbHits++;
@@ -141,7 +145,6 @@ PerceptronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, A
 		setPrediction(current);
 	
 	Predictor::insertionPolicy(set , index , inNVM , element);
-	//updatePolicy(set , index, inNVM, element, false);
 }
 
 void 
@@ -157,6 +160,12 @@ PerceptronPredictor::setPrediction(CacheEntry* current)
 			current->predictedReused[i] = false;
 		else
 			current->predictedReused[i] = true;
+		/*if(hash == 2)
+		{
+			string a = current->predictedReused[i] ? "REUSED" : "NOT REUSE";
+			dump_file << cpt_time << " : cl 0x" << std::hex << current->address << std::dec << " Feature : " \
+				<< m_criterias_names[i] << " , setNewPrediction BPPred=" << bp_pred << " , " << a  << endl; 			
+		}*/
 	}
 	
 
@@ -188,6 +197,11 @@ int PerceptronPredictor::evictPolicy(int set, bool inNVM)
 			{
 				int hash = m_features_hash[i](current->address , current->m_pc , m_cache->getActualPC());
  				m_features[i]->increaseConfidence(hash);
+				/*if(hash == 2)
+				{
+					dump_file << cpt_time << " : evictPolicy, Feature : " << m_criterias_names[i] << " , increaseConfidence " \
+						 << m_features[i]->getBypassPrediction(hash) << endl; 				
+				}*/
 		
 			}
 		}
@@ -298,6 +312,7 @@ PerceptronPredictor::finishSimu()
 	for(auto feature : m_features)
 		feature->finishSimu();
 
+	dump_file.close();
 	Predictor::finishSimu();
 }
 

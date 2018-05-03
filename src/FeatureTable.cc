@@ -198,15 +198,11 @@ FeatureTable::finishSimu()
 	vector< vector<int> > blue  = red;
 	vector< vector<int> > green = red;
 	
-	ofstream file_output(string(m_name+"_heatmap.txt"));
-	
 	for(unsigned i = 0 ; i < stats_heatmap.size(); i++)
 	{
-		file_output << "Index " << i << "\t";
 		for(unsigned j = 0 ; j < stats_heatmap[i].size(); j++)
 		{
 			int value = stats_heatmap[i][j];
-			file_output << stats_heatmap[i][j] << ",";
 			
 			if(value >= 0)
 			{
@@ -221,7 +217,6 @@ FeatureTable::finishSimu()
 				green[j][i] = 255 - 255 * -value / 32; 
 			}
 		}
-		file_output << endl;
 	}
 
 	writeBMPimage(string("heatmap_" + m_name + ".bmp") , width , height , red, blue, green );
