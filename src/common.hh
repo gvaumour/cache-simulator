@@ -132,6 +132,7 @@ void writeBMPimage(std::string image_name , int width , int height , std::vector
 
 extern uint64_t cpt_time;
 extern int start_debug;
+extern int miss_counter;
 
 extern const char* memCmd_str[];
 extern const char* str_RW_status[];

@@ -34,7 +34,7 @@ const char* str_RD_status[] = {"RD_SHORT" , "RD_MEDIUM", "RD_NOTACC", "UNKOWN"};
 
 
 SimuParameters simu_parameters;
-
+int miss_counter;
 
 vector<string> 
 split(string s, char delimiter){

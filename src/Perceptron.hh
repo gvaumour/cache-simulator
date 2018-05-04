@@ -3,10 +3,12 @@
 
 #include <vector>
 #include <map>
-#include <list>
+#include <deque>
 #include <ostream>
 
 #include "FeatureTable.hh"
+#include "FeaturesFunction.hh"
+
 #include "Predictor.hh"
 #include "common.hh"
 #include "HybridCache.hh"
@@ -18,7 +20,7 @@ class Predictor;
 class HybridCache;
 
 
-typedef int (*hashing_function)(uint64_t , uint64_t , uint64_t); 
+typedef int (*hashing_function)(uint64_t , uint64_t , std::deque<uint64_t>); 
 
 class PerceptronPredictor : public Predictor {
 
@@ -38,6 +40,9 @@ class PerceptronPredictor : public Predictor {
 		RD_TYPE classifyRD(int set , int index , bool inNVM);
 		void setPrediction(CacheEntry* current);
 		CacheEntry* get_entry(uint64_t set , uint64_t index , bool inNVM);
+
+		void update_globalPChistory(uint64_t pc);
+
 				
 	protected : 
 
@@ -54,21 +59,13 @@ class PerceptronPredictor : public Predictor {
 		std::vector<uint64_t> stats_nbDeadLine;
 		std::vector<int> stats_missCounter;
 		uint64_t stats_nbMiss, stats_nbHits;
+//		std::vector<double> stats_variances_buffer;
+//		std::vector<double> stats_variances;
+		
+		std::deque<uint64_t> global_PChistory;		
+
 };
 
-
-int hashingAddr_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
-int hashingAddr_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
-int hashingAddr_LSB1(uint64_t addr , uint64_t missPC , uint64_t currentPC);
-
-int hashingMissPC_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
-int hashingMissPC_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC);
-int hashingMissPC_LSB1(uint64_t addr , uint64_t missPC , uint64_t currentPC);
-
-int hashing_MissCounter(uint64_t addr, uint64_t missPC, uint64_t currentPC);
-int hashing_MissCounter1(uint64_t addr, uint64_t missPC, uint64_t currentPC);
-
-int hashing_currentPC(uint64_t addr, uint64_t missPC, uint64_t currentPC);
 
 #endif
 

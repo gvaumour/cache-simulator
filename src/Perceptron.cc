@@ -1,3 +1,4 @@
+#include <cmath>
 #include <vector>
 #include <map>
 #include <ostream>
@@ -6,7 +7,6 @@
 
 using namespace std;
 
-int miss_counter;
 ofstream dump_file(FILE_DUMP_PERCEPTRON);
 //int WATCHED_INDEX = 121;
 
@@ -28,20 +28,26 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 		else if(feature == "MissPC_MSB")
 			m_features_hash.push_back(hashingMissPC_MSB);				
 
-		else if(feature == "Addr_LSB")
-			m_features_hash.push_back(hashingAddr_LSB);						
-		else if(feature == "Addr_LSB1")
-			m_features_hash.push_back(hashingAddr_LSB1);						
-		else if(feature == "Addr_MSB")
-			m_features_hash.push_back(hashingAddr_MSB);	
-
+		else if(feature == "TagBlock")
+			m_features_hash.push_back(hashingTag_block);
+		else if(feature == "TagPage")
+			m_features_hash.push_back(hashingTag_page);
+	
 		else if(feature == "MissCounter")
 			m_features_hash.push_back(hashing_MissCounter);	
 		else if(feature == "MissCounter1")
-			m_features_hash.push_back(hashing_MissCounter1);	
-
+			m_features_hash.push_back(hashing_MissCounter1);
+			
 		else if(feature == "currentPC")
 			m_features_hash.push_back(hashing_currentPC);
+		else if(feature == "currentPC1")
+			m_features_hash.push_back(hashing_currentPC1);
+		else if(feature == "currentPC_3")
+			m_features_hash.push_back(hashingcurrentPC_3);
+		else if(feature == "currentPC_2")
+			m_features_hash.push_back(hashingcurrentPC_2);
+		else if(feature == "currentPC_1")
+			m_features_hash.push_back(hashingcurrentPC_1);
 		else
 			assert(false && "Error while initializing the features , wrong name\n");
 
@@ -49,9 +55,16 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 	
 	miss_counter = 0;
 	m_cpt = 0;
+
+	global_PChistory = deque<uint64_t>();
+
 	stats_nbBPrequests = vector<uint64_t>(1, 0);
 	stats_nbDeadLine = vector<uint64_t>(1, 0);
 	stats_missCounter = vector<int>();
+	/*
+	stats_variances_buffer = vector<double>();
+	stats_variances = vector<double>();
+	*/
 	stats_nbMiss = 0;
 	stats_nbHits = 0;
 	
@@ -69,6 +82,8 @@ PerceptronPredictor::allocateInNVM(uint64_t set, Access element)
 {
 //	if(element.isInstFetch())
 //		return ALLOCATE_IN_NVM;
+	
+	update_globalPChistory(element.m_pc);
 	stats_nbMiss++;
 	miss_counter++;
 	if(miss_counter > 255)
@@ -85,13 +100,23 @@ PerceptronPredictor::allocateInNVM(uint64_t set, Access element)
 	{	
 		//Predict if we should bypass
 		int sum_prediction = 0;
-		int actual_pc = m_cache->getActualPC();
+		//vector<double> samples;
 		for(unsigned i = 0 ; i < m_features.size(); i++)
 		{
-			int hash = m_features_hash[i](element.m_address , element.m_pc , actual_pc);
-			sum_prediction += m_features[i]->getBypassPrediction(hash);
+			int hash = m_features_hash[i](element.m_address , element.m_pc , global_PChistory);
+			int pred = m_features[i]->getBypassPrediction(hash);
+			//samples.push_back(pred);
+			sum_prediction += pred;
 		}
-	
+		//Compute Variance of the sample
+		/*double variance = 0, avg = (double)sum_prediction / (double) samples.size();
+		for(unsigned i = 0 ; i < samples.size(); i++)
+			variance += (samples[i] - avg) * (samples[i] - avg);
+
+		variance = sqrt( variance / (double) samples.size());
+		stats_variances_buffer.push_back(variance);
+		*/
+		
 		if(sum_prediction > simu_parameters.perceptron_threshold_bypass)
 		{
 			stats_nbBPrequests[stats_nbBPrequests.size()-1]++;
@@ -105,7 +130,8 @@ PerceptronPredictor::allocateInNVM(uint64_t set, Access element)
 void
 PerceptronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element, bool isWBrequest)
 {
-
+	update_globalPChistory(element.m_pc);
+	
 	CacheEntry *entry = get_entry(set , index , inNVM);
 	entry->policyInfo = m_cpt++;
 	if(entry->isLearning)
@@ -114,13 +140,8 @@ PerceptronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 		{
 			if( entry->perceptron_BPpred[i] > -simu_parameters.perceptron_threshold_learning || !entry->predictedReused[i])
 			{
-				int hash = m_features_hash[i](entry->address , entry->m_pc ,  m_cache->getActualPC());
+				int hash = m_features_hash[i](entry->address , entry->m_pc ,  global_PChistory);
 				m_features[i]->decreaseConfidence(hash);
-				/*if(hash == 2)
-				{
-					dump_file << cpt_time << " : Feature : " << m_criterias_names[i] << " , Decrement confidence, " \
-						 << m_features[i]->getBypassPrediction(hash)  << endl; 				
-				}*/
 			}
 		}
 		setPrediction(entry);
@@ -131,21 +152,31 @@ PerceptronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 	if(miss_counter < 0)
 		miss_counter = 0;
 
+
 	Predictor::updatePolicy(set , index , inNVM , element , isWBrequest);
 }
 
 void
 PerceptronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access element)
 {
-
 	CacheEntry* current = get_entry(set , index , inNVM);
 	current->policyInfo = m_cpt++;
 
 	if(current->isLearning)
 		setPrediction(current);
-	
+			
 	Predictor::insertionPolicy(set , index , inNVM , element);
 }
+
+
+void
+PerceptronPredictor::update_globalPChistory(uint64_t pc)
+{
+	global_PChistory.push_front(pc);
+	if( global_PChistory.size() == 11)
+		global_PChistory.pop_back();
+}
+
 
 void 
 PerceptronPredictor::setPrediction(CacheEntry* current)
@@ -153,19 +184,13 @@ PerceptronPredictor::setPrediction(CacheEntry* current)
 	int bp_pred=0;
 	for(unsigned i = 0 ; i < m_features.size() ; i++)
 	{
-		int hash = m_features_hash[i](current->address , current->m_pc , m_cache->getActualPC());
+		int hash = m_features_hash[i](current->address , current->m_pc , global_PChistory);
 		bp_pred = m_features[i]->getBypassPrediction(hash);
 		current->perceptron_BPpred[i] = bp_pred;
 		if(bp_pred > simu_parameters.perceptron_threshold_bypass)
 			current->predictedReused[i] = false;
 		else
 			current->predictedReused[i] = true;
-		/*if(hash == 2)
-		{
-			string a = current->predictedReused[i] ? "REUSED" : "NOT REUSE";
-			dump_file << cpt_time << " : cl 0x" << std::hex << current->address << std::dec << " Feature : " \
-				<< m_criterias_names[i] << " , setNewPrediction BPPred=" << bp_pred << " , " << a  << endl; 			
-		}*/
 	}
 	
 
@@ -195,14 +220,8 @@ int PerceptronPredictor::evictPolicy(int set, bool inNVM)
 		{
 			if(current->predictedReused[i] || current->perceptron_BPpred[i] < simu_parameters.perceptron_threshold_learning)
 			{
-				int hash = m_features_hash[i](current->address , current->m_pc , m_cache->getActualPC());
+				int hash = m_features_hash[i](current->address , current->m_pc , global_PChistory);
  				m_features[i]->increaseConfidence(hash);
-				/*if(hash == 2)
-				{
-					dump_file << cpt_time << " : evictPolicy, Feature : " << m_criterias_names[i] << " , increaseConfidence " \
-						 << m_features[i]->getBypassPrediction(hash) << endl; 				
-				}*/
-		
 			}
 		}
 		
@@ -230,12 +249,11 @@ PerceptronPredictor::printStats(std::ostream& out, std::string entete) {
 		total_BP+= stats_nbBPrequests[i];		
 		total_DeadLines += stats_nbDeadLine[i];
 	}
-
+	/*
 	ofstream file(FILE_OUTPUT_PERCEPTRON);	
-	for(unsigned i = 0; i < stats_missCounter.size() ; i++)
-		file << stats_missCounter[i] << endl;
-
-	file.close();
+	for(unsigned i = 0; i < stats_variances.size() ; i++)
+		file << stats_variances[i] << endl;
+	file.close();*/
 	
 	out << entete << ":PerceptronPredictor:NBBypass\t" << total_BP << endl;
 	out << entete << ":PerceptronPredictor:TotalDeadLines\t" << total_DeadLines << endl;
@@ -298,9 +316,22 @@ PerceptronPredictor::openNewTimeFrame()
 	
 	stats_missCounter.push_back( miss_counter );
 	stats_nbHits = 0, stats_nbMiss = 0;
+	/*
+	if(stats_variances_buffer.size() != 0)
+	{
+		double avg = 0;
+		for(unsigned i = 0 ; i < stats_variances_buffer.size() ; i++)
+			avg += stats_variances_buffer[i];
+		avg /= (double)stats_variances_buffer.size();
+
+		stats_variances.push_back(avg);	
+		stats_variances_buffer.clear();
+	}*/
+
 
 	for(auto feature : m_features)
 		feature->openNewTimeFrame();
+	
 	
 	Predictor::openNewTimeFrame();
 }
@@ -315,61 +346,5 @@ PerceptronPredictor::finishSimu()
 	dump_file.close();
 	Predictor::finishSimu();
 }
-
-int hashingAddr_LSB1(uint64_t addr , uint64_t missPC , uint64_t currentPC)
-{
-	return ( bitSelect(addr , 6 , 13)^currentPC) % 256;
-}
-
-int hashingAddr_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
-{
-	return bitSelect(addr , 18 , 25);
-//	Addr << "cout " << std::hex << addr << " Current PC = " << currentPC << " : " << ( (missPC)^currentPC) % 256 << endl;
-}
-
-int hashingAddr_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
-{
-	return bitSelect(addr , 26 , 33);
-//	return ( (addr>>7)^currentPC) % 256;
-}
-
-int
-hashingMissPC_LSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
-{
-	return bitSelect(missPC , 0 , 7);
-}
-
-int
-hashingMissPC_LSB1(uint64_t addr , uint64_t missPC , uint64_t currentPC)
-{
-	return ( bitSelect(missPC , 0 , 7)^currentPC)%256;
-}
-
-
-int
-hashingMissPC_MSB(uint64_t addr , uint64_t missPC , uint64_t currentPC)
-{
-	return bitSelect(missPC , 20 , 27);
-//	return ( (missPC>>7)^currentPC) % 256;
-}
-
-int 
-hashing_MissCounter(uint64_t addr, uint64_t missPC, uint64_t currentPC)
-{
-	return miss_counter;
-}
-
-int 
-hashing_MissCounter1(uint64_t addr, uint64_t missPC, uint64_t currentPC)
-{
-	return (miss_counter^currentPC)%256;
-}
-
-int 
-hashing_currentPC(uint64_t addr, uint64_t missPC, uint64_t currentPC)
-{
-	return (currentPC)%256;
-}
-
 
 
