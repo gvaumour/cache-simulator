@@ -208,7 +208,7 @@ HybridCache::lookup(Access element)
 	return getEntry(element.m_address) != NULL;
 }
 
-void  
+allocDecision
 HybridCache::handleAccess(Access element)
 {
 	uint64_t address = element.m_address;
@@ -228,6 +228,7 @@ HybridCache::handleAccess(Access element)
 	int stats_index = isWrite ? 1 : 0;
 
 	CacheEntry* current = getEntry(address);
+	allocDecision des1 = ALLOCATE_IN_SRAM;
 	
 	if(current == NULL){ // The cache line is not in the hybrid cache, Miss !
 
@@ -245,6 +246,7 @@ HybridCache::handleAccess(Access element)
 			DPRINTF(DebugCache , "Bypassing the cache for this \n");
 			if(!m_isWarmup)
 				stats_bypass++;
+			des1 = BYPASS_CACHE;
 		}
 		else
 		{
@@ -281,8 +283,17 @@ HybridCache::handleAccess(Access element)
 				m_system->signalDeallocate(replaced_entry->address); 
 				m_Deallocating = false;
 				
-				//WB this cache line to the lower cache 
-				signalWB(replaced_entry->address, false);	
+				//WB this cache line to the lower cache 			
+				Access wb_request;
+				wb_request.m_address = replaced_entry->address;
+				wb_request.m_size = 4;
+				wb_request.m_pc = replaced_entry->m_pc;
+				if(replaced_entry->isDirty)
+					wb_request.m_type = MemCmd::DIRTY_WRITEBACK;
+				else
+					wb_request.m_type = MemCmd::CLEAN_WRITEBACK;
+
+				signalWB(wb_request, false);	
 				
 				if(!m_isWarmup)
 					stats_evict++;
@@ -299,7 +310,8 @@ HybridCache::handleAccess(Access element)
 
 			if(inNVM){
 				entete_debug();
-				DPRINTF(DebugCache , "It is a Miss ! Block[%#lx] is allocated in the NVM cache : Set=%d, Way=%d\n", block_addr , id_set, id_assoc);
+				DPRINTF(DebugCache , "It is a Miss ! Block[%#lx] is allocated \
+						 in the NVM cache : Set=%d, Way=%d\n", block_addr , id_set, id_assoc);
 				if(!m_isWarmup)
 				{
 					stats_missNVM[stats_index]++;
@@ -317,7 +329,8 @@ HybridCache::handleAccess(Access element)
 			}
 			else{
 				entete_debug();
-				DPRINTF(DebugCache , "It is a Miss ! Block[%#lx] is allocated in the SRAM cache : Set=%d, Way=%d\n",block_addr, id_set, id_assoc);
+				DPRINTF(DebugCache , "It is a Miss ! Block[%#lx] is allocated \
+						in the SRAM cache : Set=%d, Way=%d\n",block_addr, id_set, id_assoc);
 				if(!m_isWarmup){				
 					stats_missSRAM[stats_index]++;			
 					stats_hitsSRAM[1]++; // The insertion write 
@@ -342,7 +355,8 @@ HybridCache::handleAccess(Access element)
 		string a = current->isNVM ? "in NVM" : "in SRAM";
 
 		entete_debug();
-		DPRINTF(DebugCache , "It is a hit ! Block[%#lx] Found %s Set=%d, Way=%d\n" , block_addr, a.c_str(), id_set, id_assoc);
+		DPRINTF(DebugCache , "It is a hit ! Block[%#lx] Found %s Set=%d, Way=%d, Req=%s\n" \
+				 , block_addr, a.c_str(), id_set, id_assoc , memCmd_str[element.m_type]);
 		
 		m_predictor->updatePolicy(id_set , id_assoc, current->isNVM, element , false);
 		
@@ -354,13 +368,14 @@ HybridCache::handleAccess(Access element)
 		}
 		else{
 			//current->coherence_state stays in the same state in any case 
-			current->nbRead++;		
+			if(element.m_type != CLEAN_WRITEBACK)
+				current->nbRead++;		
 		}
 
 		if(simu_parameters.enablePCHistoryTracking && m_printStats)
 			current->pc_history.push_back(element.m_pc);
 	
-		if(!m_isWarmup)
+		if(!m_isWarmup && (element.isDemandAccess()))
 		{
 			if(current->isNVM)	
 				stats_hitsNVM[stats_index]++;
@@ -385,6 +400,7 @@ HybridCache::handleAccess(Access element)
 		//cout << "Writing to LLC_trace.out: " <<  line << endl;
 		gzwrite(LLC_trace, line.c_str() , LLC_TRACE_BUFFER_SIZE);	
 	}
+	return des1;
 }
 
 
@@ -478,75 +494,6 @@ HybridCache::deallocate(uint64_t block_addr)
 	}
 }
 
-
-/* We receive a WB message from higher level of the hierarchy of a cl being WB*/
-void 
-HybridCache::handleWB(uint64_t block_addr, bool isDirty)
-{	
-
-	map<uint64_t,HybridLocation>::iterator it = m_tag_index.find(block_addr);		
-	
-	if(it != m_tag_index.end() )
-	{
-	
-	
-		HybridLocation loc = it->second;
-		bool inNVM = loc.m_inNVM;
-		int id_set = blockAddressToCacheSet(block_addr);
-
-		CacheEntry* current = NULL;
-		if(inNVM)
-			current = m_tableNVM[id_set][loc.m_way];
-		else
-			current = m_tableSRAM[id_set][loc.m_way];							
-	
-		current->justMigrate = false;
-
-		if(isDirty){
-			//Dirty WB updates the state of the cache line		 
-			Access element;
-			element.m_type = MemCmd::DIRTY_WRITEBACK;
-			element.m_compilerHints = current->m_compilerHints;
-			element.enableMigration = !m_Deallocating;
-			element.m_pc = m_system->getActualPC();
-			
-			current->nbWrite++;
-			
-			// The updatePolicy can provoke the migration so we update the nbWrite cpt before
-			m_predictor->updatePolicy(id_set , loc.m_way , loc.m_inNVM, element , true);		
-
-			if(inNVM)
-				stats_dirtyWBNVM++;
-			else
-				stats_dirtyWBSRAM++;
-			
-		
-			if(simu_parameters.traceLLC && m_ID == -1)
-			{
-				RD_TYPE rd_type = classifyRD(id_set , loc.m_way);
-				string line = "DATA WRITE " + string(str_RD_status[rd_type]);
-				line += " 0x" + convert_hex(block_addr) + " 0x0";  
-				//cout << "Writing to LLC_trace.out: " <<  line << endl;
-				gzwrite(LLC_trace, line.c_str() , LLC_TRACE_BUFFER_SIZE);	
-			}
-		
-		}
-		else{
-			// Clean WB does not modify the state of the cache line 
-			if(inNVM)
-				stats_cleanWBNVM++;
-			else 
-				stats_cleanWBSRAM++;			
-		}
-		
-
-	
-		if(simu_parameters.enablePCHistoryTracking && m_printStats)
-			current->pc_history.push_back(1);
-
-	}
-}
-
 void 
 HybridCache::allocate(uint64_t address , int id_set , int id_assoc, bool inNVM, uint64_t pc, bool isPrefetch)
 {
@@ -594,17 +541,26 @@ void HybridCache::triggerMigration(int set, int id_assocSRAM, int id_assocNVM , 
 	
 	if(fromNVM)
 	{
+		//From NVM to SRAM 
 		if(nvm_line->justMigrate)
 			stats_nbPingMigration++;
 	
-		//From NVM to SRAM 
 		//NVM cl erase the SRAM cl 
-		deallocate(sram_line);
 		if(sram_line->isValid)
 		{
-			signalWB(sram_line->address, false);
-			stats_evict++;		
+			//WB this cache line to the lower cache 			
+			Access wb_request;
+			wb_request.m_address = sram_line->address;
+			wb_request.m_pc = sram_line->m_pc;
+			wb_request.m_size = 4;
+			if(sram_line->isDirty)
+				wb_request.m_type = MemCmd::DIRTY_WRITEBACK;
+			else
+				wb_request.m_type = MemCmd::CLEAN_WRITEBACK;
+			signalWB(wb_request, false);
+			stats_evict++;
 		}
+		deallocate(sram_line);
 		
 		sram_line->copyCL(nvm_line);
 		sram_line->justMigrate = true;
@@ -632,7 +588,16 @@ void HybridCache::triggerMigration(int set, int id_assocSRAM, int id_assocNVM , 
 		deallocate(nvm_line);
 		if(nvm_line->isValid)
 		{
-			signalWB(nvm_line->address, false);
+			//WB this cache line to the lower cache 			
+			Access wb_request;
+			wb_request.m_address = nvm_line->address;
+			wb_request.m_pc = nvm_line->m_pc;
+			wb_request.m_size = 4;
+			if(nvm_line->isDirty)
+				wb_request.m_type = MemCmd::DIRTY_WRITEBACK;
+			else
+				wb_request.m_type = MemCmd::CLEAN_WRITEBACK;
+			signalWB(wb_request, false);
 			stats_evict++;		
 		}
 	
@@ -668,14 +633,14 @@ HybridCache::addressToCacheSet(uint64_t address)
 }
 
 void
-HybridCache::signalWB(uint64_t addr, bool isKept)
+HybridCache::signalWB(Access wb_request, bool isKept)
 {
-	CacheEntry* entry = getEntry(addr);
+	CacheEntry* entry = getEntry(wb_request.m_address);
 	if(entry != NULL)
 	{
 		entete_debug();
 		DPRINTF(DebugCache , "Invalidation of the block [%#lx]\n" , entry->address);
-		m_system->signalWB(entry->address , entry->isDirty, isKept);		
+		m_system->signalWB(wb_request , isKept);		
 	}
 	
 }
@@ -879,8 +844,8 @@ HybridCache::printResults(std::ostream& out)
 		out << entete << ":TotalHits\t" << total_access - total_miss << endl;
 		out << entete << ":TotalMiss\t" << total_miss << endl;		
 		out << entete << ":MissRate\t" << (double)(total_miss)*100 / (double)(total_access) << "%"<< endl;
-		out << entete << ":CleanWriteBack\t" << stats_cleanWBNVM + stats_cleanWBSRAM << endl;
-		out << entete << ":DirtyWriteBack\t" << stats_dirtyWBNVM + stats_dirtyWBSRAM << endl;
+//		out << entete << ":CleanWriteBack\t" << stats_cleanWBNVM + stats_cleanWBSRAM << endl;
+//		out << entete << ":DirtyWriteBack\t" << stats_dirtyWBNVM + stats_dirtyWBSRAM << endl;
 		out << entete << ":Eviction\t" << stats_evict << endl;	
 		out << entete << ":Bypass\t" << stats_bypass << endl;
 	

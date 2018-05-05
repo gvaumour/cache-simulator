@@ -25,7 +25,7 @@ class Hierarchy
 		void print(std::ostream& out);
 		void handleAccess(Access element);
 		void L1sdeallocate(uint64_t addr);
-		void signalWB(uint64_t addr, bool isDirty, bool isKept, int idcore);
+		void signalWB(Access element, bool isKept, int idcore);
 		void printResults(std::ostream& out);
 		void printConfig(std::ostream& out);
 		void finishSimu();

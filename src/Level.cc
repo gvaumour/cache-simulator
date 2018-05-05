@@ -44,7 +44,7 @@ Level::~Level()
 		delete m_icache;	
 }
 
-void
+allocDecision
 Level::handleAccess(Access element)
 {
 	if(element.isInstFetch() && !m_isUnified)
@@ -88,11 +88,12 @@ Level::finishSimu()
 
 void
 Level::sendInvalidation(uint64_t addr, bool toInstCache)
-{
+{/*
 	if(toInstCache && !m_isUnified)
 		m_icache->signalWB(addr, true);
 	else
 		m_dcache->signalWB(addr, true);
+*/
 }
 
 bool
@@ -102,16 +103,9 @@ Level::receiveInvalidation(uint64_t addr)
 }
 
 void 
-Level::signalWB(uint64_t addr,  bool isDirty, bool isKept)
+Level::signalWB(Access wb_request, bool isKept)
 {
-	m_system->signalWB(addr, isDirty, isKept, m_IDcore);
-}
-void 
-Level::handleWB(uint64_t addr, bool isDirty)
-{
-	m_dcache->handleWB(addr, isDirty);
-	if(!m_isUnified)
-		m_icache->handleWB(addr, isDirty);
+	m_system->signalWB(wb_request, isKept, m_IDcore);
 }
 
 

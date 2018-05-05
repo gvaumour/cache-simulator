@@ -54,7 +54,7 @@ class HybridCache {
 		HybridCache(const HybridCache& a);
 		~HybridCache();
 
-		void handleAccess(Access element);
+		allocDecision handleAccess(Access element);
 
 		void printResults(std::ostream& out);
 		void printConfig(std::ostream& out);
@@ -68,8 +68,7 @@ class HybridCache {
 		void deallocate(uint64_t addr);
 		void allocate(uint64_t address , int id_set , int id_assoc , bool inNVM, uint64_t pc, bool isPrefetch);		
 		CacheEntry* getEntry(uint64_t addr);
-		void handleWB(uint64_t addr, bool isDirty);
-		void signalWB(uint64_t block_addr, bool isKept);
+		void signalWB(Access wb_request, bool isKept);
 		bool receiveInvalidation(uint64_t addr);
 		
 		void triggerMigration(int set, int id_assocSRAM, int id_assocNVM , bool fromNVM);

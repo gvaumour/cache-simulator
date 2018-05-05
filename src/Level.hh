@@ -20,16 +20,15 @@ class Level{
 //		Level();
 		Level(int id_core, std::vector<ConfigCache> configs, Hierarchy* system);
 		~Level();
-		void handleAccess(Access element);
+		allocDecision handleAccess(Access element);
 		bool lookup(Access element);
 		void deallocate(uint64_t addr);
 		void signalDeallocate(uint64_t addr);
-		void signalWB(uint64_t addr, bool isDirty, bool isKept);
+		void signalWB(Access element, bool isKept);
 
 		void sendInvalidation(uint64_t addr, bool toInstCache);
 		bool receiveInvalidation(uint64_t addr);
-		
-		void handleWB(uint64_t addr, bool isDirty);
+
 		void print(std::ostream& out);
 		void printResults(std::ostream& out);
 		void printConfig(std::ostream& out);		

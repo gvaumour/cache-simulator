@@ -25,7 +25,7 @@ Hierarchy::Hierarchy(const Hierarchy& a)
 
 Hierarchy::Hierarchy(string policy, int nbCores)
 {
-	ConfigCache L1Dataconfig (32768, 1 , BLOCK_SIZE , "LRU", 0);
+	ConfigCache L1Dataconfig (32768, 4 , BLOCK_SIZE , "LRU", 0);
 	vector<ConfigCache> firstLevel;
 	firstLevel.push_back(L1Dataconfig);
 
@@ -150,25 +150,45 @@ Hierarchy::print(std::ostream& out)
 }
 
 void
-Hierarchy::signalWB(uint64_t addr, bool isDirty , bool isKept, int idcore)
+Hierarchy::signalWB(Access wb_request, bool isKept, int idcore)
 {
 
 	if(idcore == -1)
 	{	
 		// It is a WB from the LLC to the Main Mem
-		if(isDirty)
+		if(wb_request.m_type == MemCmd::DIRTY_WRITEBACK)
 			stats_dirtyWB_MainMem++;		
-		else
+		else if(wb_request.m_type == MemCmd::CLEAN_WRITEBACK)
 			stats_cleanWB_MainMem++;
+		else
+			assert(false && "Error on the type of the write back request");
 			
-		m_directory->removeEntry(addr);
+//		m_directory->removeEntry(wb_request.m_address);
 	}			
 	else{
 		//Remove the idcore from the tracker list and update the state
 		if(!isKept)
-			m_directory->removeTracker(addr , idcore);
-		m_LLC->handleWB(addr , isDirty);
-		m_directory->updateEntry(addr);
+			m_directory->removeTracker(wb_request.m_address , idcore);
+		if( m_LLC->handleAccess(wb_request) == BYPASS_CACHE)
+		{
+			if(m_directory->getTrackers(wb_request.m_address).size() == 0)
+				m_directory->setCoherenceState(wb_request.m_address , NOT_PRESENT);
+		
+			if(wb_request.m_type == MemCmd::DIRTY_WRITEBACK)
+				stats_dirtyWB_MainMem++;		
+			else if(wb_request.m_type == MemCmd::CLEAN_WRITEBACK)
+				stats_cleanWB_MainMem++;
+			else
+				assert(false && "Error on the type of the write back request");
+		}
+		else
+		{
+			if(m_directory->getTrackers(wb_request.m_address).size() == 0)
+				m_directory->setCoherenceState(wb_request.m_address , CLEAN_LLC);
+			else
+				m_directory->setCoherenceState(wb_request.m_address , SHARED_L1);
+		}
+		m_directory->updateEntry(wb_request.m_address);
 	}
 }
 
@@ -244,19 +264,20 @@ Hierarchy::handleAccess(Access element)
 	
 	if(dir_state == NOT_PRESENT)
 	{
-//		isInHierarchy = false;
 		m_directory->setTrackerToEntry(block_addr, id_core);			
 
 		m_private_caches[id_core]->handleAccess(element);		
-		m_LLC->handleAccess(element);
-		m_directory->updateEntry(block_addr);
 
-		m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);
-		
+		if( m_LLC->handleAccess(element) == ALLOCATE_IN_SRAM)
+			m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);	
+		else
+			m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1_NOT_LLC);			
+				
+		m_directory->updateEntry(block_addr);
 		if(element.isWrite())
 			stats_writeMainMem++;
 		else
-			stats_readMainMem++;
+			stats_readMainMem++;	
 	}
 	else if(dir_state == CLEAN_LLC || dir_state == DIRTY_LLC)
 	{
@@ -273,7 +294,8 @@ Hierarchy::handleAccess(Access element)
 		m_directory->updateEntry(block_addr);
 		
 	}
-	else if( dir_state == MODIFIED_L1 || dir_state == EXCLUSIVE_L1)
+	else if( dir_state == MODIFIED_L1 || dir_state == MODIFIED_L1_NOT_LLC || \
+			 dir_state == EXCLUSIVE_L1 || dir_state == EXCLUSIVE_L1_NOT_LLC)
 	{
 		doPrefetch = false;
 		set<int> nodes = m_directory->getTrackers(block_addr);
@@ -282,6 +304,7 @@ Hierarchy::handleAccess(Access element)
 
 		if(node != id_core)
 		{
+			assert(false && "Not implemented yet");
 			m_private_caches[node]->sendInvalidation(block_addr, element.isInstFetch() );
 			//If it is a write, deallocate it from one core to allocate it to the other
 			if(element.isWrite()){
@@ -304,7 +327,7 @@ Hierarchy::handleAccess(Access element)
 		else{
 			// Transistion from Exclusive to Modified 
 			if(element.isWrite() && dir_state == EXCLUSIVE_L1)
-				m_directory->setCoherenceState(block_addr, MODIFIED_L1);
+				m_directory->setCoherenceState(block_addr, MODIFIED_L1_NOT_LLC);
 
 			m_private_caches[id_core]->handleAccess(element);
 		

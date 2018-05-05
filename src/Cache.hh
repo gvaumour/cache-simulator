@@ -86,6 +86,11 @@ enum DirectoryState
 	SHARED_L1,
 	MODIFIED_L1,
 	EXCLUSIVE_L1,
+
+	SHARED_L1_NOT_LLC,
+	MODIFIED_L1_NOT_LLC,
+	EXCLUSIVE_L1_NOT_LLC,
+
 	CLEAN_LLC,
 	DIRTY_LLC,
 	NOT_PRESENT,
@@ -110,6 +115,7 @@ class Access{
 		bool isWrite() { return m_type == MemCmd::DATA_WRITE || m_type == MemCmd::DIRTY_WRITEBACK;}
 		bool isInstFetch() { return m_type == MemCmd::INST_READ || m_type == MemCmd::INST_PREFETCH;}
 		bool isPrefetch() { return m_type == MemCmd::DATA_PREFETCH || m_type == MemCmd::INST_PREFETCH;}
+		bool isDemandAccess() { return m_type == MemCmd::DATA_WRITE ||  m_type == MemCmd::DATA_READ ||  m_type == MemCmd::INST_READ;}
 		
 		void print(std::ostream& out) const;
 
