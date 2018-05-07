@@ -173,7 +173,6 @@ Hierarchy::signalWB(Access wb_request, bool isKept, int idcore)
 			m_directory->removeTracker(wb_request.m_address , idcore);
 		if( m_LLC->handleAccess(wb_request) == BYPASS_CACHE)
 		{
-			assert(false && "Should not go there ");
 			if(m_directory->getTrackers(wb_request.m_address).size() == 0)
 				m_directory->setCoherenceState(wb_request.m_address , NOT_PRESENT);
 		
