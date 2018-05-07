@@ -228,13 +228,13 @@ FeatureTable::finishSimu()
 		for(unsigned j = 0 ; j < stats_frequencymap[i].size(); j++)
 		{
 			int value = stats_frequencymap[i][j];
-			if(value > 20)
-				value = 20;
+			if(value > 100)
+				value = 100;
 
 				
 			red[j][i] = 255;
-			blue[j][i] = 255 - 255 * value / 5;			
-			green[j][i] = 255 - 255 * value / 5; 
+			blue[j][i] = 255 - 255 * value / 100;			
+			green[j][i] = 255 - 255 * value / 100; 
 		}
 	}
 

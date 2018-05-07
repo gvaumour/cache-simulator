@@ -185,6 +185,7 @@ PerceptronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, A
 void
 PerceptronPredictor::update_globalPChistory(uint64_t pc)
 {
+	
 	global_PChistory.push_front(pc);
 	if( global_PChistory.size() == 11)
 		global_PChistory.pop_back();

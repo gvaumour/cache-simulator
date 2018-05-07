@@ -162,6 +162,8 @@ Hierarchy::signalWB(Access wb_request, bool isKept, int idcore)
 			stats_cleanWB_MainMem++;
 		else
 			assert(false && "Error on the type of the write back request");
+
+		m_directory->setCoherenceState(wb_request.m_address , NOT_PRESENT);
 			
 //		m_directory->removeEntry(wb_request.m_address);
 	}			
@@ -171,6 +173,7 @@ Hierarchy::signalWB(Access wb_request, bool isKept, int idcore)
 			m_directory->removeTracker(wb_request.m_address , idcore);
 		if( m_LLC->handleAccess(wb_request) == BYPASS_CACHE)
 		{
+			assert(false && "Should not go there ");
 			if(m_directory->getTrackers(wb_request.m_address).size() == 0)
 				m_directory->setCoherenceState(wb_request.m_address , NOT_PRESENT);
 		
@@ -183,6 +186,7 @@ Hierarchy::signalWB(Access wb_request, bool isKept, int idcore)
 		}
 		else
 		{
+			
 			if(m_directory->getTrackers(wb_request.m_address).size() == 0)
 				m_directory->setCoherenceState(wb_request.m_address , CLEAN_LLC);
 			else
