@@ -150,6 +150,8 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 	stats_nbPingMigration = 0;
 	
 	stats_histo_ratioRW.clear();
+	stats_allocateWB = 0, stats_allocateDemand = 0;
+	stats_demand_BP = 0, stats_WB_BP = 0;
 	
 	// Record the number of operations issued by the cache 
 	stats_operations = vector<uint64_t>(NUM_MEM_CMDS , 0); 
@@ -228,17 +230,16 @@ HybridCache::handleAccess(Access element)
 	int stats_index = isWrite ? 1 : 0;
 
 	CacheEntry* current = getEntry(address);
-	allocDecision des1 = ALLOCATE_IN_SRAM;
+	allocDecision des = ALLOCATE_IN_SRAM;
 	
 	if(current == NULL){ // The cache line is not in the hybrid cache, Miss !
-
-		//Verify if the cache line is in missing tags 
-		element.isSRAMerror = m_predictor->reportMiss(block_addr , id_set);
 				
 		CacheEntry* replaced_entry = NULL;
 		
-		allocDecision des = m_predictor->allocateInNVM(id_set, element);
-		m_predictor->recordAllocationDecision(id_set, element, des);
+		des = m_predictor->allocateInNVM(id_set, element);
+		element.isSRAMerror = m_predictor->reportMiss(block_addr , id_set);
+
+//		m_predictor->recordAllocationDecision(id_set, element, des);
 		
 		if(des == BYPASS_CACHE )
 		{
@@ -246,14 +247,23 @@ HybridCache::handleAccess(Access element)
 			DPRINTF(DebugCache , "Bypassing the cache for this \n");
 			if(!m_isWarmup)
 				stats_bypass++;
-			des1 = BYPASS_CACHE;
+			if( element.isDemandAccess())
+				stats_demand_BP++;
+			else
+				stats_WB_BP++;
 		}
 		else
 		{
 		
+			//Verify if the cache line is in missing tags 
 			bool inNVM = (des == ALLOCATE_IN_NVM) ? true : false; 
 			int id_assoc = -1;
 			
+			if( element.isDemandAccess())
+				stats_allocateDemand++;
+			else
+				stats_allocateWB++;
+					
 			id_assoc = m_predictor->evictPolicy(id_set, inNVM);	
 			
 			if(inNVM){//New line allocated in NVM
@@ -375,7 +385,7 @@ HybridCache::handleAccess(Access element)
 		if(simu_parameters.enablePCHistoryTracking && m_printStats)
 			current->pc_history.push_back(element.m_pc);
 	
-		if(!m_isWarmup && (element.isDemandAccess()))
+		if(!m_isWarmup)
 		{
 			if(current->isNVM)	
 				stats_hitsNVM[stats_index]++;
@@ -391,7 +401,7 @@ HybridCache::handleAccess(Access element)
 			rd_type = classifyRD(id_set , id_assoc);	
 	}
 	
-	if(simu_parameters.traceLLC && m_ID == -1)
+	if(simu_parameters.traceLLC && m_ID == -1 && des != BYPASS_CACHE)
 	{
 		string access = element.isWrite() ? "WRITE" : "READ";
 		string data_type = element.isInstFetch() ? "INST" : "DATA";
@@ -400,7 +410,7 @@ HybridCache::handleAccess(Access element)
 		//cout << "Writing to LLC_trace.out: " <<  line << endl;
 		gzwrite(LLC_trace, line.c_str() , LLC_TRACE_BUFFER_SIZE);	
 	}
-	return des1;
+	return des;
 }
 
 
@@ -846,9 +856,14 @@ HybridCache::printResults(std::ostream& out)
 		out << entete << ":MissRate\t" << (double)(total_miss)*100 / (double)(total_access) << "%"<< endl;
 //		out << entete << ":CleanWriteBack\t" << stats_cleanWBNVM + stats_cleanWBSRAM << endl;
 //		out << entete << ":DirtyWriteBack\t" << stats_dirtyWBNVM + stats_dirtyWBSRAM << endl;
+		out << entete << ":AllocateDemand\t" << stats_allocateDemand << endl;
+		out << entete << ":AllocateWB\t" << stats_allocateWB << endl;
+		
 		out << entete << ":Eviction\t" << stats_evict << endl;	
 		out << entete << ":Bypass\t" << stats_bypass << endl;
-	
+		out << entete << ":DemandBypass\t" << stats_demand_BP << endl;
+		out << entete << ":WBBypass\t" << stats_WB_BP << endl;
+		
 		out << entete << ":NVMways:reads\t"<< stats_hitsNVM[0] + stats_migration[true]<< endl;
 		out << entete << ":NVMways:writes\t"<< stats_hitsNVM[1] + stats_dirtyWBNVM + stats_migration[false] << endl;		
 		out << entete << ":SRAMways:reads\t"<< stats_hitsSRAM[0] + stats_migration[false] << endl;

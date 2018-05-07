@@ -56,20 +56,21 @@ Predictor::Predictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtabl
 	if(m_nbNVMways != 0)
 		m_trackError = true;
 
+	/* Allocation of the BP missing tags array*/
+	BP_missing_tags.resize(m_nb_set);
+	for(int i = 0 ; i < m_nb_set; i++)
+	{
+		BP_missing_tags[i].resize(m_assoc);
+		for(unsigned j = 0 ; j < BP_missing_tags[i].size(); j++)
+		{
+			BP_missing_tags[i][j] = new MissingTagEntry();
+		}
+	}
+
+
+
 	if(m_trackError){
 	
-
-		/* Allocation of the BP missing tags array*/
-		BP_missing_tags.resize(m_nb_set);
-		for(int i = 0 ; i < m_nb_set; i++)
-		{
-			BP_missing_tags[i].resize(m_assoc);
-			for(unsigned j = 0 ; j < BP_missing_tags[i].size(); j++)
-			{
-				BP_missing_tags[i][j] = new MissingTagEntry();
-			}
-		}
-
 		/* Allocation of the SRAM missing tags array*/
 		m_missing_tags.clear();
 		m_missing_tags.resize(m_nb_set);
@@ -93,6 +94,13 @@ Predictor::Predictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtabl
 
 Predictor::~Predictor()
 {
+	for(unsigned i = 0 ; i < BP_missing_tags.size() ; i++)
+	{
+		for(unsigned j = 0 ; j < BP_missing_tags[i].size() ; j++)
+		{
+			delete BP_missing_tags[i][j];
+		}
+	}
 	if(m_trackError){
 		for(unsigned i = 0 ; i < m_missing_tags.size() ; i++)
 		{
@@ -101,13 +109,7 @@ Predictor::~Predictor()
 				delete m_missing_tags[i][j];
 			}
 		}
-		for(unsigned i = 0 ; i < BP_missing_tags.size() ; i++)
-		{
-			for(unsigned j = 0 ; j < BP_missing_tags[i].size() ; j++)
-			{
-				delete BP_missing_tags[i][j];
-			}
-		}
+
 	}
 	delete m_replacementPolicyNVM_ptr;
 	delete m_replacementPolicySRAM_ptr;
@@ -202,37 +204,22 @@ Predictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access elem
 
 }
 
-bool
-Predictor::recordAllocationDecision(uint64_t set, Access element, allocDecision des)
-{	
-	if(!m_trackError)
-		return false;
-	
-	bool find = false , isBPerror = false;
-	//DPRINTF("Predictor::recordAllocationDecision Set %d, element.m_address = 0x%lx, des = %s \n ", set, element.m_address, allocDecision_str[des]);
 
-	//Look if the element already exists , if yes update it, if no insert it
+bool
+Predictor::hitInBypassTags(uint64_t block_addr , int set , bool isMiss)
+{	
+
+	bool find = false , isBPerror = false;
+	//DPRINTF("Predictor::recordAllocationDecision Set %d, block_addr = 0x%lx\n ", set, block_addr);
+
+	//Look if the entry already exists, if yes => BP Error, if No insert it
 	for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
 	{	
-		if(BP_missing_tags[set][i]->addr == element.m_address)
+		if(BP_missing_tags[set][i]->addr == block_addr)
 		{
 			find = true;
 			BP_missing_tags[set][i]->last_time_touched = cpt_time;
-			BP_missing_tags[set][i]->isBypassed = (des == BYPASS_CACHE);
-
-			
-			//Bypass an access that would be a hit , BP ERROR ! 
-//			if(des == BYPASS_CACHE && BP_missing_tags[set][i]->isBypassed){
-			if(des == BYPASS_CACHE){
-			
-				//DPRINTF("Predictor::recordAllocationDecision BP_error detected\n");
-
-				isBPerror = false;
-				
-				if(!m_isWarmup)		
-					stats_BP_errors[stats_BP_errors.size()-1]++;
-			}
-	
+			isBPerror = isMiss ? true : false;
 			break;
 		}
 	}
@@ -256,17 +243,11 @@ Predictor::recordAllocationDecision(uint64_t set, Access element, allocDecision 
 			}
 			
 		}
-		
-		if(BP_missing_tags[set][index_oldest]->isValid)
-		{
-			//DPRINTF("Predictor::Eviction of entry 0x%lx\n",BP_missing_tags[set][index_oldest]->addr);
-		}
 		//DPRINTF("Predictor::Insertion of the new entry at assoc %d\n", index_oldest);
 		
 		BP_missing_tags[set][index_oldest]->last_time_touched = cpt_time;
-		BP_missing_tags[set][index_oldest]->addr = element.m_address;
+		BP_missing_tags[set][index_oldest]->addr = block_addr;
 		BP_missing_tags[set][index_oldest]->isValid = true;		
-		BP_missing_tags[set][index_oldest]->isBypassed = (des == BYPASS_CACHE);
 	}
 	return isBPerror;
 }
@@ -375,6 +356,11 @@ Predictor::reportMiss(uint64_t block_addr , int id_set)
 	if( sram_error ) 
 		stats_SRAM_errors[stats_SRAM_errors.size()-1]++;
 	
+	bool bypass_error = hitInBypassTags(block_addr , id_set , true);
+	if( bypass_error )
+		stats_BP_errors[stats_BP_errors.size()-1]++;
+	
+	
 	return sram_error;
 }
 
@@ -430,6 +416,7 @@ Predictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element
 
 	uint64_t block_addr = bitRemove(element.m_address , 0 , log2(BLOCK_SIZE));
 	updateFUcaches(block_addr , inNVM);
+	hitInBypassTags(block_addr , set , false);
 
 	if(m_isWarmup)
 		return;
@@ -444,6 +431,8 @@ Predictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element
 		else
 			stats_COREerrors++;
 	}
+	
+	
 }
 
 

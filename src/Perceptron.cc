@@ -8,7 +8,7 @@
 using namespace std;
 
 ofstream dump_file(FILE_DUMP_PERCEPTRON);
-//int WATCHED_INDEX = 121;
+int WATCHED_INDEX = 121;
 
 
 PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) :\
@@ -65,9 +65,12 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 	stats_variances_buffer = vector<double>();
 	stats_variances = vector<double>();
 	*/
+	stats_allocate = 0;
 	stats_nbMiss = 0;
 	stats_nbHits = 0;
-	
+
+	stats_update_learning = 0, stats_update = 0;
+	stats_allocate = 0, stats_allocate_learning = 0;
 }
 
 
@@ -123,7 +126,9 @@ PerceptronPredictor::allocateInNVM(uint64_t set, Access element)
 			return BYPASS_CACHE;
 		}
 		else
+		{
 			return ALLOCATE_IN_SRAM;		
+		}
 	}
 }
 
@@ -132,10 +137,13 @@ PerceptronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 {
 	update_globalPChistory(element.m_pc);
 	
+	stats_update++;
+	
 	CacheEntry *entry = get_entry(set , index , inNVM);
 	entry->policyInfo = m_cpt++;
 	if(entry->isLearning)
 	{
+		stats_update_learning++;
 		for(unsigned i = 0 ; i < m_features.size() ; i++)
 		{
 			if( entry->perceptron_BPpred[i] > -simu_parameters.perceptron_threshold_learning || !entry->predictedReused[i])
@@ -162,8 +170,13 @@ PerceptronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, A
 	CacheEntry* current = get_entry(set , index , inNVM);
 	current->policyInfo = m_cpt++;
 
+	stats_allocate++;
+
 	if(current->isLearning)
+	{
+		stats_allocate_learning++;
 		setPrediction(current);
+	}
 			
 	Predictor::insertionPolicy(set , index , inNVM , element);
 }
@@ -257,7 +270,10 @@ PerceptronPredictor::printStats(std::ostream& out, std::string entete) {
 	
 	out << entete << ":PerceptronPredictor:NBBypass\t" << total_BP << endl;
 	out << entete << ":PerceptronPredictor:TotalDeadLines\t" << total_DeadLines << endl;
-	
+	out << entete << ":PerceptronPredictor:AllocationLearning\t" << stats_allocate_learning << endl;	
+	out << entete << ":PerceptronPredictor:Allocation\t" << stats_allocate_learning + stats_allocate << endl;
+	out << entete << ":PerceptronPredictor:UpdateLearning\t" << stats_update_learning << endl;
+	out << entete << ":PerceptronPredictor:Update\t" << stats_update_learning + stats_update << endl;
 
 	Predictor::printStats(out, entete);
 }

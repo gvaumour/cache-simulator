@@ -61,7 +61,10 @@ class PerceptronPredictor : public Predictor {
 		uint64_t stats_nbMiss, stats_nbHits;
 //		std::vector<double> stats_variances_buffer;
 //		std::vector<double> stats_variances;
-		
+
+		uint64_t stats_update , stats_update_learning;
+		uint64_t stats_allocate , stats_allocate_learning;
+				
 		std::deque<uint64_t> global_PChistory;		
 
 };

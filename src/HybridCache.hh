@@ -135,7 +135,9 @@ class HybridCache {
 		std::vector<uint64_t> stats_hitsNVM;
 		uint64_t stats_dirtyWBNVM;
 		uint64_t stats_cleanWBNVM;
-		
+		uint64_t stats_allocateWB, stats_allocateDemand;
+		uint64_t stats_demand_BP, stats_WB_BP;
+			
 		std::vector<uint64_t> stats_migration;
 		
 		std::vector<uint64_t> stats_operations;

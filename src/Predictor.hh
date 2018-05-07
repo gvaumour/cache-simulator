@@ -54,13 +54,13 @@ class Predictor{
 		virtual void stopWarmup();
 	
 //		void insertRecord(int set, int assoc, bool inNVM);
-		bool reportMiss(uint64_t block_addr , int id_set);
-		bool checkBPerror(uint64_t block_addr , int id_set);
 		void migrationRecording();
 		void evictRecording(int id_set , int id_assoc , bool inNVM);
-		void updateFUcaches(uint64_t block_addr, bool inNVM);
 
+		bool reportMiss(uint64_t block_addr , int id_set);
+		bool hitInBypassTags(uint64_t block_addr , int id_set, bool isMiss);
 		bool hitInMissingTags(uint64_t block_addr, int set);
+		void updateFUcaches(uint64_t block_addr, bool inNVM);
 
 
 	protected : 		

@@ -326,8 +326,10 @@ Hierarchy::handleAccess(Access element)
 		}
 		else{
 			// Transistion from Exclusive to Modified 
-			if(element.isWrite() && dir_state == EXCLUSIVE_L1)
+			if(element.isWrite() && dir_state == EXCLUSIVE_L1_NOT_LLC)
 				m_directory->setCoherenceState(block_addr, MODIFIED_L1_NOT_LLC);
+			if(element.isWrite() && dir_state == EXCLUSIVE_L1)
+				m_directory->setCoherenceState(block_addr, MODIFIED_L1);
 
 			m_private_caches[id_core]->handleAccess(element);
 		

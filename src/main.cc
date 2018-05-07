@@ -238,7 +238,7 @@ int main(int argc , char* argv[]){
 	
 	int id_trace = 0;
 	string loading_bar = "";
-	uint64_t step = 300E6/30;
+	uint64_t step = NB_ACCESS/30;
 
 	for(auto memory_trace : memory_traces)
 	{
@@ -257,7 +257,7 @@ int main(int argc , char* argv[]){
 			cpt_time++;
 			cpt_access++;
 
-			if( ((cpt_time-1) % step == 0) || cpt_time == 300E6)
+			if( ((cpt_time-1) % step == 0) || cpt_time == NB_ACCESS)
 			{
 				cout << "\tSimulation Progress [" << std::left << setw(30) << setfill(' ') \
 					<< loading_bar << "] " << setw(2) << loading_bar.size()*100/30 << "%\r";
