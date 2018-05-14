@@ -1,5 +1,7 @@
 #include "common.hh"
+#include "Perceptron.hh"
 #include "FeaturesFunction.hh"
+
 
 using namespace std;
 
@@ -84,6 +86,16 @@ int
 hashing_currentPC1(uint64_t addr, uint64_t missPC, deque<uint64_t> pc_history)
 {
 	return ( (pc_history[0]>>2)^pc_history[0])%256;
+}
+
+int hashing_CallStack(uint64_t addr, uint64_t missPC, std::deque<uint64_t> pc_history)
+{
+	return (PerceptronPredictor::m_callee_PChistory[0])%256;
+}
+
+int hashing_CallStack1(uint64_t addr, uint64_t missPC, std::deque<uint64_t> pc_history)
+{
+	return ((PerceptronPredictor::m_callee_PChistory[0])^pc_history[0])%256;
 }
 
 

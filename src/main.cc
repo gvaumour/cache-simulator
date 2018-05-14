@@ -39,7 +39,6 @@ using namespace std;
 
 int start_debug;
 Hierarchy* my_system;
-vector<string> memory_traces;
 
 int main(int argc , char* argv[]){
 	
@@ -211,12 +210,12 @@ int main(int argc , char* argv[]){
 	 {
 	 	simu_parameters.policy = "LRU";
 	 }
-	
+		
 	for(unsigned i = 0 ; i < args.size() ; i++)
-		memory_traces.push_back(args[i]);		
+		simu_parameters.memory_traces.push_back(args[i]);		
 	
 	if(argc == 1)
-		memory_traces.push_back(DEFAULT_TRACE);
+		simu_parameters.memory_traces.push_back(DEFAULT_TRACE);
 	
 	
 	
@@ -230,17 +229,26 @@ int main(int argc , char* argv[]){
 
 	my_system = new Hierarchy(simu_parameters.policy , simu_parameters.nbCores);
  
-	cout << "Launching simulation with " << memory_traces.size() << " file(s), the " << simu_parameters.policy \
-	 << " policy and with " << simu_parameters.nbCores << " core(s)" << endl;
+	cout << "Launching simulation with " << simu_parameters.memory_traces.size() << " file(s), the " << simu_parameters.policy \
+	 << " policy and with " << simu_parameters.nbCores << " core(s)" << endl;	
+	if(simu_parameters.policy == "Perceptron")
+	{
+		cout <<  "Features used : ";
+		for(auto p : simu_parameters.perceptron_features)
+			cout << p << ",";
+		cout << endl;
+	}
+
+
 	cout << "Traces considered:" << endl;
-	for(auto memory_trace : memory_traces)
+	for(auto memory_trace : simu_parameters.memory_traces)
 		cout << "\t - " << memory_trace << endl;
 	
 	int id_trace = 0;
 	string loading_bar = "";
 	uint64_t step = NB_ACCESS/30;
 
-	for(auto memory_trace : memory_traces)
+	for(auto memory_trace : simu_parameters.memory_traces)
 	{
 		cout << "\tRunning Trace: " << memory_trace << " ... " <<  endl;
 	
@@ -316,7 +324,7 @@ void printResults(bool mergingResults, int id_trace)
 	configFile.open("config" + suffixe + ".ini");
 	
 	configFile << "Simulated traces:" << endl;
-	for(auto p : memory_traces)
+	for(auto p : simu_parameters.memory_traces)
 		configFile << "\t-" << p << endl;
  	
 	my_system->printConfig(configFile);

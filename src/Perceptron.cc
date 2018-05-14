@@ -10,6 +10,9 @@ using namespace std;
 ofstream dump_file(FILE_DUMP_PERCEPTRON);
 int WATCHED_INDEX = 121;
 
+std::deque<uint64_t> PerceptronPredictor::m_global_PChistory;
+std::deque<uint64_t> PerceptronPredictor::m_callee_PChistory;
+
 
 PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) :\
 	Predictor(nbAssoc , nbSet , nbNVMways , SRAMtable , NVMtable , cache)
@@ -17,6 +20,7 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 	m_tableSize = simu_parameters.perceptron_table_size;
 	m_features.clear();
 	m_criterias_names = simu_parameters.perceptron_features;
+	m_need_callee_file = false;
 	
 	for(auto feature : simu_parameters.perceptron_features)
 	{
@@ -37,6 +41,11 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 			m_features_hash.push_back(hashing_MissCounter);	
 		else if(feature == "MissCounter1")
 			m_features_hash.push_back(hashing_MissCounter1);
+		
+		else if( feature == "CallStack")
+			m_features_hash.push_back(hashing_CallStack);
+		else if( feature == "CallStack1")	
+			m_features_hash.push_back(hashing_CallStack1);
 			
 		else if(feature == "currentPC")
 			m_features_hash.push_back(hashing_currentPC);
@@ -51,20 +60,29 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 		else
 			assert(false && "Error while initializing the features , wrong name\n");
 
+
+		if(feature == "CallStack" || feature == "CallStack1")
+			m_need_callee_file = true;
 	}
+	
+	if(m_need_callee_file)
+		load_callee_file();
+		
 	
 	miss_counter = 0;
 	m_cpt = 0;
 
-	global_PChistory = deque<uint64_t>();
+	m_global_PChistory = deque<uint64_t>();
+	m_callee_PChistory = deque<uint64_t>();
+	m_callee_map = map<uint64_t,int>();
 
 	stats_nbBPrequests = vector<uint64_t>(1, 0);
 	stats_nbDeadLine = vector<uint64_t>(1, 0);
 	stats_missCounter = vector<int>();
-	/*
+	
 	stats_variances_buffer = vector<double>();
 	stats_variances = vector<double>();
-	*/
+	
 	stats_allocate = 0;
 	stats_nbMiss = 0;
 	stats_nbHits = 0;
@@ -103,22 +121,22 @@ PerceptronPredictor::allocateInNVM(uint64_t set, Access element)
 	{	
 		//Predict if we should bypass
 		int sum_prediction = 0;
-		//vector<double> samples;
+		vector<double> samples;
 		for(unsigned i = 0 ; i < m_features.size(); i++)
 		{
-			int hash = m_features_hash[i](element.m_address , element.m_pc , global_PChistory);
+			int hash = m_features_hash[i](element.m_address , element.m_pc , m_global_PChistory);
 			int pred = m_features[i]->getBypassPrediction(hash);
-			//samples.push_back(pred);
+			samples.push_back(pred);
 			sum_prediction += pred;
 		}
 		//Compute Variance of the sample
-		/*double variance = 0, avg = (double)sum_prediction / (double) samples.size();
+		double variance = 0, avg = (double)sum_prediction / (double) samples.size();
 		for(unsigned i = 0 ; i < samples.size(); i++)
 			variance += (samples[i] - avg) * (samples[i] - avg);
 
 		variance = sqrt( variance / (double) samples.size());
 		stats_variances_buffer.push_back(variance);
-		*/
+		
 		
 		if(sum_prediction > simu_parameters.perceptron_threshold_bypass)
 		{
@@ -148,7 +166,7 @@ PerceptronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 		{
 			if( entry->perceptron_BPpred[i] > -simu_parameters.perceptron_threshold_learning || !entry->predictedReused[i])
 			{
-				int hash = m_features_hash[i](entry->address , entry->m_pc ,  global_PChistory);
+				int hash = m_features_hash[i](entry->address , entry->m_pc ,  m_global_PChistory);
 				m_features[i]->decreaseConfidence(hash);
 			}
 		}
@@ -186,9 +204,18 @@ void
 PerceptronPredictor::update_globalPChistory(uint64_t pc)
 {
 	
-	global_PChistory.push_front(pc);
-	if( global_PChistory.size() == 11)
-		global_PChistory.pop_back();
+	m_global_PChistory.push_front(pc);
+	if( m_global_PChistory.size() == 11)
+		m_global_PChistory.pop_back();
+	
+	if(!m_need_callee_file)
+		return;
+	if(m_callee_map.count(pc) != 0)
+	{
+		m_callee_PChistory.push_front(pc);
+		if( m_callee_PChistory.size() == 11)
+			m_callee_PChistory.pop_back();
+	}
 }
 
 
@@ -198,7 +225,7 @@ PerceptronPredictor::setPrediction(CacheEntry* current)
 	int bp_pred=0;
 	for(unsigned i = 0 ; i < m_features.size() ; i++)
 	{
-		int hash = m_features_hash[i](current->address , current->m_pc , global_PChistory);
+		int hash = m_features_hash[i](current->address , current->m_pc , m_global_PChistory);
 		bp_pred = m_features[i]->getBypassPrediction(hash);
 		current->perceptron_BPpred[i] = bp_pred;
 		if(bp_pred > simu_parameters.perceptron_threshold_bypass)
@@ -234,7 +261,7 @@ int PerceptronPredictor::evictPolicy(int set, bool inNVM)
 		{
 			if(current->predictedReused[i] || current->perceptron_BPpred[i] < simu_parameters.perceptron_threshold_learning)
 			{
-				int hash = m_features_hash[i](current->address , current->m_pc , global_PChistory);
+				int hash = m_features_hash[i](current->address , current->m_pc , m_global_PChistory);
  				m_features[i]->increaseConfidence(hash);
 			}
 		}
@@ -263,11 +290,11 @@ PerceptronPredictor::printStats(std::ostream& out, std::string entete) {
 		total_BP+= stats_nbBPrequests[i];		
 		total_DeadLines += stats_nbDeadLine[i];
 	}
-	/*
+	
 	ofstream file(FILE_OUTPUT_PERCEPTRON);	
 	for(unsigned i = 0; i < stats_variances.size() ; i++)
 		file << stats_variances[i] << endl;
-	file.close();*/
+	file.close();
 	
 	out << entete << ":PerceptronPredictor:NBBypass\t" << total_BP << endl;
 	out << entete << ":PerceptronPredictor:TotalDeadLines\t" << total_DeadLines << endl;
@@ -333,7 +360,7 @@ PerceptronPredictor::openNewTimeFrame()
 	
 	stats_missCounter.push_back( miss_counter );
 	stats_nbHits = 0, stats_nbMiss = 0;
-	/*
+	
 	if(stats_variances_buffer.size() != 0)
 	{
 		double avg = 0;
@@ -343,7 +370,7 @@ PerceptronPredictor::openNewTimeFrame()
 
 		stats_variances.push_back(avg);	
 		stats_variances_buffer.clear();
-	}*/
+	}
 
 
 	for(auto feature : m_features)
@@ -364,4 +391,25 @@ PerceptronPredictor::finishSimu()
 	Predictor::finishSimu();
 }
 
+
+void 
+PerceptronPredictor::load_callee_file()
+{
+
+	string mem_trace = simu_parameters.memory_traces[0];
+	string dir_name = splitFilename(mem_trace);
+	string callee_filename = dir_name + "/callee_recap.txt"; 
+	
+	ifstream file(callee_filename);
+	
+	assert(file && "Callee file not found\n");
+	string line;
+	
+	while( getline(file, line))
+	{		
+		m_callee_map.insert(pair<uint64_t,int>( hexToInt(line) , 0));		
+	};
+	
+	file.close();	
+}
 

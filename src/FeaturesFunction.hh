@@ -20,6 +20,9 @@ int hashingMissPC_LSB1(uint64_t addr , uint64_t missPC , std::deque<uint64_t> pc
 int hashing_MissCounter(uint64_t addr, uint64_t missPC, std::deque<uint64_t> pc_history);
 int hashing_MissCounter1(uint64_t addr, uint64_t missPC, std::deque<uint64_t> pc_history);
 
+int hashing_CallStack(uint64_t addr, uint64_t missPC, std::deque<uint64_t> pc_history);
+int hashing_CallStack1(uint64_t addr, uint64_t missPC, std::deque<uint64_t> pc_history);
+
 int hashing_currentPC(uint64_t addr, uint64_t missPC, std::deque<uint64_t> pc_history);
 int hashing_currentPC1(uint64_t addr, uint64_t missPC, std::deque<uint64_t> pc_history);
 int hashingcurrentPC_3(uint64_t addr, uint64_t missPC, std::deque<uint64_t> pc_history);

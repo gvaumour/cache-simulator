@@ -42,6 +42,10 @@ class PerceptronPredictor : public Predictor {
 		CacheEntry* get_entry(uint64_t set , uint64_t index , bool inNVM);
 
 		void update_globalPChistory(uint64_t pc);
+		void load_callee_file();
+	
+		static std::deque<uint64_t> m_global_PChistory;
+		static std::deque<uint64_t> m_callee_PChistory;
 
 				
 	protected : 
@@ -51,23 +55,26 @@ class PerceptronPredictor : public Predictor {
 		std::vector<hashing_function> m_features_hash;
 		std::vector<std::string> m_criterias_names;
 		int m_tableSize;
-
 		uint64_t m_cpt;		
+
+		bool m_need_callee_file;
+		std::map<uint64_t,int> m_callee_map;
 		
 		/* Stats */ 
 		std::vector<uint64_t> stats_nbBPrequests;
 		std::vector<uint64_t> stats_nbDeadLine;
 		std::vector<int> stats_missCounter;
 		uint64_t stats_nbMiss, stats_nbHits;
-//		std::vector<double> stats_variances_buffer;
-//		std::vector<double> stats_variances;
+		std::vector<double> stats_variances_buffer;
+		std::vector<double> stats_variances;
 
 		uint64_t stats_update , stats_update_learning;
 		uint64_t stats_allocate , stats_allocate_learning;
 				
-		std::deque<uint64_t> global_PChistory;		
 
 };
+
+
 
 
 #endif

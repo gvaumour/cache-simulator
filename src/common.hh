@@ -129,6 +129,7 @@ void init_default_parameters();
 std::string buildHash(uint64_t a, uint64_t p);
 void writeBMPimage(std::string image_name , int width , int height , std::vector< std::vector<int> > red,\
 				 std::vector< std::vector<int> > blue, std::vector< std::vector<int> > green );
+std::string splitFilename(std::string str);
 
 
 extern uint64_t cpt_time;

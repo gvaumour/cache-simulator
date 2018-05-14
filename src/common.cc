@@ -144,6 +144,11 @@ readInputArgs(int argc , char* argv[] , int& sizeCache , int& assoc , int& block
 	return true;
 }
 
+string splitFilename(string str)
+{
+	size_t found=str.find_last_of("/\\");
+	return str.substr(0 , found);
+}
 
 string buildHash(uint64_t a, uint64_t p)
 {
