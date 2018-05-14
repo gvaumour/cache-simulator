@@ -66,7 +66,10 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 	}
 	
 	if(m_need_callee_file)
+	{
+		m_callee_map = map<uint64_t,int>();
 		load_callee_file();
+	}
 		
 	
 	miss_counter = 0;
@@ -74,7 +77,6 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 
 	m_global_PChistory = deque<uint64_t>();
 	m_callee_PChistory = deque<uint64_t>();
-	m_callee_map = map<uint64_t,int>();
 
 	stats_nbBPrequests = vector<uint64_t>(1, 0);
 	stats_nbDeadLine = vector<uint64_t>(1, 0);
@@ -202,14 +204,14 @@ PerceptronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, A
 
 void
 PerceptronPredictor::update_globalPChistory(uint64_t pc)
-{
-	
+{	
 	m_global_PChistory.push_front(pc);
 	if( m_global_PChistory.size() == 11)
 		m_global_PChistory.pop_back();
 	
 	if(!m_need_callee_file)
 		return;
+	
 	if(m_callee_map.count(pc) != 0)
 	{
 		m_callee_PChistory.push_front(pc);
@@ -409,7 +411,7 @@ PerceptronPredictor::load_callee_file()
 	{		
 		m_callee_map.insert(pair<uint64_t,int>( hexToInt(line) , 0));		
 	};
-	
+		
 	file.close();	
 }
 

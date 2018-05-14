@@ -41,13 +41,6 @@ MemoryTrace::MemoryTrace(string trace) : m_trace(trace), m_isOpen(false)
 	}*/
 }
 
-uint64_t MemoryTrace::compressPC(uint64_t pc)
-{
-	return pc;
-}
-
-
-
 static char mybuffer_dummy[TRACE_BUFFER_SIZE];
 static int readNext_operation;
 static string readNext_addr;
@@ -73,8 +66,7 @@ CompressedTrace::readNext(Access& element)
 	readNext_operation = atoi(strtok(NULL, " ") );		
 	element.m_size = atoi(strtok(NULL, " ")); 		
 	element.m_idthread = atoi( strtok(NULL, " ") );
-	element.m_pc = compressPC(hexToInt1(strtok(NULL, " ")));
-
+	element.m_pc = hexToInt1(strtok(NULL, " "));
 
 	switch(readNext_operation){
 		case 0 : element.m_type = MemCmd::INST_READ;break;
@@ -138,7 +130,7 @@ TextTrace::readNext(Access& element)
 	int operation = atoi(split_line[1].c_str());		
 	element.m_size = atoi(split_line[2].c_str());		
 	element.m_idthread = atoi(split_line[3].c_str());
-	element.m_pc = compressPC(hexToInt(split_line[4]));
+	element.m_pc = hexToInt(split_line[4]);
 
 
 	switch(operation){
