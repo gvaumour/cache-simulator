@@ -150,21 +150,38 @@ int main(int argc , char* argv[]){
 		{	i++;
 			simu_parameters.DBAMB_signature = string(argv[i]);		
 		}
-		else if(string(argv[i]) == "--Perceptron-Features")
+		else if(string(argv[i]) == "--Perceptron-BP-Features")
 		{	i++;
-			simu_parameters.perceptron_features.clear();
-			simu_parameters.perceptron_features = split(string(argv[i]) , ',');
+			simu_parameters.perceptron_BP_features.clear();
+			simu_parameters.perceptron_BP_features = split(string(argv[i]) , ',');
+		}
+		else if(string(argv[i]) == "--Perceptron-Alloc-Features")
+		{	i++;
+			simu_parameters.perceptron_Allocation_features.clear();
+			simu_parameters.perceptron_Allocation_features = split(string(argv[i]) , ',');
 		}
 		else if(string(argv[i]) == "--Perceptron-drawFeatureMaps")
 			simu_parameters.perceptron_drawFeatureMaps = true;		
+		else if(string(argv[i]) == "--Perceptron-enableBP")
+			simu_parameters.perceptron_enableBypass = true;		
 		else if(string(argv[i]) == "--Perceptron-BPThreshold")
 		{	i++;
-			simu_parameters.perceptron_threshold_bypass = atoi(argv[i]);		
+			simu_parameters.perceptron_bypass_threshold = atoi(argv[i]);		
 		}
 		else if(string(argv[i]) == "--Perceptron-BPLearning")
 		{	i++;
-			simu_parameters.perceptron_threshold_learning = atoi(argv[i]);		
+			simu_parameters.perceptron_bypass_learning = atoi(argv[i]);		
 		}
+		else if(string(argv[i]) == "--Perceptron-AllocThreshold")
+		{	i++;
+			simu_parameters.perceptron_allocation_threshold = atoi(argv[i]);		
+		}
+		else if(string(argv[i]) == "--Perceptron-AllocLearning")
+		{	i++;
+			simu_parameters.perceptron_allocation_learning = atoi(argv[i]);		
+		}
+		else if(string(argv[i]) == "--Perceptron-dumpVariance")
+			simu_parameters.perceptron_compute_variance = true;		
 		else if(string(argv[i]) == "--DBAMB-addr-beginBits")
 		{	i++;
 			simu_parameters.DBAMB_begin_bit = atoi(argv[i]);		
@@ -190,6 +207,12 @@ int main(int argc , char* argv[]){
 		{
 			cout << "Debug enable "<< endl;		
 			simu_parameters.printDebug = true;
+		}
+		else if(argv[i][0] == '-' && argv[i][1] == '-')
+		{
+			cout << "Flag not recognized: " << argv[i] << endl;
+			cout << "Exiting ... "<< endl;
+			return 1;
 		}
 		else
 			args.push_back(string(argv[i]));
@@ -233,8 +256,12 @@ int main(int argc , char* argv[]){
 	 << " policy and with " << simu_parameters.nbCores << " core(s)" << endl;	
 	if(simu_parameters.policy == "Perceptron")
 	{
-		cout <<  "Features used : ";
-		for(auto p : simu_parameters.perceptron_features)
+		cout <<  "BP Features used : ";
+		for(auto p : simu_parameters.perceptron_BP_features)
+			cout << p << ",";
+		cout << endl;
+		cout <<  "Alloc Features used : ";
+		for(auto p : simu_parameters.perceptron_Allocation_features)
 			cout << p << ",";
 		cout << endl;
 	}

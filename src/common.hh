@@ -105,13 +105,18 @@ struct SimuParameters
 	std::string datasetFile;
 	/******************************/ 
 	
-	std::vector<std::string> perceptron_features;
+	std::vector<std::string> perceptron_BP_features;
+	std::vector<std::string> perceptron_Allocation_features;
 	int perceptron_counter_size;
 	int perceptron_windowSize;
-	int perceptron_threshold_bypass;
-	int perceptron_threshold_learning;
+	int perceptron_bypass_threshold;
+	int perceptron_bypass_learning;
+	int perceptron_allocation_threshold;
+	int perceptron_allocation_learning;
 	int perceptron_table_size;
 	bool perceptron_drawFeatureMaps;
+	bool perceptron_compute_variance;
+	bool perceptron_enableBypass;
 };
 
 std::vector<std::string> split(std::string s, char delimiter);

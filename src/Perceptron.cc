@@ -18,52 +18,24 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 	Predictor(nbAssoc , nbSet , nbNVMways , SRAMtable , NVMtable , cache)
 {	
 	m_tableSize = simu_parameters.perceptron_table_size;
-	m_features.clear();
-	m_criterias_names = simu_parameters.perceptron_features;
+
+	m_BP_features.clear();
+	m_Allocation_features.clear();
+
+	m_BP_criterias_names = simu_parameters.perceptron_BP_features;
+	m_Allocation_criterias_names = simu_parameters.perceptron_Allocation_features;
+
 	m_need_callee_file = false;
+	m_enableBP = simu_parameters.perceptron_enableBypass;
 	
-	for(auto feature : simu_parameters.perceptron_features)
-	{
-		m_features.push_back( new FeatureTable(m_tableSize, feature));
-		if(feature == "MissPC_LSB")
-			m_features_hash.push_back(hashingMissPC_LSB);		
-		else if(feature == "MissPC_LSB1")
-			m_features_hash.push_back(hashingMissPC_LSB1);				
-		else if(feature == "MissPC_MSB")
-			m_features_hash.push_back(hashingMissPC_MSB);				
-
-		else if(feature == "TagBlock")
-			m_features_hash.push_back(hashingTag_block);
-		else if(feature == "TagPage")
-			m_features_hash.push_back(hashingTag_page);
+	m_enableAllocation = true;
+	if(simu_parameters.nvm_assoc == 0 || simu_parameters.sram_assoc == 0)
+		m_enableAllocation = false;
 	
-		else if(feature == "MissCounter")
-			m_features_hash.push_back(hashing_MissCounter);	
-		else if(feature == "MissCounter1")
-			m_features_hash.push_back(hashing_MissCounter1);
-		
-		else if( feature == "CallStack")
-			m_features_hash.push_back(hashing_CallStack);
-		else if( feature == "CallStack1")	
-			m_features_hash.push_back(hashing_CallStack1);
-			
-		else if(feature == "currentPC")
-			m_features_hash.push_back(hashing_currentPC);
-		else if(feature == "currentPC1")
-			m_features_hash.push_back(hashing_currentPC1);
-		else if(feature == "currentPC_3")
-			m_features_hash.push_back(hashingcurrentPC_3);
-		else if(feature == "currentPC_2")
-			m_features_hash.push_back(hashingcurrentPC_2);
-		else if(feature == "currentPC_1")
-			m_features_hash.push_back(hashingcurrentPC_1);
-		else
-			assert(false && "Error while initializing the features , wrong name\n");
-
-
-		if(feature == "CallStack" || feature == "CallStack1")
-			m_need_callee_file = true;
-	}
+	
+	if(m_enableBP)
+		initFeatures(true);
+	initFeatures(false);
 	
 	if(m_need_callee_file)
 	{
@@ -82,9 +54,12 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 	stats_nbDeadLine = vector<uint64_t>(1, 0);
 	stats_missCounter = vector<int>();
 	
-	stats_variances_buffer = vector<double>();
-	stats_variances = vector<double>();
-	
+	if(simu_parameters.perceptron_compute_variance)
+	{
+		stats_variances_buffer = vector<double>();
+		stats_variances = vector<double>();
+	}	
+
 	stats_allocate = 0;
 	stats_nbMiss = 0;
 	stats_nbHits = 0;
@@ -96,9 +71,74 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 
 PerceptronPredictor::~PerceptronPredictor()
 {
-	for(auto feature : m_features)
+	for(auto feature : m_BP_features)
 		delete feature;
 }
+
+void
+PerceptronPredictor::initFeatures(bool isBP)
+{
+	vector<FeatureTable*>* features;
+	vector<string>* criterias_name;
+	vector<hashing_function>* features_hash;
+
+	if(isBP)
+	{
+		criterias_name = &m_BP_criterias_names;
+		features_hash = &m_BP_features_hash;
+		features = &m_BP_features;		
+	}
+	else
+	{
+		criterias_name = &m_Allocation_criterias_names;
+		features_hash = &m_Allocation_features_hash;
+		features = &m_Allocation_features;
+	}
+
+	for(auto feature : *criterias_name)
+	{
+		features->push_back( new FeatureTable(m_tableSize, feature));
+		if(feature == "MissPC_LSB")
+			features_hash->push_back(hashingMissPC_LSB);
+		else if(feature == "MissPC_LSB1")
+			features_hash->push_back(hashingMissPC_LSB1);
+		else if(feature == "MissPC_MSB")
+			features_hash->push_back(hashingMissPC_MSB);		
+
+		else if(feature == "TagBlock")
+			features_hash->push_back(hashingTag_block);
+		else if(feature == "TagPage")
+			features_hash->push_back(hashingTag_page);
+	
+		else if(feature == "MissCounter")
+			features_hash->push_back(hashing_MissCounter);	
+		else if(feature == "MissCounter1")
+			features_hash->push_back(hashing_MissCounter1);
+		
+		else if( feature == "CallStack")
+			features_hash->push_back(hashing_CallStack);
+		else if( feature == "CallStack1")	
+			features_hash->push_back(hashing_CallStack1);
+			
+		else if(feature == "currentPC")
+			features_hash->push_back(hashing_currentPC);
+		else if(feature == "currentPC1")
+			features_hash->push_back(hashing_currentPC1);
+		else if(feature == "currentPC_3")
+			features_hash->push_back(hashingcurrentPC_3);
+		else if(feature == "currentPC_2")
+			features_hash->push_back(hashingcurrentPC_2);
+		else if(feature == "currentPC_1")
+			features_hash->push_back(hashingcurrentPC_1);
+		else
+			assert(false && "Error while initializing the features , wrong name\n");
+
+
+		if(feature == "CallStack" || feature == "CallStack1")
+			m_need_callee_file = true;
+	}	
+}
+
 
 allocDecision
 PerceptronPredictor::allocateInNVM(uint64_t set, Access element)
@@ -115,41 +155,55 @@ PerceptronPredictor::allocateInNVM(uint64_t set, Access element)
 	// All the set is a learning/sampled set independantly of its way or SRAM/NVM alloc
 	bool isLearning = m_tableSRAM[set][0]->isLearning; 
 	
-	if(isLearning)
+	if(!isLearning && m_enableBP)
 	{
-		return ALLOCATE_IN_SRAM;
-	}
-	else
-	{	
 		//Predict if we should bypass
 		int sum_prediction = 0;
 		vector<double> samples;
-		for(unsigned i = 0 ; i < m_features.size(); i++)
+		for(unsigned i = 0 ; i < m_BP_features.size(); i++)
 		{
-			int hash = m_features_hash[i](element.m_address , element.m_pc , m_global_PChistory);
-			int pred = m_features[i]->getBypassPrediction(hash);
+			int hash = m_BP_features_hash[i](element.m_address , element.m_pc);
+			int pred = m_BP_features[i]->getBypassPrediction(hash);
 			samples.push_back(pred);
 			sum_prediction += pred;
 		}
-		//Compute Variance of the sample
-		double variance = 0, avg = (double)sum_prediction / (double) samples.size();
-		for(unsigned i = 0 ; i < samples.size(); i++)
-			variance += (samples[i] - avg) * (samples[i] - avg);
 
-		variance = sqrt( variance / (double) samples.size());
-		stats_variances_buffer.push_back(variance);
+		if(simu_parameters.perceptron_compute_variance)
+		{	//Compute Variance of the sample
+			double variance = 0, avg = (double)sum_prediction / (double) samples.size();
+			for(unsigned i = 0 ; i < samples.size(); i++)
+				variance += (samples[i] - avg) * (samples[i] - avg);
+
+			variance = sqrt( variance / (double) samples.size());
+			stats_variances_buffer.push_back(variance);
+		}		
 		
-		
-		if(sum_prediction > simu_parameters.perceptron_threshold_bypass)
+		if(sum_prediction > simu_parameters.perceptron_bypass_threshold)
 		{
 			stats_nbBPrequests[stats_nbBPrequests.size()-1]++;
 			return BYPASS_CACHE;
 		}
-		else
-		{
-			return ALLOCATE_IN_SRAM;		
-		}
 	}
+
+	if(m_enableAllocation)
+	{
+		//Bypass decision is done, we do not bypass
+		//Decide NVM/SRAM allocation
+		int sum_prediction = 0;
+		for(unsigned i = 0 ; i < m_Allocation_features.size(); i++)
+		{
+			int hash = m_Allocation_features_hash[i](element.m_address , element.m_pc);
+			int pred = m_Allocation_features[i]->getAllocationPrediction(hash);
+			sum_prediction += pred;
+		}	
+	
+		if(sum_prediction > simu_parameters.perceptron_allocation_threshold)
+			return ALLOCATE_IN_NVM;
+		else
+			return ALLOCATE_IN_SRAM;
+	}
+	else 
+		return ALLOCATE_IN_SRAM;
 }
 
 void
@@ -161,18 +215,42 @@ PerceptronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 	
 	CacheEntry *entry = get_entry(set , index , inNVM);
 	entry->policyInfo = m_cpt++;
+
 	if(entry->isLearning)
 	{
-		stats_update_learning++;
-		for(unsigned i = 0 ; i < m_features.size() ; i++)
+		if(m_enableBP)
 		{
-			if( entry->perceptron_BPpred[i] > -simu_parameters.perceptron_threshold_learning || !entry->predictedReused[i])
+			stats_update_learning++;
+			for(unsigned i = 0 ; i < m_BP_features.size() ; i++)
 			{
-				int hash = m_features_hash[i](entry->address , entry->m_pc ,  m_global_PChistory);
-				m_features[i]->decreaseConfidence(hash);
+				if( entry->perceptron_BPpred[i] > -simu_parameters.perceptron_bypass_learning || !entry->predictedReused[i])
+					m_BP_features[i]->decreaseBPConfidence(entry->perceptron_BPHash[i]);
 			}
+			setBPPrediction(entry);
 		}
-		setPrediction(entry);
+		
+		if(m_enableAllocation)
+		{
+			RD_TYPE rd_type = classifyRD(set , index , inNVM);
+		
+			if(rd_type == RD_MEDIUM && !inNVM)
+			{
+				for(unsigned i = 0 ; i < m_Allocation_features.size() ; i++)
+				{
+					if( entry->perceptron_Allocpred[i] < simu_parameters.perceptron_bypass_learning)
+						m_Allocation_features[i]->increaseAllocConfidence(entry->perceptron_AllocHash[i]);
+				}
+			}
+			if(rd_type == RD_SHORT && element.isWrite() && inNVM)
+			{
+				for(unsigned i = 0 ; i < m_Allocation_features.size() ; i++)
+				{
+					if( entry->perceptron_Allocpred[i] > - simu_parameters.perceptron_bypass_learning)
+						m_Allocation_features[i]->decreaseAllocConfidence(entry->perceptron_AllocHash[i]);
+				}		
+			}
+			setAllocPrediction(entry);
+		}
 	}
 	
 	stats_nbHits++;
@@ -192,10 +270,10 @@ PerceptronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, A
 
 	stats_allocate++;
 
-	if(current->isLearning)
+	if(current->isLearning && m_enableBP)
 	{
 		stats_allocate_learning++;
-		setPrediction(current);
+		setBPPrediction(current);
 	}
 			
 	Predictor::insertionPolicy(set , index , inNVM , element);
@@ -220,23 +298,39 @@ PerceptronPredictor::update_globalPChistory(uint64_t pc)
 	}
 }
 
+void
+PerceptronPredictor::setAllocPrediction(CacheEntry *current)
+{
+	int alloc_pred=0;
+	for(unsigned i = 0 ; i < m_Allocation_features.size() ; i++)
+	{
+		int hash = m_Allocation_features_hash[i](current->address , current->m_pc);
+		alloc_pred = m_Allocation_features[i]->getAllocationPrediction(hash);
+		current->perceptron_Allocpred[i] = alloc_pred;
+		current->perceptron_AllocHash[i] = hash;
+//		if(alloc_pred > simu_parameters.perceptron_allocation_threshold)
+//			current->predictedReused[i] = false;
+//		else
+//			current->predictedReused[i] = true;
+	}
+}
+
 
 void 
-PerceptronPredictor::setPrediction(CacheEntry* current)
+PerceptronPredictor::setBPPrediction(CacheEntry* current)
 {
 	int bp_pred=0;
-	for(unsigned i = 0 ; i < m_features.size() ; i++)
+	for(unsigned i = 0 ; i < m_BP_features.size() ; i++)
 	{
-		int hash = m_features_hash[i](current->address , current->m_pc , m_global_PChistory);
-		bp_pred = m_features[i]->getBypassPrediction(hash);
+		int hash = m_BP_features_hash[i](current->address , current->m_pc);
+		bp_pred = m_BP_features[i]->getBypassPrediction(hash);
 		current->perceptron_BPpred[i] = bp_pred;
-		if(bp_pred > simu_parameters.perceptron_threshold_bypass)
+		current->perceptron_BPHash[i] = hash;
+		if(bp_pred > simu_parameters.perceptron_bypass_threshold)
 			current->predictedReused[i] = false;
 		else
 			current->predictedReused[i] = true;
 	}
-	
-
 }
 
 int PerceptronPredictor::evictPolicy(int set, bool inNVM)
@@ -258,13 +352,13 @@ int PerceptronPredictor::evictPolicy(int set, bool inNVM)
 	}
 
 	if(current->isValid && current->isLearning)
-	{	
-		for(unsigned i =  0 ; i < m_features.size() ; i++)
+	{
+		for(unsigned i =  0 ; i < m_BP_features.size() ; i++)
 		{
-			if(current->predictedReused[i] || current->perceptron_BPpred[i] < simu_parameters.perceptron_threshold_learning)
+			if(current->predictedReused[i] || current->perceptron_BPpred[i] < simu_parameters.perceptron_bypass_learning)
 			{
-				int hash = m_features_hash[i](current->address , current->m_pc , m_global_PChistory);
- 				m_features[i]->increaseConfidence(hash);
+				int hash = m_BP_features_hash[i](current->address , current->m_pc);
+ 				m_BP_features[i]->increaseBPConfidence(hash);
 			}
 		}
 		
@@ -313,11 +407,24 @@ PerceptronPredictor::printStats(std::ostream& out, std::string entete) {
 void PerceptronPredictor::printConfig(std::ostream& out, std::string entete) { 
 
 	out << entete << ":Perceptron:TableSize\t" << m_tableSize << endl; 
-	out << entete << ":Perceptron:BPThreshold\t" << simu_parameters.perceptron_threshold_bypass  << endl;
-	out << entete << ":Perceptron:LearningThreshold\t" << simu_parameters.perceptron_threshold_learning << endl; 
-	out << entete << ":Perceptron:NBFeatures\t" << simu_parameters.perceptron_features.size() << endl; 
-	for(auto p : simu_parameters.perceptron_features)
-		out << entete << ":PerceptronFeatures\t" << p << endl;
+	
+	string a = m_enableAllocation ? "TRUE" : "FALSE";
+	out << entete << ":Perceptron:EnableAllocation\t" << a << endl;
+	a = m_enableBP ? "TRUE" : "FALSE";
+	out << entete << ":Perceptron:EnableBP\t" << a << endl;
+	
+	out << entete << ":Perceptron:BypassThreshold\t" << simu_parameters.perceptron_bypass_threshold  << endl;
+	out << entete << ":Perceptron:BypassLearning\t" << simu_parameters.perceptron_bypass_learning << endl; 
+	out << entete << ":Perceptron:AllocThreshold\t" << simu_parameters.perceptron_allocation_threshold  << endl;
+	out << entete << ":Perceptron:AllocLearning\t" << simu_parameters.perceptron_allocation_learning << endl; 
+	out << entete << ":Perceptron:BypassFeatures\t"; 
+	for(auto p : m_BP_criterias_names)
+		out << p << ",";
+	out << endl;	
+	out << entete << ":Perceptron:AllocFeatures\t"; 
+	for(auto p : m_Allocation_criterias_names)
+		out << p << ",";
+	out << endl;	
 
 	Predictor::printConfig(out, entete);
 }
@@ -331,29 +438,6 @@ PerceptronPredictor::get_entry(uint64_t set , uint64_t index , bool inNVM)
 		return m_tableSRAM[set][index];
 }
 
-RD_TYPE 
-PerceptronPredictor::classifyRD(int set , int index , bool inNVM)
-{
-	if(!inNVM)
-		return RD_SHORT;
-	
-	vector<CacheEntry*> line = m_tableNVM[set];
-	int ref_rd = m_tableNVM[set][index]->policyInfo;
-	int position = 0;
-	
-	/* Determine the position of the cachel line in the LRU stack, the policyInfo is not enough */
-	for(unsigned i = 0 ; i < line.size() ; i ++)
-	{
-		if(line[i]->policyInfo > ref_rd)
-			position++;
-	}
-	
-	if( position < 4 )
-		return RD_SHORT;
-	else
-		return RD_MEDIUM;
-}
-
 void
 PerceptronPredictor::openNewTimeFrame()
 {
@@ -362,20 +446,22 @@ PerceptronPredictor::openNewTimeFrame()
 	
 	stats_missCounter.push_back( miss_counter );
 	stats_nbHits = 0, stats_nbMiss = 0;
-	
-	if(stats_variances_buffer.size() != 0)
-	{
-		double avg = 0;
-		for(unsigned i = 0 ; i < stats_variances_buffer.size() ; i++)
-			avg += stats_variances_buffer[i];
-		avg /= (double)stats_variances_buffer.size();
 
-		stats_variances.push_back(avg);	
-		stats_variances_buffer.clear();
+	if(simu_parameters.perceptron_compute_variance)
+	{
+		if(stats_variances_buffer.size() != 0)
+		{
+			double avg = 0;
+			for(unsigned i = 0 ; i < stats_variances_buffer.size() ; i++)
+				avg += stats_variances_buffer[i];
+			avg /= (double)stats_variances_buffer.size();
+
+			stats_variances.push_back(avg);	
+			stats_variances_buffer.clear();
+		}
 	}
 
-
-	for(auto feature : m_features)
+	for(auto feature : m_BP_features)
 		feature->openNewTimeFrame();
 	
 	
@@ -386,7 +472,7 @@ void
 PerceptronPredictor::finishSimu()
 {
 	
-	for(auto feature : m_features)
+	for(auto feature : m_BP_features)
 		feature->finishSimu();
 
 	dump_file.close();
@@ -414,4 +500,47 @@ PerceptronPredictor::load_callee_file()
 		
 	file.close();	
 }
+
+
+
+RD_TYPE
+PerceptronPredictor::classifyRD(int set , int index, bool inNVM)
+{
+	vector<CacheEntry*> line;
+	int64_t ref_rd = 0;
+	if(inNVM)
+	{
+		ref_rd = m_tableSRAM[set][index]->policyInfo;
+		line = m_tableSRAM[set];
+	}
+	else
+	{
+		line = m_tableNVM[set];
+		ref_rd = m_tableNVM[set][index]->policyInfo;
+	}
+	
+	int position = 0;
+	/* Determine the position of the cache line in the LRU stack */
+	for(unsigned i = 0 ; i < line.size() ; i ++)
+	{
+		if(line[i]->policyInfo < ref_rd && line[i]->isValid)
+			position++;
+	}	
+
+	if(simu_parameters.nvm_assoc > simu_parameters.sram_assoc)
+	{
+		if(position < simu_parameters.sram_assoc)
+			return RD_SHORT;
+		else
+			return RD_MEDIUM;	
+	}
+	else
+	{
+		if(position < simu_parameters.nvm_assoc)
+			return RD_SHORT;
+		else
+			return RD_MEDIUM;
+	}
+}
+
 

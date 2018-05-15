@@ -307,12 +307,19 @@ init_default_parameters()
 	/********* Perceptron Config *************/ 	
 	simu_parameters.perceptron_table_size = 256;
 //	simu_parameters.perceptron_features = { "Addr_LSB", "Addr_MSB", "PC_LSB", "PC_MSB"};
-	simu_parameters.perceptron_features = { "MissCounter1"};
+	simu_parameters.perceptron_BP_features = { "MissCounter1"};
+	simu_parameters.perceptron_Allocation_features = { "MissPC_LSB"};
 	simu_parameters.perceptron_counter_size = 32;
-	simu_parameters.perceptron_windowSize = 16;	
-	simu_parameters.perceptron_threshold_bypass = 3;
-	simu_parameters.perceptron_threshold_learning = 11;
+	simu_parameters.perceptron_windowSize = 16;
+	
+	simu_parameters.perceptron_bypass_threshold = 3;
+	simu_parameters.perceptron_bypass_learning = 11;
+	simu_parameters.perceptron_allocation_threshold = 3;
+	simu_parameters.perceptron_allocation_learning = 11;
+
 	simu_parameters.perceptron_drawFeatureMaps = false;
+	simu_parameters.perceptron_compute_variance = false;
+	simu_parameters.perceptron_enableBypass = true;
 	/***************************************/ 
 	
 	simu_parameters.nbCores = 1;

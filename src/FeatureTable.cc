@@ -108,7 +108,7 @@ FeatureTable::getBypassPrediction(int index)
 }
 
 void
-FeatureTable::decreaseConfidence(int index)
+FeatureTable::decreaseBPConfidence(int index)
 {
 	FeatureEntry* feature_entry = lookup(index);
 	feature_entry->bypass_counter--;
@@ -117,12 +117,30 @@ FeatureTable::decreaseConfidence(int index)
 }
 
 void
-FeatureTable::increaseConfidence(int index)
+FeatureTable::increaseBPConfidence(int index)
 {
 	FeatureEntry* feature_entry = lookup(index);
 	feature_entry->bypass_counter++;
 	if(feature_entry->bypass_counter > simu_parameters.perceptron_counter_size)
 		feature_entry->bypass_counter = simu_parameters.perceptron_counter_size;	
+}
+
+void
+FeatureTable::increaseAllocConfidence(int index)
+{
+	FeatureEntry* feature_entry = lookup(index);
+	feature_entry->allocation_counter++;
+	if(feature_entry->allocation_counter > simu_parameters.perceptron_counter_size)
+		feature_entry->allocation_counter = simu_parameters.perceptron_counter_size;	
+}
+
+void
+FeatureTable::decreaseAllocConfidence(int index)
+{
+	FeatureEntry* feature_entry = lookup(index);
+	feature_entry->allocation_counter--;
+	if(feature_entry->allocation_counter < -simu_parameters.perceptron_counter_size)
+		feature_entry->allocation_counter = -simu_parameters.perceptron_counter_size;	
 }
 
 

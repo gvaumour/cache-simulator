@@ -54,8 +54,11 @@ class FeatureTable
 		void recordEvict(int index , bool hasBeenReused);		
 		void recordAccess(int index, Access element, RD_TYPE rd);
 
-		void decreaseConfidence(int index);
-		void increaseConfidence(int index);
+		void decreaseBPConfidence(int index);
+		void increaseBPConfidence(int index);
+
+		void decreaseAllocConfidence(int index);
+		void increaseAllocConfidence(int index);
 		
 		std::vector< std::vector<int> > resize_image(std::vector< std::vector<int> >& img);
 

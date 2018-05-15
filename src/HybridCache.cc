@@ -97,22 +97,31 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		assert(false && "Cannot initialize predictor for HybridCache");
 	}
 	
-	if(m_ID == -1)
+	if(m_ID == -1 && m_policy == "Perceptron")
 	{
 		int constituency = m_nb_set / simu_parameters.nb_sampled_sets;
 		int index = 0;
+		
 		for(int i = 0 ; i+index < m_nb_set; i += constituency)
 		{
 			for(int j = 0 ; j < m_nbSRAMways ; j++){
 				m_tableSRAM[i+index][j]->isLearning = true;
-				m_tableSRAM[i+index][j]->perceptron_BPpred = vector<int>(simu_parameters.perceptron_features.size() , 0);
-				m_tableSRAM[i+index][j]->predictedReused = vector<bool>(simu_parameters.perceptron_features.size() , false);		
+				m_tableSRAM[i+index][j]->perceptron_BPHash = vector<int>(simu_parameters.perceptron_BP_features.size() , 0);
+				m_tableSRAM[i+index][j]->perceptron_BPpred = vector<int>(simu_parameters.perceptron_BP_features.size() , 0);
+				m_tableSRAM[i+index][j]->predictedReused = vector<bool>(simu_parameters.perceptron_BP_features.size() , false);		
+
+				m_tableSRAM[i+index][j]->perceptron_AllocHash = vector<int>(simu_parameters.perceptron_Allocation_features.size() , 0);
+				m_tableSRAM[i+index][j]->perceptron_Allocpred = vector<int>(simu_parameters.perceptron_Allocation_features.size() , 0);
 			}
 			for(int j = 0 ; j < m_nbNVMways ; j++)
 			{
 				m_tableNVM[i+index][j]->isLearning = true;
-				m_tableNVM[i+index][j]->perceptron_BPpred = vector<int>(simu_parameters.perceptron_features.size() , 0);
-				m_tableNVM[i+index][j]->predictedReused = vector<bool>(simu_parameters.perceptron_features.size() , false);
+				m_tableNVM[i+index][j]->perceptron_BPpred = vector<int>(simu_parameters.perceptron_BP_features.size() , 0);
+				m_tableNVM[i+index][j]->perceptron_BPHash = vector<int>(simu_parameters.perceptron_BP_features.size() , 0);
+				m_tableNVM[i+index][j]->predictedReused = vector<bool>(simu_parameters.perceptron_BP_features.size() , false);
+
+				m_tableNVM[i+index][j]->perceptron_Allocpred = vector<int>(simu_parameters.perceptron_Allocation_features.size() , 0);
+				m_tableNVM[i+index][j]->perceptron_AllocHash = vector<int>(simu_parameters.perceptron_Allocation_features.size() , 0);
 			}
 			index = (index+1)%constituency;
 		}

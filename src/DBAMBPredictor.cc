@@ -1076,7 +1076,6 @@ DBAMBPredictor::openNewTimeFrame()
 	if(m_isWarmup)
 		return;
 
-//	stats_switchDecision.push_back(vector<vector<int> >(NUM_ALLOC_DECISION,vector<int>(NUM_ALLOC_DECISION,0)));
 	stats_nbMigrationsFromNVM.push_back(vector<int>(2,0));
 	dataset_file << "TimeFrame" << endl;
 	Predictor::openNewTimeFrame();

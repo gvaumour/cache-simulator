@@ -191,7 +191,14 @@ class CacheEntry{
 		int policyInfo;
 		int m_compilerHints;
 		bool isNVM;
+
 		std::vector<int> perceptron_BPpred;
+		std::vector<int> perceptron_Allocpred;
+		
+		std::vector<int> perceptron_BPHash;
+		std::vector<int> perceptron_AllocHash;
+
+		std::vector<bool> predictedReused;
 		
 		int nbWrite;
 		int nbRead;
@@ -204,7 +211,6 @@ class CacheEntry{
 		//field used only by the RAP predictor
 		bool isLearning;
 		bool isPrefetch;
-		std::vector<bool> predictedReused;
 		bool justMigrate;
 		std::vector<uint64_t> pc_history;
 
