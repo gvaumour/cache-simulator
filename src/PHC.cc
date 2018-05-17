@@ -176,7 +176,7 @@ PHCPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access elem
 	{
 		RD_TYPE rd_type = classifyRD( set , index , inNVM );
 		entry->cost_value += m_costAccess[element.isWrite()][rd_type];	
-//		cout << "UpdatePolicy Learning Cache line 0x" << std::hex << element.block_addr \
+//		cout << "UpdatePolicy Learning Cache line 0x" << std::hex << element.block_addr
 //			<< std::dec << " Cost Value " << entry->cost_value << endl;
 
 	}

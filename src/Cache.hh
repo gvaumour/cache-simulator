@@ -110,7 +110,8 @@ class Access{
 	public : 
 		Access() : m_address(0), m_size(0), m_pc(0), m_type(DATA_READ), m_idthread(0),isSRAMerror(false) {};
 		Access(uint64_t address, int size, uint64_t pc , MemCmd type, int id_thread) : m_address(address), m_size(size), \
-				m_pc(pc), m_hints(0), m_type(type) , m_idthread(id_thread), isSRAMerror(false), enableMigration(true) {};
+				m_pc(pc), m_hints(0), m_type(type) , m_idthread(id_thread), isSRAMerror(false), \
+				enableMigration(true), block_addr(0) {};
 
 		bool isWrite() { return m_type == MemCmd::DATA_WRITE || m_type == MemCmd::DIRTY_WRITEBACK;}
 		bool isInstFetch() { return m_type == MemCmd::INST_READ || m_type == MemCmd::INST_PREFETCH;}
@@ -121,6 +122,7 @@ class Access{
 
 		
 		uint64_t m_address;
+
 		int m_size;
 		uint64_t m_pc;
 		int m_hints;
@@ -129,6 +131,7 @@ class Access{
 		int m_compilerHints;
 		bool isSRAMerror;
 		bool enableMigration;
+		uint64_t block_addr;
 };
 
 
@@ -152,7 +155,6 @@ class CacheEntry{
 			
 			isPrefetch = false;
 			address = 0;
-			block_addr = 0;
 			policyInfo = 0; 
 			saturation_counter = 0;
 			m_pc = 0;
@@ -184,7 +186,6 @@ class CacheEntry{
 		bool isValid;
 		bool isDirty;
 		uint64_t address;
-		uint64_t block_addr;
 		uint64_t m_pc;
 		uint64_t signature;
 		uint64_t value;
