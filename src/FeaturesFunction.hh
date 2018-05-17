@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <deque>
 
+typedef int (*hashing_function)(uint64_t , uint64_t); 
 
 int hashingAddr_MSB(uint64_t addr , uint64_t missPC );
 int hashingAddr_LSB(uint64_t addr , uint64_t missPC );

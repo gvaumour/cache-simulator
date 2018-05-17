@@ -42,10 +42,11 @@ FeatureEntry::updateDatasetState()
 
 
 
-FeatureTable::FeatureTable( int size, string name)
+FeatureTable::FeatureTable( int size, string name, bool isBP)
 {
 	m_size = size;
 	m_name = name;
+	m_isBP = isBP;
 	
 	m_table.resize(size);
 	for(int i = 0 ; i < m_size; i++)
@@ -86,22 +87,55 @@ FeatureTable::recordAccess(int index, Access element, RD_TYPE rd)
 	}
 
 	if( element.isWrite() ) 
-		feature_entry->cpts[rd][WRITE_ACCESS]++;
+		feature_entry->cpts[WRITE_ACCESS][rd]++;
 	else
-		feature_entry->cpts[rd][READ_ACCESS]++;
+		feature_entry->cpts[READ_ACCESS][rd]++;
 	
 	feature_entry->cptWindow++;
 
-	if(feature_entry->cptWindow > simu_parameters.perceptron_windowSize)
+	if(feature_entry->cptWindow >= simu_parameters.perceptron_windowSize)
 		feature_entry->updateDatasetState();
 }
 
+
+int
+FeatureTable::getConfidence(int index)
+{
+	int result = lookup(index)->weight;
+	
+	if(simu_parameters.perceptron_drawFeatureMaps)
+		stats_history_buffer[index].push_back(result);
+			
+	return result;
+}
+
+
+void
+FeatureTable::decreaseConfidence(int index)
+{
+	FeatureEntry* feature_entry = lookup(index);
+	feature_entry->weight--;
+	if(feature_entry->weight < -simu_parameters.perceptron_counter_size)
+		feature_entry->weight = -simu_parameters.perceptron_counter_size;	
+}
+
+void
+FeatureTable::increaseConfidence(int index)
+{
+	FeatureEntry* feature_entry = lookup(index);
+	feature_entry->weight++;
+	if(feature_entry->weight > simu_parameters.perceptron_counter_size)
+		feature_entry->weight = simu_parameters.perceptron_counter_size;	
+}
+
+
+/*
 int
 FeatureTable::getBypassPrediction(int index)
 {
 	int result = lookup(index)->bypass_counter;
 	
-	if(simu_parameters.perceptron_drawFeatureMaps)
+	if(simu_parameters.perceptron_drawFeatureMaps && m_isBP)
 		stats_history_buffer[index].push_back(result);
 			
 	return result;
@@ -142,7 +176,7 @@ FeatureTable::decreaseAllocConfidence(int index)
 	if(feature_entry->allocation_counter < -simu_parameters.perceptron_counter_size)
 		feature_entry->allocation_counter = -simu_parameters.perceptron_counter_size;	
 }
-
+*/
 
 void
 FeatureTable::recordEvict(int index , bool hasBeenReused)
@@ -150,22 +184,24 @@ FeatureTable::recordEvict(int index , bool hasBeenReused)
 
 }
 
+/*
 int
 FeatureTable::getAllocationPrediction(int index)
 {
 	FeatureEntry* entry = lookup(index);
-	
-	if(!entry)
-		return 0;
-		
+			
+	int result = 0;		
 	if(entry->des == ALLOCATE_IN_NVM)
-		return entry->allocation_counter;
+		result = entry->allocation_counter;
 	else if( entry->des == ALLOCATE_IN_SRAM)
-		return (-1) * entry->allocation_counter;
-	else
-		return 0;
-}
+		result =  (-1) * entry->allocation_counter;
 
+	if(simu_parameters.perceptron_drawFeatureMaps && !m_isBP)
+		stats_history_buffer[index].push_back(result);
+
+	return result;
+}
+*/
 
 void 
 FeatureTable::openNewTimeFrame()

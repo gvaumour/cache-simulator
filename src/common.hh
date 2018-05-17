@@ -117,6 +117,10 @@ struct SimuParameters
 	bool perceptron_drawFeatureMaps;
 	bool perceptron_compute_variance;
 	bool perceptron_enableBypass;
+	
+	/***********/
+	std::vector<std::string> PHC_features;
+	int PHC_cost_threshold;
 };
 
 std::vector<std::string> split(std::string s, char delimiter);

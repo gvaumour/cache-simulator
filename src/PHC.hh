@@ -1,5 +1,5 @@
-#ifndef __PERCEPTRON__PREDICTOR__HH__
-#define __PERCEPTRON__PREDICTOR__HH__
+#ifndef __PHC__PREDICTOR__HH__
+#define __PHC__PREDICTOR__HH__
 
 #include <vector>
 #include <map>
@@ -14,17 +14,17 @@
 #include "HybridCache.hh"
 #include "Cache.hh"
 
-#define FILE_OUTPUT_PERCEPTRON "output_perceptron.out"
-#define FILE_DUMP_PERCEPTRON "dump_perceptron.out"
+#define FILE_OUTPUT_PHC "output_PHC.out"
+
+
 class Predictor;
 class HybridCache;
 
-
-class PerceptronPredictor : public Predictor {
+class PHCPredictor : public Predictor {
 
 	public :
-		PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache);
-		~PerceptronPredictor();
+		PHCPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache);
+		~PHCPredictor();
 			
 		allocDecision allocateInNVM(uint64_t set, Access element);
 		void updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element , bool isWBrequest );
@@ -35,17 +35,13 @@ class PerceptronPredictor : public Predictor {
 		void printConfig(std::ostream& out, std::string entete);
 		void openNewTimeFrame();
 		void finishSimu();
-
-		
-		void setBPPrediction(CacheEntry* current);
-		void setAllocPrediction(CacheEntry *entry);
 		
 		RD_TYPE classifyRD(int set , int index , bool inNVM);
 		CacheEntry* get_entry(uint64_t set , uint64_t index , bool inNVM);
 
 		void update_globalPChistory(uint64_t pc);
 		void load_callee_file();
-		void initFeatures(bool isBP);
+		void initFeatures();
 	
 		static std::deque<uint64_t> m_global_PChistory;
 		static std::deque<uint64_t> m_callee_PChistory;
@@ -54,13 +50,11 @@ class PerceptronPredictor : public Predictor {
 	protected : 
 
 		/* FeatureTable Handlers */
-		std::vector<FeatureTable*> m_Allocation_features;
-		std::vector<hashing_function> m_Allocation_features_hash;
-		std::vector<std::string> m_Allocation_criterias_names;
+		std::vector<FeatureTable*> m_features;
+		std::vector<hashing_function> m_features_hash;
+		std::vector<std::string> m_criterias_names;
 
-		std::vector<FeatureTable*> m_BP_features;
-		std::vector<hashing_function> m_BP_features_hash;
-		std::vector<std::string> m_BP_criterias_names;
+		std::vector< std::vector<int> > m_costAccess;
 
 		int m_tableSize;
 		uint64_t m_cpt;		
@@ -68,7 +62,6 @@ class PerceptronPredictor : public Predictor {
 		bool m_need_callee_file;
 		std::map<uint64_t,int> m_callee_map;
 		
-		bool m_enableBP;
 		bool m_enableAllocation;
 		
 		/* Stats */ 

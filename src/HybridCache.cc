@@ -33,11 +33,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "ReplacementPolicy.hh"
 #include "SaturationPredictor.hh"
 #include "InstructionPredictor.hh"
-//#include "DynamicSaturation.hh"
-//#include "CompilerPredictor.hh"
+#include "PHC.hh"
 #include "DBAMBPredictor.hh"
 #include "Perceptron.hh"
-//#include "RAPPredictor_opt.hh"
 
 #define LLC_TRACE_BUFFER_SIZE 50
 
@@ -89,6 +87,8 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		 m_predictor = new SaturationCounter(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "Instruction")
 		 m_predictor = new InstructionPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
+	else if(m_policy == "PHC")
+		 m_predictor = new PHCPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "Perceptron")
 		 m_predictor = new PerceptronPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "DBAMB" || m_policy == "DBA")
@@ -97,7 +97,7 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		assert(false && "Cannot initialize predictor for HybridCache");
 	}
 	
-	if(m_ID == -1 && m_policy == "Perceptron")
+	if(m_ID == -1 && ( m_policy == "Perceptron" || m_policy == "PHC") )
 	{
 		int constituency = m_nb_set / simu_parameters.nb_sampled_sets;
 		int index = 0;
@@ -233,6 +233,7 @@ HybridCache::handleAccess(Access element)
 	assert(size > 0);
 	
 	uint64_t block_addr = bitRemove(address , 0 , m_start_index+1);
+	element.block_addr = block_addr;
 	
 	int id_set = addressToCacheSet(address);
 

@@ -250,21 +250,10 @@ int main(int argc , char* argv[]){
 	sigaction(SIGINT, &sigIntHandler, NULL);*/
 	/***********************************/	
 
-	my_system = new Hierarchy(simu_parameters.policy , simu_parameters.nbCores);
- 
 	cout << "Launching simulation with " << simu_parameters.memory_traces.size() << " file(s), the " << simu_parameters.policy \
 	 << " policy and with " << simu_parameters.nbCores << " core(s)" << endl;	
-	if(simu_parameters.policy == "Perceptron")
-	{
-		cout <<  "BP Features used : ";
-		for(auto p : simu_parameters.perceptron_BP_features)
-			cout << p << ",";
-		cout << endl;
-		cout <<  "Alloc Features used : ";
-		for(auto p : simu_parameters.perceptron_Allocation_features)
-			cout << p << ",";
-		cout << endl;
-	}
+
+	my_system = new Hierarchy(simu_parameters.policy , simu_parameters.nbCores);
 
 
 	cout << "Traces considered:" << endl;

@@ -19,8 +19,9 @@ class FeatureEntry
 		 					
 			isValid = true;
 			cptWindow = 0;			
-			allocation_counter = 0;
-			bypass_counter = 0;
+//			allocation_counter = 0;
+//			bypass_counter = 0;
+			weight = 0;
 			des = ALLOCATE_PREEMPTIVELY;
 		 };
 		
@@ -31,9 +32,10 @@ class FeatureEntry
 		int cptWindow;
 		
 		bool isValid;
-				
-		int allocation_counter;
-		int bypass_counter;
+
+		int weight;				
+//		int allocation_counter;
+//		int bypass_counter;
 		allocDecision des;
 };
 
@@ -42,23 +44,28 @@ class FeatureTable
 {
 
 	public: 
-		FeatureTable( int size, std::string name);
+		FeatureTable( int size, std::string name , bool isBP);
 		~FeatureTable();
 
 		FeatureEntry* lookup(int index);
-		int getAllocationPrediction(int index);
-		int getBypassPrediction(int index);
+//		int getAllocationPrediction(int index);
+//		int getBypassPrediction(int index);
+
+		int getConfidence(int index);
 
 		void openNewTimeFrame();
 		void finishSimu();
 		void recordEvict(int index , bool hasBeenReused);		
 		void recordAccess(int index, Access element, RD_TYPE rd);
 
-		void decreaseBPConfidence(int index);
-		void increaseBPConfidence(int index);
+//		void decreaseBPConfidence(int index);
+//		void increaseBPConfidence(int index);
 
-		void decreaseAllocConfidence(int index);
-		void increaseAllocConfidence(int index);
+		void decreaseConfidence(int index);
+		void increaseConfidence(int index);
+
+//		void decreaseAllocConfidence(int index);
+//		void increaseAllocConfidence(int index);
 		
 		std::vector< std::vector<int> > resize_image(std::vector< std::vector<int> >& img);
 
@@ -66,6 +73,8 @@ class FeatureTable
 	private:
 		int m_size;
 		std::string m_name;
+		bool m_isBP;
+		
 		std::vector<FeatureEntry*> m_table;
 		std::vector< std::vector<int> > stats_heatmap;
 		std::vector< std::vector<int> > stats_frequencymap;

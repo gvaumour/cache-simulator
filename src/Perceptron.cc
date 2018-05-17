@@ -33,6 +33,16 @@ PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways,
 		m_enableAllocation = false;
 	
 	
+	cout <<  "\tBP Features used : ";
+	for(auto p : simu_parameters.perceptron_BP_features)
+		cout << p << ",";
+	cout << endl;
+	cout <<  "\tAlloc Features used : ";
+	for(auto p : simu_parameters.perceptron_Allocation_features)
+		cout << p << ",";
+	cout << endl;
+
+	
 	if(m_enableBP)
 		initFeatures(true);
 	initFeatures(false);
@@ -97,7 +107,7 @@ PerceptronPredictor::initFeatures(bool isBP)
 
 	for(auto feature : *criterias_name)
 	{
-		features->push_back( new FeatureTable(m_tableSize, feature));
+		features->push_back( new FeatureTable(m_tableSize, feature, isBP));
 		if(feature == "MissPC_LSB")
 			features_hash->push_back(hashingMissPC_LSB);
 		else if(feature == "MissPC_LSB1")
@@ -163,7 +173,7 @@ PerceptronPredictor::allocateInNVM(uint64_t set, Access element)
 		for(unsigned i = 0 ; i < m_BP_features.size(); i++)
 		{
 			int hash = m_BP_features_hash[i](element.m_address , element.m_pc);
-			int pred = m_BP_features[i]->getBypassPrediction(hash);
+			int pred = m_BP_features[i]->getConfidence(hash);
 			samples.push_back(pred);
 			sum_prediction += pred;
 		}
@@ -193,7 +203,7 @@ PerceptronPredictor::allocateInNVM(uint64_t set, Access element)
 		for(unsigned i = 0 ; i < m_Allocation_features.size(); i++)
 		{
 			int hash = m_Allocation_features_hash[i](element.m_address , element.m_pc);
-			int pred = m_Allocation_features[i]->getAllocationPrediction(hash);
+			int pred = m_Allocation_features[i]->getConfidence(hash);
 			sum_prediction += pred;
 		}	
 	
@@ -224,7 +234,7 @@ PerceptronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 			for(unsigned i = 0 ; i < m_BP_features.size() ; i++)
 			{
 				if( entry->perceptron_BPpred[i] > -simu_parameters.perceptron_bypass_learning || !entry->predictedReused[i])
-					m_BP_features[i]->decreaseBPConfidence(entry->perceptron_BPHash[i]);
+					m_BP_features[i]->decreaseConfidence(entry->perceptron_BPHash[i]);
 			}
 			setBPPrediction(entry);
 		}
@@ -232,26 +242,32 @@ PerceptronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 		if(m_enableAllocation)
 		{
 			RD_TYPE rd_type = classifyRD(set , index , inNVM);
+			
 		
-			if(rd_type == RD_MEDIUM && !inNVM)
-			{
-				for(unsigned i = 0 ; i < m_Allocation_features.size() ; i++)
-				{
-					if( entry->perceptron_Allocpred[i] < simu_parameters.perceptron_bypass_learning)
-						m_Allocation_features[i]->increaseAllocConfidence(entry->perceptron_AllocHash[i]);
-				}
-			}
 			if(rd_type == RD_SHORT && element.isWrite() && inNVM)
 			{
 				for(unsigned i = 0 ; i < m_Allocation_features.size() ; i++)
 				{
 					if( entry->perceptron_Allocpred[i] > - simu_parameters.perceptron_bypass_learning)
-						m_Allocation_features[i]->decreaseAllocConfidence(entry->perceptron_AllocHash[i]);
+						m_Allocation_features[i]->decreaseConfidence(entry->perceptron_AllocHash[i]);
 				}		
 			}
 			setAllocPrediction(entry);
+
 		}
 	}
+	
+	if(m_enableAllocation)
+	{
+		RD_TYPE rd_type = classifyRD(set , index , inNVM);
+	
+		for(unsigned i = 0 ; i < m_Allocation_features.size() ; i++)
+		{
+			int hash = m_Allocation_features_hash[i](entry->address , entry->m_pc);
+			m_Allocation_features[i]->recordAccess( hash  , element , rd_type);
+		}
+	}
+
 	
 	stats_nbHits++;
 	miss_counter--;
@@ -270,10 +286,39 @@ PerceptronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, A
 
 	stats_allocate++;
 
-	if(current->isLearning && m_enableBP)
+	/** Training learning cache lines */ 
+	if(current->isLearning)
 	{
-		stats_allocate_learning++;
-		setBPPrediction(current);
+		if(m_enableBP)
+		{
+			stats_allocate_learning++;
+			setBPPrediction(current);		
+		}
+		
+		if(m_enableAllocation)
+		{
+			if(element.isSRAMerror && !inNVM)
+			{
+				for(unsigned i = 0 ; i < m_Allocation_features.size() ; i++)
+				{
+					if( current->perceptron_Allocpred[i] < simu_parameters.perceptron_bypass_learning)
+						m_Allocation_features[i]->increaseConfidence(current->perceptron_AllocHash[i]);
+				}
+			}
+		}
+	}
+	
+	if(m_enableAllocation)
+	{
+		RD_TYPE rd_type = classifyRD(set , index , inNVM);
+		if( element.isSRAMerror )
+			rd_type = RD_MEDIUM;
+		
+		for(unsigned i = 0 ; i < m_Allocation_features.size() ; i++)
+		{
+			int hash = m_Allocation_features_hash[i](current->address , current->m_pc);
+			m_Allocation_features[i]->recordAccess( hash  , element , rd_type);
+		}
 	}
 			
 	Predictor::insertionPolicy(set , index , inNVM , element);
@@ -305,7 +350,7 @@ PerceptronPredictor::setAllocPrediction(CacheEntry *current)
 	for(unsigned i = 0 ; i < m_Allocation_features.size() ; i++)
 	{
 		int hash = m_Allocation_features_hash[i](current->address , current->m_pc);
-		alloc_pred = m_Allocation_features[i]->getAllocationPrediction(hash);
+		alloc_pred = m_Allocation_features[i]->getConfidence(hash);
 		current->perceptron_Allocpred[i] = alloc_pred;
 		current->perceptron_AllocHash[i] = hash;
 //		if(alloc_pred > simu_parameters.perceptron_allocation_threshold)
@@ -323,7 +368,7 @@ PerceptronPredictor::setBPPrediction(CacheEntry* current)
 	for(unsigned i = 0 ; i < m_BP_features.size() ; i++)
 	{
 		int hash = m_BP_features_hash[i](current->address , current->m_pc);
-		bp_pred = m_BP_features[i]->getBypassPrediction(hash);
+		bp_pred = m_BP_features[i]->getConfidence(hash);
 		current->perceptron_BPpred[i] = bp_pred;
 		current->perceptron_BPHash[i] = hash;
 		if(bp_pred > simu_parameters.perceptron_bypass_threshold)
@@ -358,7 +403,7 @@ int PerceptronPredictor::evictPolicy(int set, bool inNVM)
 			if(current->predictedReused[i] || current->perceptron_BPpred[i] < simu_parameters.perceptron_bypass_learning)
 			{
 				int hash = m_BP_features_hash[i](current->address , current->m_pc);
- 				m_BP_features[i]->increaseBPConfidence(hash);
+ 				m_BP_features[i]->increaseConfidence(hash);
 			}
 		}
 		
@@ -510,13 +555,13 @@ PerceptronPredictor::classifyRD(int set , int index, bool inNVM)
 	int64_t ref_rd = 0;
 	if(inNVM)
 	{
-		ref_rd = m_tableSRAM[set][index]->policyInfo;
-		line = m_tableSRAM[set];
+		ref_rd = m_tableNVM[set][index]->policyInfo;
+		line = m_tableNVM[set];
 	}
 	else
 	{
-		line = m_tableNVM[set];
-		ref_rd = m_tableNVM[set][index]->policyInfo;
+		line = m_tableSRAM[set];
+		ref_rd = m_tableSRAM[set][index]->policyInfo;
 	}
 	
 	int position = 0;

@@ -274,8 +274,8 @@ init_default_parameters()
 	simu_parameters.prefetchStreams = 16; 
 	simu_parameters.enablePrefetch = false;
 
-	simu_parameters.sram_assoc = 16;
-	simu_parameters.nvm_assoc = 0;
+	simu_parameters.sram_assoc = 4;
+	simu_parameters.nvm_assoc = 12;
 	simu_parameters.nb_sets = 2048;
 	simu_parameters.nb_sampled_sets = 64;
 
@@ -303,13 +303,12 @@ init_default_parameters()
 	simu_parameters.enableReuseErrorComputation = false;
 	simu_parameters.enablePCHistoryTracking = false;
 	/***************************************/ 
+	
 
 	/********* Perceptron Config *************/ 	
-	simu_parameters.perceptron_table_size = 256;
 //	simu_parameters.perceptron_features = { "Addr_LSB", "Addr_MSB", "PC_LSB", "PC_MSB"};
 	simu_parameters.perceptron_BP_features = { "MissCounter1"};
 	simu_parameters.perceptron_Allocation_features = { "MissPC_LSB"};
-	simu_parameters.perceptron_counter_size = 32;
 	simu_parameters.perceptron_windowSize = 16;
 	
 	simu_parameters.perceptron_bypass_threshold = 3;
@@ -317,11 +316,18 @@ init_default_parameters()
 	simu_parameters.perceptron_allocation_threshold = 3;
 	simu_parameters.perceptron_allocation_learning = 11;
 
-	simu_parameters.perceptron_drawFeatureMaps = false;
 	simu_parameters.perceptron_compute_variance = false;
-	simu_parameters.perceptron_enableBypass = true;
+	simu_parameters.perceptron_table_size = 256;
+	simu_parameters.perceptron_counter_size = 32;
+	simu_parameters.perceptron_drawFeatureMaps = false;
+
+	simu_parameters.perceptron_enableBypass = false;
 	/***************************************/ 
 	
+	/*********** PHC Config ******************/ 
+	simu_parameters.PHC_features = {"MissPC_LSB"};
+	simu_parameters.PHC_cost_threshold = 1;
+
 	simu_parameters.nbCores = 1;
 	simu_parameters.policy = "Perceptron";
 

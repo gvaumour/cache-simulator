@@ -152,6 +152,7 @@ class CacheEntry{
 			
 			isPrefetch = false;
 			address = 0;
+			block_addr = 0;
 			policyInfo = 0; 
 			saturation_counter = 0;
 			m_pc = 0;
@@ -183,6 +184,7 @@ class CacheEntry{
 		bool isValid;
 		bool isDirty;
 		uint64_t address;
+		uint64_t block_addr;
 		uint64_t m_pc;
 		uint64_t signature;
 		uint64_t value;
