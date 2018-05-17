@@ -155,6 +155,15 @@ int main(int argc , char* argv[]){
 			simu_parameters.perceptron_BP_features.clear();
 			simu_parameters.perceptron_BP_features = split(string(argv[i]) , ',');
 		}
+		else if(string(argv[i]) == "--PHC-costTh")
+		{	i++;
+			simu_parameters.PHC_cost_threshold = atoi(argv[i]);
+		}
+		else if(string(argv[i]) == "--PHC-Features")
+		{	i++;
+			simu_parameters.PHC_features.clear();
+			simu_parameters.PHC_features = split(string(argv[i]) , ',');
+		}
 		else if(string(argv[i]) == "--Perceptron-Alloc-Features")
 		{	i++;
 			simu_parameters.perceptron_Allocation_features.clear();

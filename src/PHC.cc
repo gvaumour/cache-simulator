@@ -147,7 +147,7 @@ PHCPredictor::allocateInNVM(uint64_t set, Access element)
 		miss_counter = 255;
 	
 	// All the set is a learning/sampled set independantly of its way or SRAM/NVM alloc
-//	bool isLearning = m_tableSRAM[set][0]->isLearning; 
+	//bool isLearning = m_tableSRAM[set][0]->isLearning; 
 
 	int sum_pred = 0;
 	for(unsigned i = 0 ; i < m_features.size() ; i++)
