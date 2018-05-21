@@ -456,6 +456,8 @@ Predictor::printConfig(std::ostream& out, std::string entete)
 		out << entete << ":Predictor:SizeMTarray:\t" << m_assoc_MT << endl;	
 //	else
 //		out << entete << ":Predictor:TrackingEnabled\tFALSE" << endl;
+
+	out << entete << ":Predictor:SampledSets\t" << simu_parameters.nb_sampled_sets << endl;
 }
 
 
