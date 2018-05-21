@@ -34,13 +34,15 @@ int hashingcurrentPC_3(uint64_t addr , uint64_t missPC )
 int hashingTag_block(uint64_t addr , uint64_t missPC )
 {
 	uint64_t tag = bitSelect(addr , 18 , 64);
-	return ((tag >> 4)^PerceptronPredictor::m_global_PChistory[0])%256;
+//	return ((tag >> 4)^PerceptronPredictor::m_global_PChistory[0])%256;
+	return ((tag >> 4)%256);
 }
 
 int hashingTag_page(uint64_t addr , uint64_t missPC )
 {
 	uint64_t tag = bitSelect(addr , 18 , 64);
-	return ((tag >> 7)^PerceptronPredictor::m_global_PChistory[0])%256;
+//	return ((tag >> 7)^PerceptronPredictor::m_global_PChistory[0])%256;
+	return ((tag >> 7)%256);
 }
 
 

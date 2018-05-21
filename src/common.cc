@@ -277,7 +277,7 @@ init_default_parameters()
 	simu_parameters.sram_assoc = 4;
 	simu_parameters.nvm_assoc = 12;
 	simu_parameters.nb_sets = 2048;
-	simu_parameters.nb_sampled_sets = 64;
+	simu_parameters.nb_sampled_sets = 2048;
 
 	/********* DBAMB Config *************/ 
 	simu_parameters.window_size = 20; 

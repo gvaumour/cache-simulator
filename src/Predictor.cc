@@ -173,7 +173,7 @@ Predictor::evictRecording(int set, int assoc_victim , bool inNVM)
 	m_missing_tags[set][index_victim]->addr = current->address;
 	m_missing_tags[set][index_victim]->last_time_touched = cpt_time;
 	m_missing_tags[set][index_victim]->isValid = current->isValid;
-
+	m_missing_tags[set][index_victim]->cost_value = current->cost_value;
 
 }
 
@@ -204,6 +204,18 @@ Predictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access elem
 
 }
 
+int 
+Predictor::missingTagCostValue(uint64_t block_addr, int set)
+{
+	for(unsigned i = 0 ; i < m_missing_tags[set].size() ; i++)
+	{
+		if(m_missing_tags[set][i]->addr == block_addr && m_missing_tags[set][i]->isValid)
+		{
+			return m_missing_tags[set][i]->cost_value;
+		}
+	}	
+	return 0;
+}
 
 bool
 Predictor::hitInBypassTags(uint64_t block_addr , int set , bool isMiss)

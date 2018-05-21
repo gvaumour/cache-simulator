@@ -24,10 +24,11 @@ class MissingTagEntry{
 	public : 
 		uint64_t addr;
 		uint64_t last_time_touched;
+		int cost_value;
 		bool isValid;
 		bool isBypassed;
 	
-		MissingTagEntry() : addr(0) , last_time_touched(0), isValid(false), isBypassed(false) { };
+		MissingTagEntry() : addr(0) , last_time_touched(0), cost_value(0), isValid(false), isBypassed(false) { };
 		MissingTagEntry(uint64_t a , uint64_t t, bool v) : addr(a) , last_time_touched(t), isValid(v), isBypassed(false) {};
 	
 };
@@ -61,6 +62,7 @@ class Predictor{
 		bool hitInBypassTags(uint64_t block_addr , int id_set, bool isMiss);
 		bool hitInMissingTags(uint64_t block_addr, int set);
 		void updateFUcaches(uint64_t block_addr, bool inNVM);
+		int missingTagCostValue(uint64_t block_addr, int set);
 
 
 	protected : 		

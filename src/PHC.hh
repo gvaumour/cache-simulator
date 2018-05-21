@@ -74,7 +74,11 @@ class PHCPredictor : public Predictor {
 
 		uint64_t stats_update , stats_update_learning;
 		uint64_t stats_allocate , stats_allocate_learning;
-				
+		
+		uint64_t stats_cptLearningSRAMerror, stats_cptSRAMerror;
+			
+		uint64_t stats_prediction_confident, stats_prediction_preemptive;
+		std::vector< std::vector< std::vector<int> > > stats_histo_value;				
 
 };
 
