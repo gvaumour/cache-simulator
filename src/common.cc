@@ -326,7 +326,7 @@ init_default_parameters()
 	
 	/*********** PHC Config ******************/ 
 	simu_parameters.PHC_features = {"MissPC_LSB"};
-	simu_parameters.PHC_cost_threshold = 1;
+	simu_parameters.PHC_cost_threshold = -5;
 
 	simu_parameters.nbCores = 1;
 	simu_parameters.policy = "Perceptron";

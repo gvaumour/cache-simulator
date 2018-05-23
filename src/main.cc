@@ -115,6 +115,10 @@ int main(int argc , char* argv[]){
 		{	i++;
 			simu_parameters.deadSaturationCouter = atoi(argv[i]);
 		}
+		else if(string(argv[i]) == "--sampled-sets")
+		{	i++;
+			simu_parameters.nb_sampled_sets = atoi(argv[i]);
+		}
 		else if(string(argv[i]) == "--prefetchDegree")
 		{	i++;
 			simu_parameters.prefetchDegree = atoi(argv[i]);

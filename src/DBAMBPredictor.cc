@@ -44,7 +44,7 @@ DBAMBPredictor::DBAMBPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray
 		stats_history_SRAM.resize(nbSet);
 	*/
 
-	if(simu_parameters.DBAMB_signature.find("B") !=std::string::npos)
+	if(simu_parameters.DBAMB_signature.find("B") != std::string::npos)
 	{	
 		vector<string> split_line = split(simu_parameters.DBAMB_signature , 'B');
 	
@@ -1099,7 +1099,6 @@ uint64_t
 DBAMBPredictor::hashingFunction(Access element)
 {	
 	string total = buildHash( element.m_address , element.m_pc);
-//	string sig = string(1, total[m_hashingFirstByte]) + string( 1,total[m_hashingSecondByte]) + string(1,total[m_hashingByte]);
 	string sig ="";
 	for(unsigned i = 0 ; i < m_hashingBytes.size() ; i++)
 	{
