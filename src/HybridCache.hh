@@ -60,6 +60,7 @@ class HybridCache {
 		void printConfig(std::ostream& out);
 		void print(std::ostream& out);
 
+		void initializeLearningCl(CacheEntry* entry);
 		bool lookup(Access element);
 		int addressToCacheSet(uint64_t address);
 		int blockAddressToCacheSet(uint64_t block_add); 

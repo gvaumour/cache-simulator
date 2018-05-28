@@ -7,7 +7,6 @@
 
 using namespace std;
 
-ofstream dump_file(FILE_DUMP_PERCEPTRON);
 int WATCHED_INDEX = 121;
 
 std::deque<uint64_t> PerceptronPredictor::m_global_PChistory;
@@ -520,7 +519,6 @@ PerceptronPredictor::finishSimu()
 	for(auto feature : m_BP_features)
 		feature->finishSimu();
 
-	dump_file.close();
 	Predictor::finishSimu();
 }
 

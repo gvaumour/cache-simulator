@@ -7,8 +7,6 @@
 #include "Cache.hh"
 #include "common.hh"
 
-#define IMG_WIDTH 2000
-
 class FeatureEntry
 {
 	public: 
@@ -34,7 +32,7 @@ class FeatureEntry
 		bool isValid;
 
 		int weight;				
-//		int allocation_counter;
+		int allocation_counter;
 //		int bypass_counter;
 		allocDecision des;
 };
@@ -63,22 +61,27 @@ class FeatureTable
 
 		void decreaseConfidence(int index);
 		void increaseConfidence(int index);
-
-//		void decreaseAllocConfidence(int index);
-//		void increaseAllocConfidence(int index);
 		
-		std::vector< std::vector<int> > resize_image(std::vector< std::vector<int> >& img);
+		void registerError(int index , bool isError);
+
+		void decreaseAlloc(int index);
+		void increaseAlloc(int index);
+		int getAllocationPrediction(int index);
+		
+//		std::vector< std::vector<int> > resize_image(std::vector< std::vector<int> >& img);
 
 		
 	private:
 		int m_size;
 		std::string m_name;
 		bool m_isBP;
+		int m_counter_size;
 		
 		std::vector<FeatureEntry*> m_table;
 		std::vector< std::vector<int> > stats_heatmap;
-		std::vector< std::vector<int> > stats_frequencymap;
+//		std::vector< std::vector<int> > stats_frequencymap;
 		std::vector< std::vector<int> > stats_history_buffer;
+		std::vector< std::vector<int> > stats_errorMap;
 };		
 
 

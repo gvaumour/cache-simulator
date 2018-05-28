@@ -44,6 +44,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #define BLOCK_SIZE 64
 
+#define IMG_WIDTH 2000
+
 /**
 	Hold utilitary functions 
 */
@@ -136,6 +138,10 @@ std::string convert_hex(int n);
 const char * StripPath(const char * path);
 void init_default_parameters();
 std::string buildHash(uint64_t a, uint64_t p);
+
+
+std::vector< std::vector<int> > resize_image(std::vector< std::vector<int> >& img);
+
 void writeBMPimage(std::string image_name , int width , int height , std::vector< std::vector<int> > red,\
 				 std::vector< std::vector<int> > blue, std::vector< std::vector<int> > green );
 std::string splitFilename(std::string str);

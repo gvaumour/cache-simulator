@@ -7,7 +7,7 @@
 #include <iostream>
 
 #include "FeatureTable.hh"
-
+#include "common.hh"
 using namespace std;
 
 void 
@@ -47,6 +47,7 @@ FeatureTable::FeatureTable( int size, string name, bool isBP)
 	m_size = size;
 	m_name = name;
 	m_isBP = isBP;
+	m_counter_size = simu_parameters.perceptron_counter_size;
 	
 	m_table.resize(size);
 	for(int i = 0 ; i < m_size; i++)
@@ -55,8 +56,9 @@ FeatureTable::FeatureTable( int size, string name, bool isBP)
 	if(simu_parameters.perceptron_drawFeatureMaps)
 	{
 		stats_heatmap = vector<vector<int> >(m_size, vector<int>());
-		stats_frequencymap = vector<vector<int> >(m_size, vector<int>());
+//		stats_frequencymap = vector<vector<int> >(m_size, vector<int>());
 		stats_history_buffer = vector<vector<int> >(m_size, vector<int>());
+		stats_errorMap = vector< vector<int> >(m_size , vector<int>(1 , 0));
 	}
 }
 
@@ -98,6 +100,34 @@ FeatureTable::recordAccess(int index, Access element, RD_TYPE rd)
 }
 
 
+void 
+FeatureTable::decreaseAlloc(int index)
+{
+	FeatureEntry* entry = lookup(index);
+	entry->allocation_counter--;
+	
+	if(entry->allocation_counter < -m_counter_size)
+		entry->allocation_counter = -m_counter_size;
+}
+
+void 
+FeatureTable::increaseAlloc(int index)
+{
+	FeatureEntry* entry = lookup(index);
+	entry->allocation_counter++;
+	
+	if(entry->allocation_counter > m_counter_size)
+		entry->allocation_counter = m_counter_size;	
+}
+
+int
+FeatureTable::getAllocationPrediction(int index)
+{
+	return lookup(index)->allocation_counter;
+}
+
+
+
 int
 FeatureTable::getConfidence(int index)
 {
@@ -128,80 +158,19 @@ FeatureTable::increaseConfidence(int index)
 		feature_entry->weight = simu_parameters.perceptron_counter_size;	
 }
 
-
-/*
-int
-FeatureTable::getBypassPrediction(int index)
-{
-	int result = lookup(index)->bypass_counter;
-	
-	if(simu_parameters.perceptron_drawFeatureMaps && m_isBP)
-		stats_history_buffer[index].push_back(result);
-			
-	return result;
-}
-
 void
-FeatureTable::decreaseBPConfidence(int index)
+FeatureTable::registerError(int index , bool isError)
 {
-	FeatureEntry* feature_entry = lookup(index);
-	feature_entry->bypass_counter--;
-	if(feature_entry->bypass_counter < -simu_parameters.perceptron_counter_size)
-		feature_entry->bypass_counter = -simu_parameters.perceptron_counter_size;	
+	if(isError)
+		stats_errorMap[index][stats_errorMap.size()-1]++;
 }
 
-void
-FeatureTable::increaseBPConfidence(int index)
-{
-	FeatureEntry* feature_entry = lookup(index);
-	feature_entry->bypass_counter++;
-	if(feature_entry->bypass_counter > simu_parameters.perceptron_counter_size)
-		feature_entry->bypass_counter = simu_parameters.perceptron_counter_size;	
-}
-
-void
-FeatureTable::increaseAllocConfidence(int index)
-{
-	FeatureEntry* feature_entry = lookup(index);
-	feature_entry->allocation_counter++;
-	if(feature_entry->allocation_counter > simu_parameters.perceptron_counter_size)
-		feature_entry->allocation_counter = simu_parameters.perceptron_counter_size;	
-}
-
-void
-FeatureTable::decreaseAllocConfidence(int index)
-{
-	FeatureEntry* feature_entry = lookup(index);
-	feature_entry->allocation_counter--;
-	if(feature_entry->allocation_counter < -simu_parameters.perceptron_counter_size)
-		feature_entry->allocation_counter = -simu_parameters.perceptron_counter_size;	
-}
-*/
 
 void
 FeatureTable::recordEvict(int index , bool hasBeenReused)
 {
 
 }
-
-/*
-int
-FeatureTable::getAllocationPrediction(int index)
-{
-	FeatureEntry* entry = lookup(index);
-			
-	int result = 0;		
-	if(entry->des == ALLOCATE_IN_NVM)
-		result = entry->allocation_counter;
-	else if( entry->des == ALLOCATE_IN_SRAM)
-		result =  (-1) * entry->allocation_counter;
-
-	if(simu_parameters.perceptron_drawFeatureMaps && !m_isBP)
-		stats_history_buffer[index].push_back(result);
-
-	return result;
-}
-*/
 
 void 
 FeatureTable::openNewTimeFrame()
@@ -224,10 +193,13 @@ FeatureTable::openNewTimeFrame()
 			avg = stats_heatmap[i].empty() ? 0 : stats_heatmap[i].back() ;
 
 		stats_heatmap[i].push_back(avg);
-		stats_frequencymap[i].push_back(stats_history_buffer[i].size());
+//		stats_frequencymap[i].push_back(stats_history_buffer[i].size());
 		stats_history_buffer[i].clear();
+
+		stats_errorMap[i].push_back(0);
 	}
 
+	
 //	stats_history_buffer = vector< vector<int> >(m_size , vector<int>());
 }
 
@@ -245,7 +217,7 @@ FeatureTable::finishSimu()
 	if(width > IMG_WIDTH)
 	{
 		stats_heatmap = resize_image(stats_heatmap);
-		stats_frequencymap = resize_image(stats_frequencymap);	
+//		stats_frequencymap = resize_image(stats_frequencymap);	
 		width = stats_heatmap[0].size();
 	}	
 	vector< vector<int> > red = vector< vector<int> >(width, vector<int>(height, 0));
@@ -275,15 +247,14 @@ FeatureTable::finishSimu()
 
 	writeBMPimage(string("heatmap_" + m_name + ".bmp") , width , height , red, blue, green );
 	
-	
-
-	for(unsigned i = 0 ; i < stats_frequencymap.size(); i++)
+	/*
+	for(unsigned i = 0 ; i < stats_errorMap.size(); i++)
 	{
-		for(unsigned j = 0 ; j < stats_frequencymap[i].size(); j++)
+		for(unsigned j = 0 ; j < stats_errorMap[i].size(); j++)
 		{
-			int value = stats_frequencymap[i][j];
-			if(value > 100)
-				value = 100;
+			int value = stats_errorMap[i][j];
+			if(value > 20)
+				value = 20;
 
 				
 			red[j][i] = 255;
@@ -292,36 +263,9 @@ FeatureTable::finishSimu()
 		}
 	}
 
-	writeBMPimage(string("frequencymap_" + m_name + ".bmp") , width , height , red, blue, green );
-	
+	writeBMPimage(string("errormap_" + m_name + ".bmp") , width , height , red, blue, green );
+	*/
 }
-
-vector< vector<int> > 
-FeatureTable::resize_image(vector< vector<int> >& img)
-{
-
-	int width =img[0].size();
-
-	vector<vector<int > > result = vector< vector<int> >(m_size , vector<int>());
-	int factor = ceil ( (double)width / (double) IMG_WIDTH );
-
-	for(unsigned i = 0 ; i < img.size() ; i++)
-	{
-		for(unsigned j = 0 ; j < img[i].size() ; j+= factor)
-		{
-			int index = factor + j >= img[i].size() ? img[i].size() : factor+j; 
-			int sum = 0;
-			for(int k = j ; k < index; k++)
-				sum += img[i][k];
-				
-//			cout << "result[" << i << "].push_back " << sum << " / " << factor << " = " <<  sum / factor << endl;
-			result[i].push_back(sum / factor);
-		}
-	}	
-	return result;
-}
-
-
 
 
 

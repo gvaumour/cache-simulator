@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <cmath>
 #include <assert.h>
 #include <stdlib.h> 
 #include <string.h>
@@ -194,6 +195,31 @@ StripPath(const char * path)
     else
         return path;
 }
+
+vector< vector<int> > 
+resize_image(vector< vector<int> >& img)
+{
+
+	int width =img[0].size();
+	vector<vector<int > > result = vector< vector<int> >(img.size() , vector<int>());
+	int factor = ceil ( (double)width / (double) IMG_WIDTH );
+
+	for(unsigned i = 0 ; i < img.size() ; i++)
+	{
+		for(unsigned j = 0 ; j < img[i].size() ; j+= factor)
+		{
+			int index = factor + j >= img[i].size() ? img[i].size() : factor+j; 
+			int sum = 0;
+			for(int k = j ; k < index; k++)
+				sum += img[i][k];
+				
+//			cout << "result[" << i << "].push_back " << sum << " / " << factor << " = " <<  sum / factor << endl;
+			result[i].push_back(sum / factor);
+		}
+	}	
+	return result;
+}
+
 
 
 void writeBMPimage(std::string image_name , int width , int height , vector< vector<int> > red, vector< vector<int> > blue, vector< vector<int> > green )

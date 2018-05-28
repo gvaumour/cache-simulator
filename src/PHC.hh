@@ -34,8 +34,11 @@ class PHCPredictor : public Predictor {
 		void printStats(std::ostream& out, std::string entete);
 		void printConfig(std::ostream& out, std::string entete);
 		void openNewTimeFrame();
+		void drawFeatureMaps();
 		void finishSimu();
 		
+		
+		allocDecision convertToAllocDecision(int alloc_counter, bool isLearning);
 		RD_TYPE classifyRD(int set , int index , bool inNVM);
 		CacheEntry* get_entry(uint64_t set , uint64_t index , bool inNVM);
 
@@ -80,6 +83,8 @@ class PHCPredictor : public Predictor {
 		uint64_t stats_prediction_confident, stats_prediction_preemptive;
 		std::vector< std::vector< std::vector<int> > > stats_histo_value;				
 
+		std::vector<std::vector<int> > stats_local_error;
+		std::vector< std::vector<int> > stats_global_error;
 };
 
 

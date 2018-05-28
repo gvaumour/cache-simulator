@@ -105,23 +105,11 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		for(int i = 0 ; i+index < m_nb_set; i += constituency)
 		{
 			for(int j = 0 ; j < m_nbSRAMways ; j++){
-				m_tableSRAM[i+index][j]->isLearning = true;
-				m_tableSRAM[i+index][j]->perceptron_BPHash = vector<int>(simu_parameters.perceptron_BP_features.size() , 0);
-				m_tableSRAM[i+index][j]->perceptron_BPpred = vector<int>(simu_parameters.perceptron_BP_features.size() , 0);
-				m_tableSRAM[i+index][j]->predictedReused = vector<bool>(simu_parameters.perceptron_BP_features.size() , false);		
-
-				m_tableSRAM[i+index][j]->perceptron_AllocHash = vector<int>(simu_parameters.perceptron_Allocation_features.size() , 0);
-				m_tableSRAM[i+index][j]->perceptron_Allocpred = vector<int>(simu_parameters.perceptron_Allocation_features.size() , 0);
+				initializeLearningCl(m_tableSRAM[i+index][j]);
 			}
 			for(int j = 0 ; j < m_nbNVMways ; j++)
 			{
-				m_tableNVM[i+index][j]->isLearning = true;
-				m_tableNVM[i+index][j]->perceptron_BPpred = vector<int>(simu_parameters.perceptron_BP_features.size() , 0);
-				m_tableNVM[i+index][j]->perceptron_BPHash = vector<int>(simu_parameters.perceptron_BP_features.size() , 0);
-				m_tableNVM[i+index][j]->predictedReused = vector<bool>(simu_parameters.perceptron_BP_features.size() , false);
-
-				m_tableNVM[i+index][j]->perceptron_Allocpred = vector<int>(simu_parameters.perceptron_Allocation_features.size() , 0);
-				m_tableNVM[i+index][j]->perceptron_AllocHash = vector<int>(simu_parameters.perceptron_Allocation_features.size() , 0);
+				initializeLearningCl(m_tableNVM[i+index][j]);
 			}
 			index = (index+1)%constituency;
 		}
@@ -172,6 +160,27 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 	
 	if(simu_parameters.traceLLC && m_ID == -1)
 		LLC_trace = gzopen("LLC_trace.out", "wb8");
+}
+
+void
+HybridCache::initializeLearningCl(CacheEntry* entry)
+{
+
+	entry->isLearning = true;
+	if(m_policy == "Perceptron")
+	{
+		entry->perceptron_BPpred = vector<int>(simu_parameters.perceptron_BP_features.size() , 0);
+		entry->perceptron_BPHash = vector<int>(simu_parameters.perceptron_BP_features.size() , 0);
+		entry->predictedReused = vector<bool>(simu_parameters.perceptron_BP_features.size() , false);
+
+		entry->perceptron_Allocpred = vector<int>(simu_parameters.perceptron_Allocation_features.size() , 0);
+		entry->perceptron_AllocHash = vector<int>(simu_parameters.perceptron_Allocation_features.size() , 0);	
+	}
+
+	if(m_policy == "PHC")
+	{
+		entry->PHC_allocation_pred = vector<allocDecision>(simu_parameters.PHC_features.size() , ALLOCATE_IN_SRAM);
+	}
 }
 
 HybridCache::HybridCache(const HybridCache& a) : HybridCache(a.getID(), a.isInstCache(),\
