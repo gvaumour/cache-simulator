@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "ReplacementPolicy.hh"
 #include "SaturationPredictor.hh"
 #include "InstructionPredictor.hh"
+#include "Cerebron.hh"
 #include "PHC.hh"
 #include "DBAMBPredictor.hh"
 #include "Perceptron.hh"
@@ -89,6 +90,8 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		 m_predictor = new InstructionPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "PHC")
 		 m_predictor = new PHCPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
+	else if(m_policy == "Cerebron")
+		 m_predictor = new CerebronPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "Perceptron")
 		 m_predictor = new PerceptronPredictor(m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "DBAMB" || m_policy == "DBA")

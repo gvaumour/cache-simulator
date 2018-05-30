@@ -145,8 +145,8 @@ FeatureTable::decreaseConfidence(int index)
 {
 	FeatureEntry* feature_entry = lookup(index);
 	feature_entry->weight--;
-	if(feature_entry->weight < -simu_parameters.perceptron_counter_size)
-		feature_entry->weight = -simu_parameters.perceptron_counter_size;	
+	if(feature_entry->weight < 0)
+		feature_entry->weight = 0;	
 }
 
 void

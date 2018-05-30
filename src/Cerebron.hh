@@ -1,5 +1,5 @@
-#ifndef __PHC__PREDICTOR__HH__
-#define __PHC__PREDICTOR__HH__
+#ifndef __Cerebron__PREDICTOR__HH__
+#define __Cerebron__PREDICTOR__HH__
 
 #include <vector>
 #include <map>
@@ -14,17 +14,17 @@
 #include "HybridCache.hh"
 #include "Cache.hh"
 
-#define FILE_OUTPUT_PHC "output_PHC.out"
+#define FILE_OUTPUT_Cerebron "output_Cerebron.out"
 
 
 class Predictor;
 class HybridCache;
 
-class PHCPredictor : public Predictor {
+class CerebronPredictor : public Predictor {
 
 	public :
-		PHCPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache);
-		~PHCPredictor();
+		CerebronPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache);
+		~CerebronPredictor();
 			
 		allocDecision allocateInNVM(uint64_t set, Access element);
 		void updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element , bool isWBrequest );
@@ -34,10 +34,11 @@ class PHCPredictor : public Predictor {
 		void printStats(std::ostream& out, std::string entete);
 		void printConfig(std::ostream& out, std::string entete);
 		void openNewTimeFrame();
-		void finishSimu();
 		void drawFeatureMaps();
-
+		void finishSimu();
 		
+		
+		allocDecision convertToAllocDecision(int alloc_counter, bool isLearning);
 		RD_TYPE classifyRD(int set , int index , bool inNVM);
 		CacheEntry* get_entry(uint64_t set , uint64_t index , bool inNVM);
 
@@ -80,11 +81,12 @@ class PHCPredictor : public Predictor {
 		uint64_t stats_cptLearningSRAMerror, stats_cptSRAMerror;
 			
 		uint64_t stats_prediction_confident, stats_prediction_preemptive;
-		std::vector< std::vector< std::vector<int> > > stats_histo_value;
-		
+		std::vector< std::vector< std::vector<int> > > stats_histo_value;				
+
 		std::vector<std::vector<int> > stats_local_error;
 		std::vector< std::vector<int> > stats_global_error;
 
+		std::vector< std::vector<int> > stats_access_class;
 };
 
 

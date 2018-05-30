@@ -19,7 +19,7 @@ class FeatureEntry
 			cptWindow = 0;			
 //			allocation_counter = 0;
 //			bypass_counter = 0;
-			weight = 0;
+			weight = simu_parameters.perceptron_counter_size/2;
 			des = ALLOCATE_PREEMPTIVELY;
 		 };
 		
