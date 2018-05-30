@@ -423,6 +423,11 @@ void PHCPredictor::printConfig(std::ostream& out, std::string entete) {
 	for(auto p : m_criterias_names)
 		out << p << ",";
 	out << endl;	
+	out << entete << ":PHC:CostModel" << endl;
+	out << entete << ":PHC:ShortRead\t" << m_costAccess[false][RD_SHORT] << endl; 		
+	out << entete << ":PHC:ShortWrite\t" << m_costAccess[true][RD_SHORT] << endl; 		
+	out << entete << ":PHC:MediumRead\t" << m_costAccess[false][RD_MEDIUM] << endl; 		
+	out << entete << ":PHC:MediumWrite\t" << m_costAccess[true][RD_MEDIUM] << endl; 		
 
 	Predictor::printConfig(out, entete);
 }

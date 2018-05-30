@@ -459,11 +459,11 @@ void CerebronPredictor::printConfig(std::ostream& out, std::string entete) {
 	out << endl;	
 
 	out << entete << ":CerebronPredictor:CostModel" << endl;
-	out << entete << ":CerebronPredictor:ShortRead\t" << m_costAccess[RD_SHORT][false] << endl; 		
-	out << entete << ":CerebronPredictor:ShortWrite\t" << m_costAccess[RD_SHORT][true] << endl; 		
-	out << entete << ":CerebronPredictor:MediumRead\t" << m_costAccess[RD_MEDIUM][false] << endl; 		
-	out << entete << ":CerebronPredictor:MediumWrite\t" << m_costAccess[RD_MEDIUM][true] << endl; 		
-	
+	out << entete << ":CerebronPredictor:ShortRead\t" << m_costAccess[false][RD_SHORT] << endl; 		
+	out << entete << ":CerebronPredictor:ShortWrite\t" << m_costAccess[true][RD_SHORT] << endl; 		
+	out << entete << ":CerebronPredictor:MediumRead\t" << m_costAccess[false][RD_MEDIUM] << endl; 		
+	out << entete << ":CerebronPredictor:MediumWrite\t" << m_costAccess[true][RD_MEDIUM] << endl; 		
+
 
 	Predictor::printConfig(out, entete);
 }
