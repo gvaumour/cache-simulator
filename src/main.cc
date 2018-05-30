@@ -163,6 +163,22 @@ int main(int argc , char* argv[]){
 		{	i++;
 			simu_parameters.PHC_cost_threshold = atoi(argv[i]);
 		}
+		else if(string(argv[i]) == "--PHC-costMediumWrite")
+		{	i++;
+			simu_parameters.PHC_cost_mediumWrite = atoi(argv[i]);
+		}
+		else if(string(argv[i]) == "--PHC-costShortWrite")
+		{	i++;
+			simu_parameters.PHC_cost_shortWrite = atoi(argv[i]);
+		}
+		else if(string(argv[i]) == "--PHC-costShortRead")
+		{	i++;
+			simu_parameters.PHC_cost_shortRead = atoi(argv[i]);
+		}
+		else if(string(argv[i]) == "--PHC-costMediumRead")
+		{	i++;
+			simu_parameters.PHC_cost_mediumRead = atoi(argv[i]);
+		}
 		else if(string(argv[i]) == "--PHC-Features")
 		{	i++;
 			simu_parameters.PHC_features.clear();

@@ -43,12 +43,10 @@ CerebronPredictor::CerebronPredictor(int nbAssoc , int nbSet, int nbNVMways, Dat
 	}
 		
 	m_costAccess = vector< vector<int> >(NUM_RW_TYPE , vector<int>(NUM_RD_TYPE, 0));
-	m_costAccess[true][RD_MEDIUM] = -20;
-	m_costAccess[false][RD_MEDIUM] = -30;
-	m_costAccess[true][RD_SHORT] = +2;
-	m_costAccess[false][RD_SHORT] = 0;
-//	m_costAccess[true][RD_NOT_ACCURATE] = -30;
-//	m_costAccess[false][RD_NOT_ACCURATE] = -30;
+	m_costAccess[true][RD_MEDIUM] = simu_parameters.PHC_cost_mediumWrite;
+	m_costAccess[false][RD_MEDIUM] = simu_parameters.PHC_cost_mediumRead;
+	m_costAccess[true][RD_SHORT] = simu_parameters.PHC_cost_shortWrite;
+	m_costAccess[false][RD_SHORT] = simu_parameters.PHC_cost_shortRead;
 		
 	
 	miss_counter = 0;
