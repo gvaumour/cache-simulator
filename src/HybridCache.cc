@@ -71,12 +71,15 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		m_tableSRAM[i].resize(m_nbSRAMways);
 		for(int j = 0 ; j < m_nbSRAMways ; j++){
 			m_tableSRAM[i][j] = new CacheEntry();
+			initializeLearningCl(m_tableSRAM[i][j]);
 		}
 
 		m_tableNVM[i].resize(m_nbNVMways);
 		for(int j = 0 ; j < m_nbNVMways ; j++){
 			m_tableNVM[i][j] = new CacheEntry();
-			m_tableNVM[i][j]->isNVM = true;
+			m_tableNVM[i][j]->isNVM = true;	
+			initializeLearningCl(m_tableNVM[i][j]);
+
 		}
 	}
 
@@ -108,11 +111,12 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		for(int i = 0 ; i+index < m_nb_set; i += constituency)
 		{
 			for(int j = 0 ; j < m_nbSRAMways ; j++){
-				initializeLearningCl(m_tableSRAM[i+index][j]);
+				m_tableSRAM[i+index][j]->isLearning = true;
 			}
 			for(int j = 0 ; j < m_nbNVMways ; j++)
 			{
-				initializeLearningCl(m_tableNVM[i+index][j]);
+				m_tableNVM[i+index][j]->isLearning = true;
+				//initializeLearningCl(m_tableNVM[i+index][j]);
 			}
 			index = (index+1)%constituency;
 		}
@@ -169,7 +173,6 @@ void
 HybridCache::initializeLearningCl(CacheEntry* entry)
 {
 
-	entry->isLearning = true;
 	if(m_policy == "Perceptron")
 	{
 		entry->perceptron_BPpred = vector<int>(simu_parameters.perceptron_BP_features.size() , 0);
@@ -180,7 +183,7 @@ HybridCache::initializeLearningCl(CacheEntry* entry)
 		entry->perceptron_AllocHash = vector<int>(simu_parameters.perceptron_Allocation_features.size() , 0);	
 	}
 
-	if(m_policy == "PHC")
+	if(m_policy == "PHC" || m_policy == "Cerebron")
 	{
 		entry->PHC_allocation_pred = vector<allocDecision>(simu_parameters.PHC_features.size() , ALLOCATE_IN_SRAM);
 	}

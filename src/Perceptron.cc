@@ -172,7 +172,7 @@ PerceptronPredictor::allocateInNVM(uint64_t set, Access element)
 		for(unsigned i = 0 ; i < m_BP_features.size(); i++)
 		{
 			int hash = m_BP_features_hash[i](element.m_address , element.m_pc);
-			int pred = m_BP_features[i]->getConfidence(hash);
+			int pred = m_BP_features[i]->getConfidence(hash,true);
 			samples.push_back(pred);
 			sum_prediction += pred;
 		}
@@ -202,7 +202,7 @@ PerceptronPredictor::allocateInNVM(uint64_t set, Access element)
 		for(unsigned i = 0 ; i < m_Allocation_features.size(); i++)
 		{
 			int hash = m_Allocation_features_hash[i](element.m_address , element.m_pc);
-			int pred = m_Allocation_features[i]->getConfidence(hash);
+			int pred = m_Allocation_features[i]->getConfidence(hash, true);
 			sum_prediction += pred;
 		}	
 	
@@ -349,7 +349,7 @@ PerceptronPredictor::setAllocPrediction(CacheEntry *current)
 	for(unsigned i = 0 ; i < m_Allocation_features.size() ; i++)
 	{
 		int hash = m_Allocation_features_hash[i](current->address , current->m_pc);
-		alloc_pred = m_Allocation_features[i]->getConfidence(hash);
+		alloc_pred = m_Allocation_features[i]->getConfidence(hash, true);
 		current->perceptron_Allocpred[i] = alloc_pred;
 		current->perceptron_AllocHash[i] = hash;
 //		if(alloc_pred > simu_parameters.perceptron_allocation_threshold)
@@ -367,7 +367,7 @@ PerceptronPredictor::setBPPrediction(CacheEntry* current)
 	for(unsigned i = 0 ; i < m_BP_features.size() ; i++)
 	{
 		int hash = m_BP_features_hash[i](current->address , current->m_pc);
-		bp_pred = m_BP_features[i]->getConfidence(hash);
+		bp_pred = m_BP_features[i]->getConfidence(hash,true);
 		current->perceptron_BPpred[i] = bp_pred;
 		current->perceptron_BPHash[i] = hash;
 		if(bp_pred > simu_parameters.perceptron_bypass_threshold)

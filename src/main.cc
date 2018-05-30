@@ -304,7 +304,7 @@ int main(int argc , char* argv[]){
 		uint64_t cpt_access = 0;
 		my_system->startWarmup();
 		my_system->stopWarmup();
-		
+		/*
 		while(traceWrapper->readNext(element)){
 
 			cpt_time++;
@@ -322,7 +322,7 @@ int main(int argc , char* argv[]){
 			my_system->handleAccess(element);
 			DPRINTF(DebugCache, "TIME::%ld\n",cpt_access);
 			
-		}
+		}*/
 		cout << endl;
 		traceWrapper->close();
 		free(traceWrapper);

@@ -162,7 +162,7 @@ CerebronPredictor::allocateInNVM(uint64_t set, Access element)
 	for(unsigned i = 0 ; i < m_features.size() ; i++)
 	{
 		int hash = m_features_hash[i](element.block_addr , element.m_pc);
-		int confidence = m_features[i]->getConfidence(hash);
+		int confidence = m_features[i]->getConfidence(hash, true);
 		allocDecision des = convertToAllocDecision(m_features[i]->getAllocationPrediction(hash) , element.isWrite() );
 		
 		if( des == ALLOCATE_IN_SRAM )
@@ -219,8 +219,8 @@ CerebronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 	stats_access_class[rd][element.isWrite()]++;
 
 	/** Training learning cache lines */ 
-	if(entry->isLearning)
-	{
+//	if(entry->isLearning)
+//	{
 	
 //		cout << "Insertion Learning Cache line 0x" << std::hex << element.block_addr << endl;
 //		if( element.isSRAMerror)
@@ -230,15 +230,15 @@ CerebronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 //		}
 //		else 
 //		{
-		for(unsigned i = 0 ; i < m_features.size() ; i++)
-		{
-			int hash = m_features_hash[i](element.block_addr , element.m_pc);
-			int pred = m_features[i]->getAllocationPrediction(hash);		
-			entry->PHC_allocation_pred[i] = convertToAllocDecision(pred, element.isWrite() );
-		}
-		entry->cost_value = m_costAccess[element.isWrite()][RD_SHORT];
-//		}
+	for(unsigned i = 0 ; i < m_features.size() ; i++)
+	{
+		int hash = m_features_hash[i](element.block_addr , element.m_pc);
+		int pred = m_features[i]->getAllocationPrediction(hash);		
+		entry->PHC_allocation_pred[i] = convertToAllocDecision(pred, element.isWrite() );
 	}
+	entry->cost_value = m_costAccess[element.isWrite()][RD_SHORT];
+//		}
+//	}
 			
 	Predictor::insertionPolicy(set , index , inNVM , element);
 }
@@ -322,11 +322,11 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 			for(unsigned i = 0; i < m_features.size() ; i++)
 			{
 				int hash = m_features_hash[i](entry->address , entry->m_pc);
-				int confidence = m_features[i]->getConfidence(hash);
+
 				bool local_error = false;
-				if( ALLOCATE_IN_NVM && confidence > simu_parameters.perceptron_allocation_threshold)
+				if( des == ALLOCATE_IN_NVM && entry->PHC_allocation_pred[i] == ALLOCATE_IN_NVM)
 					local_error = true;
-				else if(  ALLOCATE_IN_SRAM && confidence < simu_parameters.perceptron_allocation_threshold )
+				else if(  des == ALLOCATE_IN_SRAM && entry->PHC_allocation_pred[i] == ALLOCATE_IN_SRAM )
 				 	local_error = true;
 				 					
 				if(local_error)	
@@ -346,6 +346,7 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 					(entry->PHC_allocation_pred[i] == ALLOCATE_IN_SRAM && des == ALLOCATE_IN_SRAM))
 				{
 					m_features[i]->increaseConfidence(hash);
+					
 				}
 				else if( (entry->PHC_allocation_pred[i] == ALLOCATE_IN_NVM && des == ALLOCATE_IN_SRAM) || \
 					(entry->PHC_allocation_pred[i] == ALLOCATE_IN_SRAM && des == ALLOCATE_IN_NVM))
@@ -457,6 +458,13 @@ void CerebronPredictor::printConfig(std::ostream& out, std::string entete) {
 		out << p << ",";
 	out << endl;	
 
+	out << entete << ":CerebronPredictor:CostModel" << endl;
+	out << entete << ":CerebronPredictor:ShortRead\t" << m_costAccess[RD_SHORT][false] << endl; 		
+	out << entete << ":CerebronPredictor:ShortWrite\t" << m_costAccess[RD_SHORT][true] << endl; 		
+	out << entete << ":CerebronPredictor:MediumRead\t" << m_costAccess[RD_MEDIUM][false] << endl; 		
+	out << entete << ":CerebronPredictor:MediumWrite\t" << m_costAccess[RD_MEDIUM][true] << endl; 		
+	
+
 	Predictor::printConfig(out, entete);
 }
 
@@ -518,7 +526,7 @@ void
 CerebronPredictor::drawFeatureMaps()
 {
 
-	ofstream file("output_Cerebron.out");
+	ofstream file("output_PHC.out");
 	for(unsigned i = 0 ; i < stats_global_error.size() ; i++)
 	{
 		for(unsigned j =  0 ; j < stats_global_error[i].size() ; j++)
@@ -529,7 +537,7 @@ CerebronPredictor::drawFeatureMaps()
 	}
 	file.close();
 
-	ofstream file1("output_Cerebron1.out");
+	ofstream file1("output_PHC1.out");
 	for(unsigned i = 0 ; i < stats_local_error.size() ; i++)
 	{
 		for(unsigned j =  0 ; j < stats_local_error[i].size() ; j++)

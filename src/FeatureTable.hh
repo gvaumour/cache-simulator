@@ -49,7 +49,7 @@ class FeatureTable
 //		int getAllocationPrediction(int index);
 //		int getBypassPrediction(int index);
 
-		int getConfidence(int index);
+		int getConfidence(int index, bool isLegal);
 
 		void openNewTimeFrame();
 		void finishSimu();

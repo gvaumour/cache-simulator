@@ -43,10 +43,11 @@ PHCPredictor::PHCPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SR
 	}
 		
 	m_costAccess = vector< vector<int> >(NUM_RW_TYPE , vector<int>(NUM_RD_TYPE, 0));
-	m_costAccess[true][RD_MEDIUM] = -20;
-	m_costAccess[false][RD_MEDIUM] = -30;
-	m_costAccess[true][RD_SHORT] = +2;
-	m_costAccess[false][RD_SHORT] = 0;
+	m_costAccess[true][RD_MEDIUM] = simu_parameters.PHC_cost_mediumWrite;
+	m_costAccess[false][RD_MEDIUM] = simu_parameters.PHC_cost_mediumRead;
+	m_costAccess[true][RD_SHORT] = simu_parameters.PHC_cost_shortWrite;
+	m_costAccess[false][RD_SHORT] = simu_parameters.PHC_cost_shortRead;
+	
 //	m_costAccess[true][RD_NOT_ACCURATE] = -30;
 //	m_costAccess[false][RD_NOT_ACCURATE] = -30;
 		
@@ -165,7 +166,7 @@ PHCPredictor::allocateInNVM(uint64_t set, Access element)
 	for(unsigned i = 0 ; i < m_features.size() ; i++)
 	{
 		int hash = m_features_hash[i](element.block_addr , element.m_pc);
-		sum_pred += m_features[i]->getConfidence(hash);
+		sum_pred += m_features[i]->getAllocationPrediction(hash);
 	}
 	if( abs(sum_pred) < simu_parameters.perceptron_allocation_threshold )
 	{
@@ -225,7 +226,7 @@ PHCPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access e
 		
 
 	/** Training learning cache lines */ 
-	if(entry->isLearning)
+	/*if(entry->isLearning)
 	{
 //		cout << "Insertion Learning Cache line 0x" << std::hex << element.block_addr << endl;
 		if( element.isSRAMerror)
@@ -236,6 +237,21 @@ PHCPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access e
 		else 
 			entry->cost_value = m_costAccess[element.isWrite()][RD_SHORT];
 	}
+	*/
+	for(unsigned i = 0 ; i < m_features.size() ; i++)
+	{
+		int hash = m_features_hash[i](element.block_addr , element.m_pc);
+		int pred = m_features[i]->getAllocationPrediction(hash);		
+		allocDecision des = ALLOCATE_IN_SRAM;
+		if( abs(pred) < simu_parameters.perceptron_allocation_threshold)
+			des = element.isWrite() ? ALLOCATE_IN_SRAM : ALLOCATE_IN_NVM;
+		if(pred > 0 )
+			des = ALLOCATE_IN_NVM;
+			
+		entry->PHC_allocation_pred[i] = des; 
+	}
+	entry->cost_value = m_costAccess[element.isWrite()][RD_SHORT];
+
 			
 	Predictor::insertionPolicy(set , index , inNVM , element);
 }
@@ -300,11 +316,12 @@ int PHCPredictor::evictPolicy(int set, bool inNVM)
 			for(unsigned i = 0; i < m_features.size() ; i++)
 			{
 				int hash = m_features_hash[i](entry->address , entry->m_pc);
-				int confidence = m_features[i]->getConfidence(hash);
+				allocDecision alloc_pred = entry->PHC_allocation_pred[i];
+				
 				bool local_error = false;
-				if( ALLOCATE_IN_NVM && confidence > simu_parameters.perceptron_allocation_threshold)
+				if( des == ALLOCATE_IN_NVM && alloc_pred == ALLOCATE_IN_SRAM)
 					local_error = true;
-				else if(  ALLOCATE_IN_SRAM && confidence < simu_parameters.perceptron_allocation_threshold )
+				else if( des == ALLOCATE_IN_SRAM && alloc_pred == ALLOCATE_IN_NVM )
 				 	local_error = true;
 				 					
 				if(local_error)	
@@ -319,7 +336,7 @@ int PHCPredictor::evictPolicy(int set, bool inNVM)
 				for(unsigned i = 0; i < m_features.size() ; i++)
 				{
 					int hash = m_features_hash[i](entry->address , entry->m_pc);
-					m_features[i]->decreaseConfidence(hash);
+					m_features[i]->decreaseAlloc(hash);
 				}
 			}			
 			else
@@ -327,7 +344,7 @@ int PHCPredictor::evictPolicy(int set, bool inNVM)
 				for(unsigned i = 0; i < m_features.size() ; i++)
 				{
 					int hash = m_features_hash[i](entry->address , entry->m_pc);
-					m_features[i]->increaseConfidence(hash);
+					m_features[i]->increaseAlloc(hash);
 				}
 			}
 		}

@@ -58,7 +58,7 @@ FeatureTable::FeatureTable( int size, string name, bool isBP)
 		stats_heatmap = vector<vector<int> >(m_size, vector<int>());
 //		stats_frequencymap = vector<vector<int> >(m_size, vector<int>());
 		stats_history_buffer = vector<vector<int> >(m_size, vector<int>());
-		stats_errorMap = vector< vector<int> >(m_size , vector<int>(1 , 0));
+//		stats_errorMap = vector< vector<int> >(m_size , vector<int>(1 , 0));
 	}
 }
 
@@ -129,11 +129,11 @@ FeatureTable::getAllocationPrediction(int index)
 
 
 int
-FeatureTable::getConfidence(int index)
+FeatureTable::getConfidence(int index, bool isLegal)
 {
 	int result = lookup(index)->weight;
 	
-	if(simu_parameters.perceptron_drawFeatureMaps)
+	if(simu_parameters.perceptron_drawFeatureMaps && isLegal)
 		stats_history_buffer[index].push_back(result);
 			
 	return result;
@@ -161,8 +161,10 @@ FeatureTable::increaseConfidence(int index)
 void
 FeatureTable::registerError(int index , bool isError)
 {
+	/*
 	if(isError)
 		stats_errorMap[index][stats_errorMap.size()-1]++;
+	*/
 }
 
 
@@ -196,7 +198,7 @@ FeatureTable::openNewTimeFrame()
 //		stats_frequencymap[i].push_back(stats_history_buffer[i].size());
 		stats_history_buffer[i].clear();
 
-		stats_errorMap[i].push_back(0);
+//		stats_errorMap[i].push_back(0);
 	}
 
 	
