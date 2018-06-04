@@ -175,6 +175,10 @@ int main(int argc , char* argv[]){
 		{	i++;
 			simu_parameters.PHC_cost_shortRead = atoi(argv[i]);
 		}
+		else if(string(argv[i]) == "--test")
+		{	i++;
+			simu_parameters.test = atoi(argv[i]);
+		}
 		else if(string(argv[i]) == "--PHC-costMediumRead")
 		{	i++;
 			simu_parameters.PHC_cost_mediumRead = atoi(argv[i]);

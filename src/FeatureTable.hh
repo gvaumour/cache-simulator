@@ -66,7 +66,7 @@ class FeatureTable
 
 		void decreaseAlloc(int index);
 		void increaseAlloc(int index);
-		int getAllocationPrediction(int index);
+		int getAllocationPrediction(int index, bool isLegal);
 		
 //		std::vector< std::vector<int> > resize_image(std::vector< std::vector<int> >& img);
 
@@ -78,10 +78,10 @@ class FeatureTable
 		int m_counter_size;
 		
 		std::vector<FeatureEntry*> m_table;
-		std::vector< std::vector<int> > stats_heatmap;
-//		std::vector< std::vector<int> > stats_frequencymap;
-		std::vector< std::vector<int> > stats_history_buffer;
-		std::vector< std::vector<int> > stats_errorMap;
+		std::vector< std::vector<int> > stats_heatmap_weight;
+		std::vector< std::vector<int> > stats_heatmap_allocation;
+		std::vector< std::vector<int> > stats_allocation_buffer;
+		std::vector< std::vector<int> > stats_weight_buffer;
 };		
 
 

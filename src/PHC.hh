@@ -84,7 +84,7 @@ class PHCPredictor : public Predictor {
 		
 		std::vector<std::vector<int> > stats_local_error;
 		std::vector< std::vector<int> > stats_global_error;
-
+		std::vector< std::vector<int> > stats_access_class;
 };
 
 

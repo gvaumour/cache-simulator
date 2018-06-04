@@ -55,10 +55,11 @@ FeatureTable::FeatureTable( int size, string name, bool isBP)
 
 	if(simu_parameters.perceptron_drawFeatureMaps)
 	{
-		stats_heatmap = vector<vector<int> >(m_size, vector<int>());
-//		stats_frequencymap = vector<vector<int> >(m_size, vector<int>());
-		stats_history_buffer = vector<vector<int> >(m_size, vector<int>());
-//		stats_errorMap = vector< vector<int> >(m_size , vector<int>(1 , 0));
+		stats_heatmap_weight = vector<vector<int> >(m_size, vector<int>());
+		stats_heatmap_allocation = vector<vector<int> >(m_size, vector<int>());
+		stats_allocation_buffer = vector<vector<int> >(m_size, vector<int>());
+		stats_weight_buffer = vector<vector<int> >(m_size, vector<int>());
+
 	}
 }
 
@@ -121,9 +122,14 @@ FeatureTable::increaseAlloc(int index)
 }
 
 int
-FeatureTable::getAllocationPrediction(int index)
+FeatureTable::getAllocationPrediction(int index, bool isLegal = true)
 {
-	return lookup(index)->allocation_counter;
+	int result = lookup(index)->allocation_counter;
+	
+	if(simu_parameters.perceptron_drawFeatureMaps && isLegal)
+		stats_allocation_buffer[index].push_back(result);
+			
+	return result;
 }
 
 
@@ -134,7 +140,7 @@ FeatureTable::getConfidence(int index, bool isLegal)
 	int result = lookup(index)->weight;
 	
 	if(simu_parameters.perceptron_drawFeatureMaps && isLegal)
-		stats_history_buffer[index].push_back(result);
+		stats_weight_buffer[index].push_back(result);
 			
 	return result;
 }
@@ -180,57 +186,74 @@ FeatureTable::openNewTimeFrame()
 	if(!simu_parameters.perceptron_drawFeatureMaps)
 		return;
 	int avg = 0;
-	for(unsigned i = 0; i < stats_history_buffer.size() ; i++)
+	for(unsigned i = 0; i < stats_allocation_buffer.size() ; i++)
 	{
 		int sum = 0;
-		if(stats_history_buffer[i].size() != 0)
+		if(stats_allocation_buffer[i].size() != 0)
 		{
-			for(unsigned j = 0 ; j < stats_history_buffer[i].size() ; j++)
-				sum += stats_history_buffer[i][j];
+			for(unsigned j = 0 ; j < stats_allocation_buffer[i].size() ; j++)
+				sum += stats_allocation_buffer[i][j];
 
 
-			avg = sum / (int)stats_history_buffer[i].size();		
+			avg = sum / (int)stats_allocation_buffer[i].size();		
 		}
 		else 
-			avg = stats_heatmap[i].empty() ? 0 : stats_heatmap[i].back() ;
+			avg = stats_heatmap_allocation[i].empty() ? 0 : stats_heatmap_allocation[i].back() ;
 
-		stats_heatmap[i].push_back(avg);
-//		stats_frequencymap[i].push_back(stats_history_buffer[i].size());
-		stats_history_buffer[i].clear();
+		stats_heatmap_allocation[i].push_back(avg);
 
-//		stats_errorMap[i].push_back(0);
+		stats_allocation_buffer[i].clear();
 	}
 
 	
-//	stats_history_buffer = vector< vector<int> >(m_size , vector<int>());
+	for(unsigned i = 0; i < stats_weight_buffer.size() ; i++)
+	{
+		int sum = 0;
+		if(stats_weight_buffer[i].size() != 0)
+		{
+			for(unsigned j = 0 ; j < stats_weight_buffer[i].size() ; j++)
+				sum += stats_weight_buffer[i][j];
+
+
+			avg = sum / (int)stats_weight_buffer[i].size();		
+		}
+		else 
+			avg = stats_heatmap_weight[i].empty() ? 16 : stats_heatmap_weight[i].back() ;
+
+		stats_heatmap_weight[i].push_back(avg);
+
+		stats_weight_buffer[i].clear();
+	}
+
+
 }
 
 void 
 FeatureTable::finishSimu()
 {
 
-	if(!simu_parameters.perceptron_drawFeatureMaps || stats_heatmap.size() == 0)
+	if(!simu_parameters.perceptron_drawFeatureMaps || stats_heatmap_allocation.size() == 0)
 		return;
 		
 	int height = m_size;
-	int width = stats_heatmap[0].size();
+	int width = stats_heatmap_allocation[0].size();
 
 
 	if(width > IMG_WIDTH)
 	{
-		stats_heatmap = resize_image(stats_heatmap);
-//		stats_frequencymap = resize_image(stats_frequencymap);	
-		width = stats_heatmap[0].size();
+		stats_heatmap_allocation = resize_image(stats_heatmap_allocation);
+		stats_heatmap_weight = resize_image(stats_heatmap_weight);
+		width = stats_heatmap_allocation[0].size();
 	}	
 	vector< vector<int> > red = vector< vector<int> >(width, vector<int>(height, 0));
 	vector< vector<int> > blue  = red;
 	vector< vector<int> > green = red;
 	
-	for(unsigned i = 0 ; i < stats_heatmap.size(); i++)
+	for(unsigned i = 0 ; i < stats_heatmap_allocation.size(); i++)
 	{
-		for(unsigned j = 0 ; j < stats_heatmap[i].size(); j++)
+		for(unsigned j = 0 ; j < stats_heatmap_allocation[i].size(); j++)
 		{
-			int value = stats_heatmap[i][j];
+			int value = stats_heatmap_allocation[i][j];
 			
 			if(value >= 0)
 			{
@@ -247,26 +270,30 @@ FeatureTable::finishSimu()
 		}
 	}
 
-	writeBMPimage(string("heatmap_" + m_name + ".bmp") , width , height , red, blue, green );
+	writeBMPimage(string("allocation_" + m_name + ".bmp") , width , height , red, blue, green );
 	
-	/*
-	for(unsigned i = 0 ; i < stats_errorMap.size(); i++)
+	for(unsigned i = 0 ; i < stats_heatmap_weight.size(); i++)
 	{
-		for(unsigned j = 0 ; j < stats_errorMap[i].size(); j++)
+		for(unsigned j = 0 ; j < stats_heatmap_weight[i].size(); j++)
 		{
-			int value = stats_errorMap[i][j];
-			if(value > 20)
-				value = 20;
-
-				
-			red[j][i] = 255;
-			blue[j][i] = 255 - 255 * value / 100;			
-			green[j][i] = 255 - 255 * value / 100; 
+			int value = stats_heatmap_weight[i][j] - simu_parameters.perceptron_counter_size/2;
+			
+			if(value >= 0)
+			{
+				red[j][i] = 255;
+				blue[j][i] = 255 - 255 * value / 32;			
+				green[j][i] =  255 - 255 * value / 32; 
+			}
+			else
+			{
+				blue[j][i] = 255;
+				red[j][i] = 255 - 255 * -value / 32;
+				green[j][i] = 255 - 255 * -value / 32; 
+			}
 		}
 	}
 
-	writeBMPimage(string("errormap_" + m_name + ".bmp") , width , height , red, blue, green );
-	*/
+	writeBMPimage(string("weight_" + m_name + ".bmp") , width , height , red, blue, green );
 }
 
 

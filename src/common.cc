@@ -352,17 +352,18 @@ init_default_parameters()
 	
 	/*********** PHC Config ******************/ 
 	simu_parameters.PHC_features = {"MissPC_LSB"};
-	simu_parameters.PHC_cost_threshold = -5;
-	simu_parameters.PHC_cost_mediumRead = -30;
-	simu_parameters.PHC_cost_mediumWrite = -20;
-	simu_parameters.PHC_cost_shortWrite = 2;
-	simu_parameters.PHC_cost_shortRead = 0;
+	simu_parameters.PHC_cost_threshold = 0;
+	simu_parameters.PHC_cost_mediumRead = -4124;
+	simu_parameters.PHC_cost_mediumWrite = -3702;
+	simu_parameters.PHC_cost_shortWrite = 405;
+	simu_parameters.PHC_cost_shortRead = -35;
 
 	simu_parameters.nbCores = 1;
 	simu_parameters.policy = "Perceptron";
 
 	simu_parameters.saturation_threshold = 2;	
 	simu_parameters.cost_threshold = -5;
+	simu_parameters.test = 4;
 
 	simu_parameters.traceLLC = false;
 }

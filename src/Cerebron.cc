@@ -163,7 +163,7 @@ CerebronPredictor::allocateInNVM(uint64_t set, Access element)
 	{
 		int hash = m_features_hash[i](element.block_addr , element.m_pc);
 		int confidence = m_features[i]->getConfidence(hash, true);
-		allocDecision des = convertToAllocDecision(m_features[i]->getAllocationPrediction(hash) , element.isWrite() );
+		allocDecision des = convertToAllocDecision(m_features[i]->getAllocationPrediction(hash, true) , element.isWrite() );
 		
 		if( des == ALLOCATE_IN_SRAM )
 			sum_pred += (-1) * confidence;
@@ -233,7 +233,7 @@ CerebronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 	for(unsigned i = 0 ; i < m_features.size() ; i++)
 	{
 		int hash = m_features_hash[i](element.block_addr , element.m_pc);
-		int pred = m_features[i]->getAllocationPrediction(hash);		
+		int pred = m_features[i]->getAllocationPrediction(hash, true);		
 		entry->PHC_allocation_pred[i] = convertToAllocDecision(pred, element.isWrite() );
 	}
 	entry->cost_value = m_costAccess[element.isWrite()][RD_SHORT];

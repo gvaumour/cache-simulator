@@ -125,6 +125,8 @@ struct SimuParameters
 	int PHC_cost_threshold;
 	int PHC_cost_mediumRead, PHC_cost_mediumWrite;
 	int PHC_cost_shortWrite, PHC_cost_shortRead;
+	
+	int test;
 };
 
 std::vector<std::string> split(std::string s, char delimiter);

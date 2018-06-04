@@ -62,14 +62,10 @@ PHCPredictor::PHCPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SR
 	stats_nbDeadLine = vector<uint64_t>(1, 0);
 	stats_missCounter = vector<int>();
 	stats_histo_value = vector<vector<vector<int> > >( m_features.size() , vector<vector<int> >(m_tableSize, vector<int>()));
-	
+	stats_access_class = vector<vector<int> >(NUM_RD_TYPE ,  vector<int>(2, 0));	
 
-	
-	if(simu_parameters.perceptron_drawFeatureMaps)
-	{
-		stats_local_error = vector< vector<int> >(simu_parameters.PHC_features.size() , vector<int>(m_tableSize, 0));
-		stats_global_error = vector< vector<int> >(m_tableSize , vector<int>(m_tableSize , 0 ));
-	}
+	stats_local_error = vector< vector<int> >(simu_parameters.PHC_features.size() , vector<int>(m_tableSize, 0));
+	stats_global_error = vector< vector<int> >(m_tableSize , vector<int>(m_tableSize , 0 ));
 	
 	if(simu_parameters.perceptron_compute_variance)
 	{
@@ -166,7 +162,7 @@ PHCPredictor::allocateInNVM(uint64_t set, Access element)
 	for(unsigned i = 0 ; i < m_features.size() ; i++)
 	{
 		int hash = m_features_hash[i](element.block_addr , element.m_pc);
-		sum_pred += m_features[i]->getAllocationPrediction(hash);
+		sum_pred += m_features[i]->getAllocationPrediction(hash, true);
 	}
 	if( abs(sum_pred) < simu_parameters.perceptron_allocation_threshold )
 	{
@@ -197,9 +193,12 @@ PHCPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access elem
 	CacheEntry *entry = get_entry(set , index , inNVM);
 	entry->policyInfo = m_cpt++;
 
+
+	RD_TYPE rd_type = classifyRD( set , index , inNVM );
+	stats_access_class[rd_type][element.isWrite()]++;
+
 	if(entry->isLearning)
 	{
-		RD_TYPE rd_type = classifyRD( set , index , inNVM );
 		entry->cost_value += m_costAccess[element.isWrite()][rd_type];
 //		cout << "UpdatePolicy Learning Cache line 0x" << std::hex << element.block_addr
 //			<< std::dec << " Cost Value " << entry->cost_value << endl;
@@ -220,37 +219,51 @@ PHCPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access e
 	CacheEntry* entry = get_entry(set , index , inNVM);
 	entry->policyInfo = m_cpt++;
 
+	RD_TYPE rd = RD_NOT_ACCURATE;
+	
 	stats_allocate++;
 	if( element.isSRAMerror)
+	{
+		rd = RD_MEDIUM;	
 		stats_cptSRAMerror++;
+	}
 		
-
+	stats_access_class[rd][element.isWrite()]++;
+	
 	/** Training learning cache lines */ 
 	/*if(entry->isLearning)
 	{
 //		cout << "Insertion Learning Cache line 0x" << std::hex << element.block_addr << endl;
-		if( element.isSRAMerror)
-		{
-			entry->cost_value = missingTagCostValue(element.block_addr , set) +  m_costAccess[element.isWrite()][RD_MEDIUM];
-			stats_cptLearningSRAMerror++;		
-		}
-		else 
-			entry->cost_value = m_costAccess[element.isWrite()][RD_SHORT];
-	}
 	*/
+/*
+	string alloc = inNVM ? "NVM" : "SRAM";
+	cout << "Insertion Block addr = 0x" << std::hex << element.block_addr << std::dec << " in " << alloc << "; Prediction per feature:" << endl;
+*/
 	for(unsigned i = 0 ; i < m_features.size() ; i++)
 	{
 		int hash = m_features_hash[i](element.block_addr , element.m_pc);
-		int pred = m_features[i]->getAllocationPrediction(hash);		
+		int pred = m_features[i]->getAllocationPrediction(hash, true);		
 		allocDecision des = ALLOCATE_IN_SRAM;
 		if( abs(pred) < simu_parameters.perceptron_allocation_threshold)
 			des = element.isWrite() ? ALLOCATE_IN_SRAM : ALLOCATE_IN_NVM;
 		if(pred > 0 )
 			des = ALLOCATE_IN_NVM;
 			
+//		cout << "\t- " << m_criterias_names[i] << " : " << allocDecision_str[des]  << ", " << hash  << ", " << pred << endl; 
 		entry->PHC_allocation_pred[i] = des; 
 	}
-	entry->cost_value = m_costAccess[element.isWrite()][RD_SHORT];
+	if( element.isSRAMerror)
+	{
+		for(unsigned i = 0 ; i < m_features.size() ; i++)
+		{
+			int hash = m_features_hash[i](element.block_addr , element.m_pc);
+			m_features[i]->increaseAlloc(hash);			
+		}
+		entry->cost_value = missingTagCostValue(element.block_addr , set) +  m_costAccess[element.isWrite()][RD_MEDIUM];
+		stats_cptLearningSRAMerror++;		
+	}
+	else
+		entry->cost_value = m_costAccess[element.isWrite()][RD_SHORT];
 
 			
 	Predictor::insertionPolicy(set , index , inNVM , element);
@@ -296,13 +309,15 @@ int PHCPredictor::evictPolicy(int set, bool inNVM)
 
 	if(entry->isValid )
 	{
-//		cout << "Eviction Learning Cache line 0x" << std::hex << entry->address << " Value = " << entry->cost_value << endl;
-	
+		/*
+		string alloc = inNVM ? "NVM" : "SRAM";
+		cout << "Eviction Block 0x" << std::hex << entry->address << std::dec << " from " << alloc << " Cost Value = " << entry->cost_value << endl;
+		*/
 		if(simu_parameters.perceptron_drawFeatureMaps)
 		{
 			bool global_error = false;
 			allocDecision des = entry->cost_value > simu_parameters.PHC_cost_threshold ? ALLOCATE_IN_SRAM : ALLOCATE_IN_NVM;
-			
+			//cout << "\t Evaluated allocation = " << allocDecision_str[des] << " , cost Value = " << entry->cost_value << endl;
 			if(( des == ALLOCATE_IN_SRAM && inNVM ) || \
 				( des == ALLOCATE_IN_NVM && !inNVM ))
 				global_error = true;
@@ -311,6 +326,8 @@ int PHCPredictor::evictPolicy(int set, bool inNVM)
 				int hash1 = m_features_hash[0](entry->address , entry->m_pc);
 				int hash2 = (m_features.size() > 1) ? m_features_hash[1](entry->address , entry->m_pc) : 0;
 				stats_global_error[hash1][hash2]++;
+				//cout << "\tGlobal Error Detected features[" << hash1 << "][" << hash2 << "]" << endl; 
+
 			}
 		
 			for(unsigned i = 0; i < m_features.size() ; i++)
@@ -323,9 +340,14 @@ int PHCPredictor::evictPolicy(int set, bool inNVM)
 					local_error = true;
 				else if( des == ALLOCATE_IN_SRAM && alloc_pred == ALLOCATE_IN_NVM )
 				 	local_error = true;
-				 					
-				if(local_error)	
+				 
+						
+				if(local_error)
+				{
 					stats_local_error[i][hash]++;
+					/*cout << "\tLocal Error detected, " << m_criterias_names[i] << std::dec << \
+						"[" << hash << "] = " << allocDecision_str[alloc_pred] << endl; */
+				}	
 			}
 
 		}	
@@ -333,18 +355,25 @@ int PHCPredictor::evictPolicy(int set, bool inNVM)
 		{
 			if(entry->cost_value > simu_parameters.PHC_cost_threshold)
 			{
+				//cout << "Decrease allocation counter" << endl; 
 				for(unsigned i = 0; i < m_features.size() ; i++)
 				{
 					int hash = m_features_hash[i](entry->address , entry->m_pc);
 					m_features[i]->decreaseAlloc(hash);
+					/*cout << "\t - Feature " << m_criterias_names[i] << std::dec << ": Hash=" \
+						<< hash  << ", Alloc=" << m_features[i]->getAllocationPrediction(hash, false) << endl; */
+
 				}
 			}			
 			else
 			{
+				//cout << "Increase allocation counter" << endl; 
 				for(unsigned i = 0; i < m_features.size() ; i++)
 				{
 					int hash = m_features_hash[i](entry->address , entry->m_pc);
 					m_features[i]->increaseAlloc(hash);
+					/*cout << "\t - Feature " << m_criterias_names[i] << std::dec << ": Hash=" \
+						<< hash  << ", Alloc" << m_features[i]->getAllocationPrediction(hash, false) << endl; */
 				}
 			}
 		}
@@ -373,25 +402,20 @@ PHCPredictor::printStats(std::ostream& out, std::string entete) {
 		total_BP+= stats_nbBPrequests[i];		
 		total_DeadLines += stats_nbDeadLine[i];
 	}
-	/*
-	ofstream file(FILE_OUTPUT_PHC);	
-	for(unsigned i = 0 ; i < stats_histo_value.size() ; i++)
-	{
-		file << "Feature : " <<  m_criterias_names[i] << endl;
-		for(unsigned j = 0 ; j < stats_histo_value[i].size() ; j++)
-		{
-			file << "Index " << j << "\t";
-			for(auto cost : stats_histo_value[i][j])
-				file << cost << ", ";
-			file << endl;
-		}
-		
-		
-		file << "-------------" << endl;
-		file << endl;
-	}*/
 	
-//	file.close();
+	uint64_t global_errors = 0;
+	for(unsigned i = 0 ; i < stats_global_error.size() ; i++)
+	{
+		for(unsigned j = 0; j < stats_global_error[i].size(); j++)
+			global_errors += stats_global_error[i][j];
+	}
+	
+	vector<int> local_errors = vector<int>(m_features.size() , 0);
+	for(unsigned i = 0 ; i < stats_local_error[0].size(); i++)
+	{
+		for(unsigned j = 0 ; j < stats_local_error.size() ; j++)
+			local_errors[j] += stats_local_error[j][i];
+	}
 	
 	out << entete << ":PHCPredictor:PredictionPreemptive\t" << stats_prediction_preemptive << endl;
 	out << entete << ":PHCPredictor:PredictionConfident\t" << stats_prediction_confident << endl;
@@ -403,7 +427,21 @@ PHCPredictor::printStats(std::ostream& out, std::string entete) {
 	out << entete << ":PHCPredictor:Update\t" << stats_update_learning + stats_update << endl;
 	out << entete << ":PHCPredictor:SRAMerror\t" << stats_cptSRAMerror << endl;
 	out << entete << ":PHCPredictor:LearningSRAMerror\t" << stats_cptLearningSRAMerror << endl;
+	
 
+	out << entete << ":PHCPredictor:AccessClassification" << endl;
+	for(unsigned i = 0 ; i < stats_access_class.size() ; i++)
+	{
+		if(stats_access_class[i][0] != 0 || stats_access_class[i][1] != 1)
+		{
+			out << entete << ":PHCPredictor:Read" <<  str_RD_status[i]	<< "\t" << stats_access_class[i][false] << endl;	
+			out << entete << ":PHCPredictor:Write" << str_RD_status[i] << "\t" << stats_access_class[i][true] << endl; 		
+		}
+	}
+	
+	for(unsigned j = 0 ; j < m_features.size() ; j++)
+		out << entete << ":PHCPredictor:" << m_criterias_names[j] << "_errors\t" << local_errors[j] << endl;
+	out << entete << ":PHCPredictor:GlobalErrors\t" << global_errors << endl; 
 	Predictor::printStats(out, entete);
 }
 
@@ -536,7 +574,7 @@ PHCPredictor::classifyRD(int set , int index, bool inNVM)
 
 	if(simu_parameters.nvm_assoc > simu_parameters.sram_assoc)
 	{
-		if(position < simu_parameters.sram_assoc)
+		if(position < simu_parameters.test)
 			return RD_SHORT;
 		else
 			return RD_MEDIUM;	
