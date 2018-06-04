@@ -237,6 +237,21 @@ CerebronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 		entry->PHC_allocation_pred[i] = convertToAllocDecision(pred, element.isWrite() );
 	}
 	entry->cost_value = m_costAccess[element.isWrite()][RD_SHORT];
+		if( element.isSRAMerror)
+	{
+		for(unsigned i = 0 ; i < m_features.size() ; i++)
+		{
+			int hash = m_features_hash[i](element.block_addr , element.m_pc);
+			m_features[i]->increaseAlloc(hash);			
+		}
+		entry->cost_value = missingTagCostValue(element.block_addr , set) +  m_costAccess[element.isWrite()][RD_MEDIUM];
+		stats_cptLearningSRAMerror++;		
+	}
+	else
+		entry->cost_value = m_costAccess[element.isWrite()][RD_SHORT];
+
+
+	
 //		}
 //	}
 			
