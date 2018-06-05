@@ -54,7 +54,7 @@ class FeatureTable
 		void openNewTimeFrame();
 		void finishSimu();
 		void recordEvict(int index , bool hasBeenReused);		
-		void recordAccess(int index, Access element, RD_TYPE rd);
+		void recordAccess(int index, bool isWrite, RD_TYPE rd);
 
 //		void decreaseBPConfidence(int index);
 //		void increaseBPConfidence(int index);
@@ -67,6 +67,7 @@ class FeatureTable
 		void decreaseAlloc(int index);
 		void increaseAlloc(int index);
 		int getAllocationPrediction(int index, bool isLegal);
+		allocDecision getAllocDecision(int index, bool isWrite);
 		
 //		std::vector< std::vector<int> > resize_image(std::vector< std::vector<int> >& img);
 

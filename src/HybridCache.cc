@@ -103,7 +103,7 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		assert(false && "Cannot initialize predictor for HybridCache");
 	}
 	
-	if(m_ID == -1 && ( m_policy == "Perceptron" || m_policy == "PHC") )
+	if(m_ID == -1)
 	{
 		int constituency = m_nb_set / simu_parameters.nb_sampled_sets;
 		int index = 0;

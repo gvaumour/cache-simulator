@@ -77,6 +77,7 @@ class CerebronPredictor : public Predictor {
 
 		uint64_t stats_update , stats_update_learning;
 		uint64_t stats_allocate , stats_allocate_learning;
+		uint64_t stats_good_alloc, stats_wrong_alloc;
 		
 		uint64_t stats_cptLearningSRAMerror, stats_cptSRAMerror;
 			
@@ -85,7 +86,6 @@ class CerebronPredictor : public Predictor {
 
 		std::vector<std::vector<int> > stats_local_error;
 		std::vector< std::vector<int> > stats_global_error;
-
 		std::vector< std::vector<int> > stats_access_class;
 };
 

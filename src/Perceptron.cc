@@ -263,7 +263,7 @@ PerceptronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acce
 		for(unsigned i = 0 ; i < m_Allocation_features.size() ; i++)
 		{
 			int hash = m_Allocation_features_hash[i](entry->address , entry->m_pc);
-			m_Allocation_features[i]->recordAccess( hash  , element , rd_type);
+			m_Allocation_features[i]->recordAccess( hash  , element.isWrite() , rd_type);
 		}
 	}
 
@@ -316,7 +316,7 @@ PerceptronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, A
 		for(unsigned i = 0 ; i < m_Allocation_features.size() ; i++)
 		{
 			int hash = m_Allocation_features_hash[i](current->address , current->m_pc);
-			m_Allocation_features[i]->recordAccess( hash  , element , rd_type);
+			m_Allocation_features[i]->recordAccess( hash  , element.isWrite() , rd_type);
 		}
 	}
 			

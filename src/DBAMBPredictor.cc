@@ -813,14 +813,11 @@ DBAMBPredictor::determineStatus(DHPEntry* entry)
 	
 	/* Determination of the rd type */
 //	int window_rd = entry->rd_history.size();
-
-	vector<int> cpts_rd = vector<int>(NUM_RD_TYPE,0);
-	
-	for(auto rd : entry->rd_history)
-		cpts_rd[rd]++;
-		
-
-	
+//	vector<int> cpts_rd = vector<int>(NUM_RD_TYPE,0);
+//	
+//	for(auto rd : entry->rd_history)
+//		cpts_rd[rd]++;
+//		
 //	int max = 0, index_max = -1;
 //	for(unsigned i = 0 ; i < cpts_rd.size() ; i++)
 //	{

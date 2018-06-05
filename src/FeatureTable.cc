@@ -77,7 +77,7 @@ FeatureTable::lookup(int index)
 }	
 
 void 
-FeatureTable::recordAccess(int index, Access element, RD_TYPE rd)
+FeatureTable::recordAccess(int index, bool isWrite, RD_TYPE rd)
 {
 	FeatureEntry* feature_entry = lookup(index);
 	
@@ -89,7 +89,7 @@ FeatureTable::recordAccess(int index, Access element, RD_TYPE rd)
 		feature_entry->isValid = true;
 	}
 
-	if( element.isWrite() ) 
+	if( isWrite ) 
 		feature_entry->cpts[WRITE_ACCESS][rd]++;
 	else
 		feature_entry->cpts[READ_ACCESS][rd]++;
@@ -99,6 +99,32 @@ FeatureTable::recordAccess(int index, Access element, RD_TYPE rd)
 	if(feature_entry->cptWindow >= simu_parameters.perceptron_windowSize)
 		feature_entry->updateDatasetState();
 }
+
+
+allocDecision
+FeatureTable::getAllocDecision(int index, bool isWrite)
+{
+	FeatureEntry* entry = lookup(index);
+	allocDecision result = entry->des;
+	
+	if(result == ALLOCATE_PREEMPTIVELY)
+	{
+		if(isWrite)
+			result = ALLOCATE_IN_NVM;
+		else 
+			result = ALLOCATE_IN_SRAM;
+	}
+
+	if(simu_parameters.perceptron_drawFeatureMaps)
+	{
+		int sign = result == ALLOCATE_IN_NVM ? -1 : +1;
+		stats_allocation_buffer[index].push_back( sign * 32);
+	}
+
+
+	return result;
+}
+
 
 
 void 
@@ -126,8 +152,8 @@ FeatureTable::getAllocationPrediction(int index, bool isLegal = true)
 {
 	int result = lookup(index)->allocation_counter;
 	
-	if(simu_parameters.perceptron_drawFeatureMaps && isLegal)
-		stats_allocation_buffer[index].push_back(result);
+//	if(simu_parameters.perceptron_drawFeatureMaps && isLegal)
+//		stats_allocation_buffer[index].push_back(result);
 			
 	return result;
 }
