@@ -202,7 +202,7 @@ class CacheEntry{
 		std::vector<int> perceptron_AllocHash;
 
 		std::vector<bool> predictedReused;
-		std::vector<allocDecision> PHC_allocation_pred;
+		std::vector< std::pair<int,allocDecision> > PHC_allocation_pred;
 		
 		int nbWrite;
 		int nbRead;

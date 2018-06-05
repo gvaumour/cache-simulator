@@ -304,6 +304,13 @@ init_default_parameters()
 	simu_parameters.nvm_assoc = 12;
 	simu_parameters.nb_sets = 2048;
 	simu_parameters.nb_sampled_sets = 64;
+	
+	simu_parameters.saturation_threshold = 2;	
+	simu_parameters.cost_threshold = -5;
+	
+	simu_parameters.mediumrd_def = 4;
+
+	simu_parameters.traceLLC = false;
 
 	/********* DBAMB Config *************/ 
 	simu_parameters.window_size = 20; 
@@ -358,14 +365,12 @@ init_default_parameters()
 	simu_parameters.PHC_cost_shortWrite = 405;
 	simu_parameters.PHC_cost_shortRead = -35;
 
+	/************ Cerebron Config ************/ 
+	simu_parameters.Cerebron_activation_function = "linear";
+	simu_parameters.Cerebron_independantLearning = false;
 	simu_parameters.nbCores = 1;
-	simu_parameters.policy = "Perceptron";
+	simu_parameters.policy = "Cerebron";
 
-	simu_parameters.saturation_threshold = 2;	
-	simu_parameters.cost_threshold = -5;
-	simu_parameters.test = 4;
-
-	simu_parameters.traceLLC = false;
 }
 
 

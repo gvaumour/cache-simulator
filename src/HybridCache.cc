@@ -185,7 +185,8 @@ HybridCache::initializeLearningCl(CacheEntry* entry)
 
 	if(m_policy == "PHC" || m_policy == "Cerebron")
 	{
-		entry->PHC_allocation_pred = vector<allocDecision>(simu_parameters.PHC_features.size() , ALLOCATE_IN_SRAM);
+		entry->PHC_allocation_pred = vector< pair<int,allocDecision> >(simu_parameters.PHC_features.size()\
+			 , pair<int,allocDecision>(0, ALLOCATE_IN_SRAM) );
 	}
 }
 

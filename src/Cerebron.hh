@@ -38,7 +38,9 @@ class CerebronPredictor : public Predictor {
 		void finishSimu();
 		
 		
+		allocDecision activationFunction(Access element);
 		allocDecision convertToAllocDecision(int alloc_counter, bool isLearning);
+		
 		RD_TYPE classifyRD(int set , int index , bool inNVM);
 		CacheEntry* get_entry(uint64_t set , uint64_t index , bool inNVM);
 
@@ -56,6 +58,7 @@ class CerebronPredictor : public Predictor {
 		std::vector<FeatureTable*> m_features;
 		std::vector<hashing_function> m_features_hash;
 		std::vector<std::string> m_criterias_names;
+		std::string m_activation_function;
 
 		std::vector< std::vector<int> > m_costAccess;
 

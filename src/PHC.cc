@@ -250,7 +250,9 @@ PHCPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access e
 			des = ALLOCATE_IN_NVM;
 			
 //		cout << "\t- " << m_criterias_names[i] << " : " << allocDecision_str[des]  << ", " << hash  << ", " << pred << endl; 
-		entry->PHC_allocation_pred[i] = des; 
+		entry->PHC_allocation_pred[i].second = des; 
+		entry->PHC_allocation_pred[i].first = hash; 
+		
 	}
 	if( element.isSRAMerror)
 	{
@@ -333,7 +335,7 @@ int PHCPredictor::evictPolicy(int set, bool inNVM)
 			for(unsigned i = 0; i < m_features.size() ; i++)
 			{
 				int hash = m_features_hash[i](entry->address , entry->m_pc);
-				allocDecision alloc_pred = entry->PHC_allocation_pred[i];
+				allocDecision alloc_pred = entry->PHC_allocation_pred[i].second;
 				
 				bool local_error = false;
 				if( des == ALLOCATE_IN_NVM && alloc_pred == ALLOCATE_IN_SRAM)
@@ -574,7 +576,7 @@ PHCPredictor::classifyRD(int set , int index, bool inNVM)
 
 	if(simu_parameters.nvm_assoc > simu_parameters.sram_assoc)
 	{
-		if(position < simu_parameters.test)
+		if(position < simu_parameters.mediumrd_def)
 			return RD_SHORT;
 		else
 			return RD_MEDIUM;	

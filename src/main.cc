@@ -174,10 +174,10 @@ int main(int argc , char* argv[]){
 		else if(string(argv[i]) == "--PHC-costShortRead")
 		{	i++;
 			simu_parameters.PHC_cost_shortRead = atoi(argv[i]);
-		}
-		else if(string(argv[i]) == "--test")
+		}		
+		else if(string(argv[i]) == "--MediumRD-def")
 		{	i++;
-			simu_parameters.test = atoi(argv[i]);
+			simu_parameters.mediumrd_def = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--PHC-costMediumRead")
 		{	i++;
@@ -188,6 +188,19 @@ int main(int argc , char* argv[]){
 			simu_parameters.PHC_features.clear();
 			simu_parameters.PHC_features = split(string(argv[i]) , ',');
 		}
+		else if(string(argv[i]) == "--PHC-Features")
+		{	i++;
+			simu_parameters.PHC_features.clear();
+			simu_parameters.PHC_features = split(string(argv[i]) , ',');
+		}
+		else if(string(argv[i]) == "--Cerebron-function")
+		{	i++;
+			simu_parameters.Cerebron_activation_function = string(argv[i]);
+		}
+		else if(string(argv[i]) == "--Cerebron-independantLearning")
+		{	i++;
+			simu_parameters.Cerebron_independantLearning = true;
+		}		
 		else if(string(argv[i]) == "--Perceptron-Alloc-Features")
 		{	i++;
 			simu_parameters.perceptron_Allocation_features.clear();

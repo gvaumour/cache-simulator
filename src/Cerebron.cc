@@ -35,6 +35,9 @@ CerebronPredictor::CerebronPredictor(int nbAssoc , int nbSet, int nbNVMways, Dat
 	cout << endl;
 
 
+	m_activation_function = simu_parameters.Cerebron_activation_function;
+	if(m_activation_function != "linear" && m_activation_function != "max")
+		assert(false && "Wrong Activation function for the Cerebron predictor");
 	
 	if(m_need_callee_file)
 	{
@@ -159,20 +162,8 @@ CerebronPredictor::allocateInNVM(uint64_t set, Access element)
 	
 	// All the set is a learning/sampled set independantly of its way or SRAM/NVM alloc
 	//bool isLearning = m_tableSRAM[set][0]->isLearning; 
-
-	int sum_pred = 0;
-	for(unsigned i = 0 ; i < m_features.size() ; i++)
-	{
-		int hash = m_features_hash[i](element.block_addr , element.m_pc);
-		int confidence = m_features[i]->getConfidence(hash, true);
-		allocDecision des = m_features[i]->getAllocDecision(hash, element.isWrite());
-		
-		if( des == ALLOCATE_IN_SRAM )
-			sum_pred += (-1) * confidence;
-		else
-			sum_pred += confidence;
-	}
-	return convertToAllocDecision(sum_pred, element.isWrite());
+	
+	return activationFunction(element);
 }
 
 
@@ -194,22 +185,16 @@ CerebronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 	/** Training learning cache lines */ 
 	if(entry->isLearning)
 	{
-	
-//		cout << "Insertion Learning Cache line 0x" << std::hex << element.block_addr << endl;
 		for(unsigned i = 0 ; i < m_features.size() ; i++)
 		{
 			int hash = m_features_hash[i](element.block_addr , element.m_pc);
+			entry->PHC_allocation_pred[i] = pair<int,allocDecision>(hash, m_features[i]->getAllocDecision(hash, element.isWrite()));
 			m_features[i]->recordAccess(hash, element.isWrite() , rd);		
 		}
 		
 		entry->cost_value = m_costAccess[element.isWrite()][RD_SHORT];	
 		if( element.isSRAMerror)
 		{
-//			for(unsigned i = 0 ; i < m_features.size() ; i++)
-//			{
-//				int hash = m_features_hash[i](element.block_addr , element.m_pc);
-//				m_features[i]->increaseAlloc(hash);			
-//			}
 			entry->cost_value = missingTagCostValue(element.block_addr , set) +  m_costAccess[element.isWrite()][RD_MEDIUM];
 			stats_cptLearningSRAMerror++;		
 		}
@@ -280,7 +265,7 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 	if(simu_parameters.perceptron_drawFeatureMaps)
 	{
 		bool global_error = false;
-		allocDecision des = entry->cost_value > simu_parameters.PHC_cost_threshold ? ALLOCATE_IN_SRAM : ALLOCATE_IN_NVM;
+		allocDecision des = entry->cost_value > 0 ? ALLOCATE_IN_SRAM : ALLOCATE_IN_NVM;
 		
 		if(( des == ALLOCATE_IN_SRAM && inNVM ) || \
 			( des == ALLOCATE_IN_NVM && !inNVM ))
@@ -297,9 +282,9 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 			int hash = m_features_hash[i](entry->address , entry->m_pc);
 
 			bool local_error = false;
-			if( des == ALLOCATE_IN_NVM && entry->PHC_allocation_pred[i] == ALLOCATE_IN_NVM)
+			if( des == ALLOCATE_IN_NVM && entry->PHC_allocation_pred[i].second == ALLOCATE_IN_SRAM)
 				local_error = true;
-			else if(  des == ALLOCATE_IN_SRAM && entry->PHC_allocation_pred[i] == ALLOCATE_IN_SRAM )
+			else if(  des == ALLOCATE_IN_SRAM && entry->PHC_allocation_pred[i].second == ALLOCATE_IN_NVM )
 			 	local_error = true;
 			 					
 			if(local_error)	
@@ -310,23 +295,44 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 
 	if( entry->isLearning)
 	{
-		if( (entry->cost_value < simu_parameters.PHC_cost_threshold && !inNVM) || \
-			(entry->cost_value > simu_parameters.PHC_cost_threshold && inNVM) )
+		
+		if( (entry->cost_value < 0 && !inNVM) || \
+			(entry->cost_value > 0 && inNVM) )
 		{
 			stats_wrong_alloc++;
-			for(unsigned i = 0; i < m_features.size() ; i++)
-			{
-				int hash = m_features_hash[i](entry->address , entry->m_pc);
-				m_features[i]->decreaseConfidence(hash);
-			}
-		}			
+		}
 		else
-		{
 			stats_good_alloc++;
+	
+		if( simu_parameters.Cerebron_independantLearning)
+		{
 			for(unsigned i = 0; i < m_features.size() ; i++)
 			{
-				int hash = m_features_hash[i](entry->address , entry->m_pc);
-				m_features[i]->increaseConfidence(hash);
+				if( (entry->cost_value < 0 && entry->PHC_allocation_pred[i].second == ALLOCATE_IN_SRAM ) || \
+				(entry->cost_value > 0 && entry->PHC_allocation_pred[i].second == ALLOCATE_IN_NVM) )
+					m_features[i]->decreaseConfidence(entry->PHC_allocation_pred[i].first);
+				else 
+					m_features[i]->increaseConfidence(entry->PHC_allocation_pred[i].first);
+			}
+		}
+		else
+		{		
+			if( (entry->cost_value < 0 && !inNVM) || \
+				(entry->cost_value > 0 && inNVM) )
+			{
+				for(unsigned i = 0; i < m_features.size() ; i++)
+				{
+					int hash = m_features_hash[i](entry->address , entry->m_pc);
+					m_features[i]->decreaseConfidence(hash);
+				}
+			}			
+			else
+			{
+				for(unsigned i = 0; i < m_features.size() ; i++)
+				{
+					int hash = m_features_hash[i](entry->address , entry->m_pc);
+					m_features[i]->increaseConfidence(hash);
+				}
 			}
 		}
 
@@ -344,6 +350,47 @@ CerebronPredictor::evictRecording( int id_set , int id_assoc , bool inNVM)
 	Predictor::evictRecording(id_set, id_assoc, inNVM);
 }
 
+
+allocDecision
+CerebronPredictor::activationFunction(Access element)
+{
+
+	if(m_activation_function == "linear")
+	{
+		int sum_pred = 0;
+		for(unsigned i = 0 ; i < m_features.size() ; i++)
+		{
+			int hash = m_features_hash[i](element.block_addr , element.m_pc);
+			int confidence = m_features[i]->getConfidence(hash, true);
+			allocDecision des = m_features[i]->getAllocDecision(hash, element.isWrite());
+		
+			if( des == ALLOCATE_IN_SRAM )
+				sum_pred += (-1) * confidence;
+			else
+				sum_pred += confidence;
+		}
+		return convertToAllocDecision(sum_pred, element.isWrite());
+	}
+	else if(m_activation_function == "max")
+	{
+		allocDecision des = ALLOCATE_IN_SRAM;
+		int max_confidence = 0;
+		for(unsigned i = 0 ; i < m_features.size() ; i++)
+		{
+			int hash = m_features_hash[i](element.block_addr , element.m_pc);
+			int confidence = m_features[i]->getConfidence(hash, true);
+			
+			if(max_confidence < confidence)
+			{
+				max_confidence = confidence;
+				des = m_features[i]->getAllocDecision(hash, element.isWrite());
+			}
+			return des;
+		}
+	}
+	
+	assert(false && "Error, should have return before");
+}
 
 allocDecision
 CerebronPredictor::convertToAllocDecision(int alloc_counter, bool isWrite)
@@ -364,6 +411,7 @@ CerebronPredictor::convertToAllocDecision(int alloc_counter, bool isWrite)
 			return ALLOCATE_IN_NVM;
 	}
 }
+
 
 void
 CerebronPredictor::update_globalPChistory(uint64_t pc)
@@ -448,6 +496,10 @@ void CerebronPredictor::printConfig(std::ostream& out, std::string entete) {
 	
 	out << entete << ":Cerebron:CostValueThreshold\t" << simu_parameters.PHC_cost_threshold  << endl;
 	out << entete << ":Cerebron:AllocationThreshold\t" << simu_parameters.perceptron_allocation_threshold  << endl;
+	out << entete << ":Cerebron:ActivationFunction\t" << simu_parameters.Cerebron_activation_function  << endl;
+	string b = simu_parameters.Cerebron_independantLearning ? "TRUE" : "FALSE";
+	out << entete << ":Cerebron:IndependantLearning\t" << b  << endl;
+	
 //	out << entete << ":Cerebron:CostLearning\t" << simu_parameters.perceptron_allocation_learning << endl; 
 	out << entete << ":Cerebron:AllocFeatures\t"; 
 	for(auto p : m_criterias_names)

@@ -125,8 +125,11 @@ struct SimuParameters
 	int PHC_cost_threshold;
 	int PHC_cost_mediumRead, PHC_cost_mediumWrite;
 	int PHC_cost_shortWrite, PHC_cost_shortRead;
+	int mediumrd_def;
 	
-	int test;
+	/****/
+	std::string Cerebron_activation_function;
+	bool Cerebron_independantLearning; 
 };
 
 std::vector<std::string> split(std::string s, char delimiter);
