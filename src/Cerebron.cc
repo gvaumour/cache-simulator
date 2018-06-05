@@ -66,8 +66,10 @@ CerebronPredictor::CerebronPredictor(int nbAssoc , int nbSet, int nbNVMways, Dat
 	
 	if(simu_parameters.perceptron_drawFeatureMaps)
 	{
-		stats_local_error = vector< vector<int> >(simu_parameters.PHC_features.size() , vector<int>(m_tableSize, 0));
-		stats_global_error = vector< vector<int> >(m_tableSize , vector<int>(m_tableSize , 0 ));
+		stats_local_error = vector< vector< pair<int,int> > >(simu_parameters.PHC_features.size() \
+		 , vector< pair<int,int> >(m_tableSize, pair<int,int>(0,0)));
+		stats_global_error = vector< vector< pair<int,int> > >(m_tableSize , \
+			vector< pair<int,int> >(m_tableSize , pair<int,int>(0,0)));
 	}
 	
 	if(simu_parameters.perceptron_compute_variance)
@@ -270,12 +272,14 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 		if(( des == ALLOCATE_IN_SRAM && inNVM ) || \
 			( des == ALLOCATE_IN_NVM && !inNVM ))
 			global_error = true;
+
+		int hash1 = m_features_hash[0](entry->address , entry->m_pc);
+		int hash2 = (m_features.size() > 1) ? m_features_hash[1](entry->address , entry->m_pc) : 0;
 		if(global_error)
-		{
-			int hash1 = m_features_hash[0](entry->address , entry->m_pc);
-			int hash2 = (m_features.size() > 1) ? m_features_hash[1](entry->address , entry->m_pc) : 0;
-			stats_global_error[hash1][hash2]++;
-		}
+			stats_global_error[hash1][hash2].first++;
+		else
+			stats_global_error[hash1][hash2].second++;
+		
 	
 		for(unsigned i = 0; i < m_features.size() ; i++)
 		{
@@ -288,7 +292,10 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 			 	local_error = true;
 			 					
 			if(local_error)	
-				stats_local_error[i][hash]++;
+				stats_local_error[i][hash].first++;
+			else 
+				stats_local_error[i][hash].second++;
+				
 		}
 
 	}		
@@ -579,7 +586,8 @@ CerebronPredictor::drawFeatureMaps()
 	{
 		for(unsigned j =  0 ; j < stats_global_error[i].size() ; j++)
 		{
-			file << stats_global_error[i][j] << ",";
+			double dummy = (double) stats_global_error[i][j].first / (double) stats_global_error[i][j].second;
+			file << dummy << ",";
 		}
 		file << endl;
 	}
@@ -590,7 +598,8 @@ CerebronPredictor::drawFeatureMaps()
 	{
 		for(unsigned j =  0 ; j < stats_local_error[i].size() ; j++)
 		{
-			file1 << stats_local_error[i][j] << ",";
+			double dummy = (double) stats_local_error[i][j].first / (double) stats_local_error[i][j].second;
+			file1 << dummy << ",";
 		}
 		file1 << endl;
 	}

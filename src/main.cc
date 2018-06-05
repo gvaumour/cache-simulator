@@ -198,9 +198,7 @@ int main(int argc , char* argv[]){
 			simu_parameters.Cerebron_activation_function = string(argv[i]);
 		}
 		else if(string(argv[i]) == "--Cerebron-independantLearning")
-		{	i++;
 			simu_parameters.Cerebron_independantLearning = true;
-		}		
 		else if(string(argv[i]) == "--Perceptron-Alloc-Features")
 		{	i++;
 			simu_parameters.perceptron_Allocation_features.clear();

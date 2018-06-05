@@ -87,8 +87,8 @@ class CerebronPredictor : public Predictor {
 		uint64_t stats_prediction_confident, stats_prediction_preemptive;
 		std::vector< std::vector< std::vector<int> > > stats_histo_value;				
 
-		std::vector<std::vector<int> > stats_local_error;
-		std::vector< std::vector<int> > stats_global_error;
+		std::vector< std::vector< std::pair<int,int> > > stats_local_error;
+		std::vector< std::vector< std::pair<int,int> > > stats_global_error;
 		std::vector< std::vector<int> > stats_access_class;
 };
 
