@@ -53,8 +53,9 @@ Predictor::Predictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtabl
 	}	 
 	/********************************************/ 
 	m_trackError = false;
-	if(m_nbNVMways != 0)
+	if(m_nbNVMways != 0 && simu_parameters.sizeMTtags != 0)
 		m_trackError = true;
+	
 
 	/* Allocation of the BP missing tags array*/
 	BP_missing_tags.resize(m_nb_set);
@@ -67,15 +68,15 @@ Predictor::Predictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtabl
 		}
 	}
 
-
-
+	m_assoc_MT = simu_parameters.sizeMTtags;
+	
 	if(m_trackError){
 	
 		/* Allocation of the SRAM missing tags array*/
 		m_missing_tags.clear();
 		m_missing_tags.resize(m_nb_set);
 		//int assoc_MT = m_nbNVMways - m_nbSRAMways;
-		m_assoc_MT = simu_parameters.sizeMTtags;
+
 		for(int i = 0 ; i < m_nb_set; i++)
 		{
 			m_missing_tags[i].resize(m_assoc_MT);
@@ -452,8 +453,7 @@ void
 Predictor::printConfig(std::ostream& out, std::string entete)
 {
 //	out << entete << ":Predictor" << endl;
-	if(m_trackError)
-		out << entete << ":Predictor:SizeMTarray:\t" << m_assoc_MT << endl;	
+	out << entete << ":Predictor:SizeMTarray:\t" << m_assoc_MT << endl;	
 //	else
 //		out << entete << ":Predictor:TrackingEnabled\tFALSE" << endl;
 

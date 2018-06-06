@@ -586,7 +586,12 @@ CerebronPredictor::drawFeatureMaps()
 	{
 		for(unsigned j =  0 ; j < stats_global_error[i].size() ; j++)
 		{
-			double dummy = (double) stats_global_error[i][j].first / (double) stats_global_error[i][j].second;
+			double a = stats_global_error[i][j].first;
+			double b = stats_global_error[i][j].second;
+			double dummy = 0;
+			if( !(a == 0 && b == 0) )
+				dummy = a / (a + b);
+
 			file << dummy << ",";
 		}
 		file << endl;
@@ -598,7 +603,9 @@ CerebronPredictor::drawFeatureMaps()
 	{
 		for(unsigned j =  0 ; j < stats_local_error[i].size() ; j++)
 		{
-			double dummy = (double) stats_local_error[i][j].first / (double) stats_local_error[i][j].second;
+			double a = stats_local_error[i][j].first;
+			double b = stats_local_error[i][j].second;
+			double dummy = a / (a + b);
 			file1 << dummy << ",";
 		}
 		file1 << endl;
