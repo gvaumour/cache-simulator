@@ -583,7 +583,7 @@ PHCPredictor::classifyRD(int set , int index, bool inNVM)
 	}
 	else
 	{
-		if(position < simu_parameters.nvm_assoc)
+		if(position < simu_parameters.mediumrd_def)
 			return RD_SHORT;
 		else
 			return RD_MEDIUM;

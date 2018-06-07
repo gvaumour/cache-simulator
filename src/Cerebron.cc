@@ -592,7 +592,7 @@ CerebronPredictor::drawFeatureMaps()
 			if( !(a == 0 && b == 0) )
 				dummy = a / (a + b);
 
-			file << dummy << ",";
+			file << a << ",";
 		}
 		file << endl;
 	}
@@ -606,7 +606,7 @@ CerebronPredictor::drawFeatureMaps()
 			double a = stats_local_error[i][j].first;
 			double b = stats_local_error[i][j].second;
 			double dummy = a / (a + b);
-			file1 << dummy << ",";
+			file1 << a << ",";
 		}
 		file1 << endl;
 	}
@@ -663,14 +663,14 @@ CerebronPredictor::classifyRD(int set , int index, bool inNVM)
 
 	if(simu_parameters.nvm_assoc > simu_parameters.sram_assoc)
 	{
-		if(position < simu_parameters.sram_assoc)
+		if(position < simu_parameters.mediumrd_def)
 			return RD_SHORT;
 		else
 			return RD_MEDIUM;	
 	}
 	else
 	{
-		if(position < simu_parameters.nvm_assoc)
+		if(position < simu_parameters.mediumrd_def)
 			return RD_SHORT;
 		else
 			return RD_MEDIUM;
