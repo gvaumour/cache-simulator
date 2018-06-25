@@ -95,9 +95,13 @@ int main(int argc , char* argv[]){
 		{	i++;
 			simu_parameters.ratio_RWcost = atof(argv[i]);
 		}
-		else if(string(argv[i]) == "--MT-size")
+		else if(string(argv[i]) == "--SRAM-MTsize")
 		{	i++;
-			simu_parameters.sizeMTtags = atoi(argv[i]);
+			simu_parameters.size_MT_SRAMtags = atoi(argv[i]);
+		}
+		else if(string(argv[i]) == "--NVM-MTsize")
+		{	i++;
+			simu_parameters.size_MT_NVMtags = atoi(argv[i]);
 		}
 		else if(string(argv[i]) == "--InstructionTh")
 		{	i++;
@@ -287,11 +291,11 @@ int main(int argc , char* argv[]){
 	
 	
 	/* The Control C signal handler setup */
-	/*struct sigaction sigIntHandler;
+	struct sigaction sigIntHandler;
 	sigIntHandler.sa_handler = my_handler;
 	sigemptyset(&sigIntHandler.sa_mask);
 	sigIntHandler.sa_flags = 0;
-	sigaction(SIGINT, &sigIntHandler, NULL);*/
+	sigaction(SIGINT, &sigIntHandler, NULL);
 	/***********************************/	
 
 	cout << "Launching simulation with " << simu_parameters.memory_traces.size() << " file(s), the " << simu_parameters.policy \

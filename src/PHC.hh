@@ -23,7 +23,7 @@ class HybridCache;
 class PHCPredictor : public Predictor {
 
 	public :
-		PHCPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache);
+		PHCPredictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache);
 		~PHCPredictor();
 			
 		allocDecision allocateInNVM(uint64_t set, Access element);

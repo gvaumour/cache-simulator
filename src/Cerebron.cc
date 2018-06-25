@@ -12,8 +12,8 @@ deque<uint64_t> CerebronPredictor::m_global_PChistory;
 deque<uint64_t> CerebronPredictor::m_callee_PChistory;
 
 
-CerebronPredictor::CerebronPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) :\
-	Predictor(nbAssoc , nbSet , nbNVMways , SRAMtable , NVMtable , cache)
+CerebronPredictor::CerebronPredictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) :\
+	Predictor(id, nbAssoc , nbSet , nbNVMways , SRAMtable , NVMtable , cache)
 {	
 	m_tableSize = simu_parameters.perceptron_table_size;
 
@@ -587,10 +587,10 @@ CerebronPredictor::drawFeatureMaps()
 		for(unsigned j =  0 ; j < stats_global_error[i].size() ; j++)
 		{
 			double a = stats_global_error[i][j].first;
-			double b = stats_global_error[i][j].second;
-			double dummy = 0;
-			if( !(a == 0 && b == 0) )
-				dummy = a / (a + b);
+//			double b = stats_global_error[i][j].second;
+//			double dummy = 0;
+//			if( !(a == 0 && b == 0) )
+//				dummy = a / (a + b);
 
 			file << a << ",";
 		}
@@ -604,8 +604,8 @@ CerebronPredictor::drawFeatureMaps()
 		for(unsigned j =  0 ; j < stats_local_error[i].size() ; j++)
 		{
 			double a = stats_local_error[i][j].first;
-			double b = stats_local_error[i][j].second;
-			double dummy = a / (a + b);
+//			double b = stats_local_error[i][j].second;
+//			double dummy = a / (a + b);
 			file1 << a << ",";
 		}
 		file1 << endl;

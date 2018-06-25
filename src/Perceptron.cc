@@ -13,8 +13,8 @@ std::deque<uint64_t> PerceptronPredictor::m_global_PChistory;
 std::deque<uint64_t> PerceptronPredictor::m_callee_PChistory;
 
 
-PerceptronPredictor::PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) :\
-	Predictor(nbAssoc , nbSet , nbNVMways , SRAMtable , NVMtable , cache)
+PerceptronPredictor::PerceptronPredictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) :\
+	Predictor(id, nbAssoc , nbSet , nbNVMways , SRAMtable , NVMtable , cache)
 {	
 	m_tableSize = simu_parameters.perceptron_table_size;
 

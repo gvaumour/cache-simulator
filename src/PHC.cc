@@ -12,8 +12,8 @@ deque<uint64_t> PHCPredictor::m_global_PChistory;
 deque<uint64_t> PHCPredictor::m_callee_PChistory;
 
 
-PHCPredictor::PHCPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) :\
-	Predictor(nbAssoc , nbSet , nbNVMways , SRAMtable , NVMtable , cache)
+PHCPredictor::PHCPredictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) :\
+	Predictor(id, nbAssoc , nbSet , nbNVMways , SRAMtable , NVMtable , cache)
 {	
 	m_tableSize = simu_parameters.perceptron_table_size;
 
@@ -249,7 +249,7 @@ PHCPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access e
 		if(pred > 0 )
 			des = ALLOCATE_IN_NVM;
 			
-//		cout << "\t- " << m_criterias_names[i] << " : " << allocDecision_str[des]  << ", " << hash  << ", " << pred << endl; 
+//		cout << "\t- " << m_criterias_names[i] << " : " << str_allocDecision[des]  << ", " << hash  << ", " << pred << endl; 
 		entry->PHC_allocation_pred[i].second = des; 
 		entry->PHC_allocation_pred[i].first = hash; 
 		
@@ -319,7 +319,7 @@ int PHCPredictor::evictPolicy(int set, bool inNVM)
 		{
 			bool global_error = false;
 			allocDecision des = entry->cost_value > simu_parameters.PHC_cost_threshold ? ALLOCATE_IN_SRAM : ALLOCATE_IN_NVM;
-			//cout << "\t Evaluated allocation = " << allocDecision_str[des] << " , cost Value = " << entry->cost_value << endl;
+			//cout << "\t Evaluated allocation = " << str_allocDecision[des] << " , cost Value = " << entry->cost_value << endl;
 			if(( des == ALLOCATE_IN_SRAM && inNVM ) || \
 				( des == ALLOCATE_IN_NVM && !inNVM ))
 				global_error = true;
@@ -348,7 +348,7 @@ int PHCPredictor::evictPolicy(int set, bool inNVM)
 				{
 					stats_local_error[i][hash]++;
 					/*cout << "\tLocal Error detected, " << m_criterias_names[i] << std::dec << \
-						"[" << hash << "] = " << allocDecision_str[alloc_pred] << endl; */
+						"[" << hash << "] = " << str_allocDecision[alloc_pred] << endl; */
 				}	
 			}
 

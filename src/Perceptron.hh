@@ -23,7 +23,7 @@ class HybridCache;
 class PerceptronPredictor : public Predictor {
 
 	public :
-		PerceptronPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache);
+		PerceptronPredictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache);
 		~PerceptronPredictor();
 			
 		allocDecision allocateInNVM(uint64_t set, Access element);

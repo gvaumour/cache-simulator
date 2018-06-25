@@ -37,7 +37,7 @@ class DHPEntry
 		 	lastWrite = 0;
 		 	signature = 0;
 		 	des = ALLOCATE_PREEMPTIVELY;
-		 					
+		 	
 		 	policyInfo = 0;
 			cptBypassLearning = 0;
 			rd_history.clear();
@@ -128,7 +128,7 @@ class DBAMBLRUPolicy : public DBAMBReplacementPolicy {
 class DBAMBPredictor : public Predictor {
 
 	public :
-		DBAMBPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache);
+		DBAMBPredictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache);
 		~DBAMBPredictor();
 			
 		allocDecision allocateInNVM(uint64_t set, Access element);
@@ -149,9 +149,6 @@ class DBAMBPredictor : public Predictor {
 		
 		void determineStatus(DHPEntry* entry);
 		allocDecision convertState(DHPEntry* rap_current);
-		void dumpDataset(DHPEntry* entry);		
-
-		bool hitInSRAM(int set, uint64_t old_time);
 
 		void updateWindow(DHPEntry* rap_current);
 		
@@ -189,6 +186,8 @@ class DBAMBPredictor : public Predictor {
 
 		unsigned stats_NVM_medium_pred_errors;
 		unsigned stats_NVM_medium_pred;
+		
+		uint64_t stats_busyness_alloc_change,stats_busyness_migrate_change;
 				
 //		std::vector< std::vector< std::vector<int> > > stats_switchDecision;		
 		std::vector<double> stats_nbSwitchDst;

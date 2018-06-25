@@ -17,8 +17,8 @@ fstream firstAlloc_dataset_file;
 int id_DATASET = 0;
 
 /** DBAMBPredictor Implementation ***********/ 
-DBAMBPredictor::DBAMBPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) : \
-	Predictor(nbAssoc, nbSet, nbNVMways, SRAMtable, NVMtable, cache) {
+DBAMBPredictor::DBAMBPredictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) : \
+	Predictor(id, nbAssoc, nbSet, nbNVMways, SRAMtable, NVMtable, cache) {
 
 	m_cpt = 1;
 	m_RAP_assoc = simu_parameters.rap_assoc;
@@ -73,35 +73,6 @@ DBAMBPredictor::DBAMBPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray
 
 	if(simu_parameters.printDebug)
 		dataset_file.open(RAP_TEST_OUTPUT_DATASETS);
-
-	/*
-	if(simu_parameters.writeDatasetFile)
-	{
-		firstAlloc_dataset_file.open( simu_parameters.datasetFile , std::fstream::out);		
-		assert(firstAlloc_dataset_file.is_open() && "Cannot open the datasetFile");
-	} 		
-	else if(simu_parameters.readDatasetFile)
-	{
-
-		firstAlloc_dataset_file.open( simu_parameters.datasetFile , std::fstream::in);		
-		assert(firstAlloc_dataset_file.is_open() && "Cannot open the datasetFile");
-
-		vector<string> split_line;
-		string line;
-		while(getline(firstAlloc_dataset_file,line))
-		{
-			split_line = split(line, '\t');
-			if(split_line.size() != 2)
-				continue;
-			
-			uint64_t pc = hexToInt(split_line[0]);
-			allocDecision des = (allocDecision) (atoi(split_line[1].c_str()));
-			
-			if(m_firstAlloc_datasets.count(pc) == 0)
-				m_firstAlloc_datasets.insert(pair<uint64_t,vector<allocDecision> >( pc , vector<allocDecision>()));
-			m_firstAlloc_datasets[pc].push_back(des);
-		}
-	}*/
 	
 	stats_nbMigrationsFromNVM.push_back(vector<int>(2,0));
 
@@ -136,8 +107,6 @@ DBAMBPredictor::~DBAMBPredictor()
 allocDecision
 DBAMBPredictor::allocateInNVM(uint64_t set, Access element)
 {
-
-	//DPRINTF("DBAMBPredictor::allocateInNVM set %ld\n" , set);
 	
 	if(element.isInstFetch())
 		return ALLOCATE_IN_NVM;
@@ -150,38 +119,15 @@ DBAMBPredictor::allocateInNVM(uint64_t set, Access element)
 		if(!m_isWarmup)
 			stats_RAP_miss++;	
 		
-		//DPRINTF("DBAMBPredictor::allocateInNVM Eviction and Installation in the RAP table 0x%lx\n" , element.m_pc);
-
 		int index = indexFunction(signature);
 		int assoc = m_rap_policy->evictPolicy(index);
 		
 		rap_current = m_DHPTable[index][assoc];
 		
-		/* Dumping stats before erasing the RAP entry */ 
-		if(rap_current->isValid)
-		{
-			dumpDataset(rap_current);
-					
-			if(rap_current->nbKeepState > 0 && rap_current->nbSwitchState  > 0 && !m_isWarmup)
-				stats_nbSwitchDst.push_back((double)rap_current->nbSwitchState / \
-					 (double)(rap_current->nbKeepState+rap_current->nbSwitchState) );		
-		}
-		/******************/
-
 		rap_current->initEntry(element);
 		rap_current->id = id_DATASET++;
 		rap_current->signature = signature;
 		dataset_file << "ID Dataset:" << rap_current->id << "\t" << signature << endl;
-
-
-		if(simu_parameters.readDatasetFile)
-		{
-			if(m_firstAlloc_datasets.count(signature) != 0){
-				cout << "Dataset PC=0x" << std::hex << signature << std::dec << " alloc = " << allocDecision_str[m_firstAlloc_datasets[signature][0]] << endl;
-				rap_current->des = m_firstAlloc_datasets[signature][0];
-				m_firstAlloc_datasets[signature].erase(m_firstAlloc_datasets[signature].begin());
-			}
-		}
 	}
 	else
 	{	
@@ -221,85 +167,75 @@ DBAMBPredictor::allocateInNVM(uint64_t set, Access element)
 			return ALLOCATE_IN_NVM;
 	}
 	else
-		return rap_current->des;
-}
-
-void 
-DBAMBPredictor::finishSimu()
-{
-	//DPRINTF("RAPPredictor::FINISH SIMU\n");
-
-	if(simu_parameters.readDatasetFile || simu_parameters.writeDatasetFile)	
-		firstAlloc_dataset_file.close();
-	
-	if(m_isWarmup)
-		return;
-		
-	for(auto lines : m_DHPTable)
 	{
-		for(auto entry : lines)
-		{		
-			if(entry->isValid)
+		if(rap_current->des == ALLOCATE_IN_NVM)
+		{
+			if(m_isNVMbusy[set] && !m_isSRAMbusy[set])
 			{
-				HistoEntry current = {entry->state_rw , entry->state_rd , entry->nbKeepState};
-				entry->stats_history.push_back(current);
-				dumpDataset(entry);
-
-				if(entry->nbKeepState + entry->nbSwitchState  > 0)
-					stats_nbSwitchDst.push_back((double)entry->nbSwitchState / \
-					  (double) (entry->nbKeepState + entry->nbSwitchState) );
+				stats_busyness_alloc_change++;
+				return ALLOCATE_IN_SRAM;
 			}
+			else
+				return ALLOCATE_IN_NVM;		
 		}
+		else if(rap_current->des == ALLOCATE_IN_SRAM)
+		{
+			if(!m_isNVMbusy[set] && m_isSRAMbusy[set])
+			{
+				stats_busyness_alloc_change++;
+				return ALLOCATE_IN_NVM;
+			}
+			else
+				return ALLOCATE_IN_SRAM;		
+		}
+		
+		return rap_current->des;
 	}
-}
-
-
-int
-DBAMBPredictor::computeRd(uint64_t set, uint64_t  index , bool inNVM)
-{
-	vector<CacheEntry*> line;
-	int ref_rd;
-	
-	if(inNVM){
-		line = m_tableNVM[set];
-		ref_rd = m_tableNVM[set][index]->policyInfo;
-	}
-	else{
-		line = m_tableSRAM[set];
-		ref_rd = m_tableSRAM[set][index]->policyInfo;
-	}
-	
-	int position = 0;
-	
-	/* Determine the position of the cachel line in the LRU stack, the policyInfo is not enough */
-	for(unsigned i = 0 ; i < line.size() ; i ++)
-	{
-		if(line[i]->policyInfo > ref_rd)
-			position++;
-	}	
-	return position;
 }
 
 
 void
-DBAMBPredictor::dumpDataset(DHPEntry* entry)
-{	/*
-	if(entry->stats_history.size() < 2)
-		return;
+DBAMBPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access element)
+{
+	CacheEntry* current = NULL;
+	if(inNVM)
+		current = m_tableNVM[set][index];
+	else 
+		current = m_tableSRAM[set][index];
+		
+	current->policyInfo = m_cpt;
+	current->signature = hashingSignature(element);
+		
+	
+	RD_TYPE reuse_class = RD_NOT_ACCURATE;
+	DHPEntry* rap_current;
 
-	if(m_isWarmup)
-		return;
-
-	ofstream //dataset_file(RAP_TEST_OUTPUT_DATASETS, std::ios::app);
-	//dataset_file << "Dataset\t0x" << std::hex << entry->m_pc << std::dec << endl;
-	//dataset_file << "\tNB Switch\t" << entry->nbSwitchState <<endl;
-	//dataset_file << "\tNB Keep State\t" << entry->nbKeepState <<endl;
-	//dataset_file << "\tHistory" << endl;
-	for(auto p : entry->stats_history)
+		
+	if( (rap_current= lookup(current->signature) ) != NULL )
 	{
-		//dataset_file << "\t\t" << str_RW_status[p.state_rw]<< "\t" << str_RD_status[p.state_rd] << "\t" << p.nbKeepState << endl;
+
+		/* Set the flag of learning cache line when bypassing */
+		if(rap_current->des == BYPASS_CACHE)
+		{
+			current->isLearning = true;
+		}
+		else
+		{
+		
+			if(element.isSRAMerror)
+				reuse_class = RD_MEDIUM; 
+
+			rap_current->rd_history.push_back(reuse_class); 
+			rap_current->rw_history.push_back(element.isWrite());
+
+			updateWindow(rap_current);		
+		}
+	
+		reportAccess(rap_current, element, current, inNVM, "INSERTION",  str_RD_status[reuse_class]);
 	}
-	//dataset_file.close();*/
+	
+	Predictor::insertionPolicy(set , index , inNVM , element);
+	m_cpt++;
 }
 
 
@@ -317,31 +253,9 @@ DBAMBPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access el
 	
 	int rd = computeRd(set, index , inNVM);
 
-	/*
-	if(inNVM && simu_parameters.enableReuseErrorComputation){
-		RD_TYPE reuse_class = convertRD(rd);
-		if(reuse_class == RD_MEDIUM)
-		{
-			stats_NVM_medium_pred++;
-			cout <<"DBAMBPredictor::set=" << set << " RD MEDIUM DETECTED cpt_time="<< m_cpt << " address=" << current->address << endl; 
-			cerr <<"DBAMBPredictor::set=" << set << " RD MEDIUM DETECTED cpt_time="<< m_cpt << " address=" << current->address << endl; 
-
-			if(hitInSRAM(set , current->policyInfo))
-			{
-				stats_NVM_medium_pred_errors++;			
-				cout <<"DBAMBPredictor::set=" << set << " stats_NVM_medium_pred_errors happens cpt_time="<< m_cpt << " address=" << current->address << endl; 
-				
-			}
-		}
-
-		cout <<"DBAMBPredictor::Record history cpt_time=" << m_cpt << " address=" << current->address << " set=" << set << endl; 
-		stats_history_SRAM[set].push_front(pair<uint64_t, uint64_t>(m_cpt, current->address));
-	}*/
-	
-
 	current->policyInfo = m_cpt;
-	uint64_t signature = hashingSignature(element);
-	DHPEntry* rap_current = lookup(signature);
+
+	DHPEntry* rap_current = lookup(current->signature);
 
 	if(rap_current)
 	{
@@ -372,6 +286,7 @@ DBAMBPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access el
 			updateWindow(rap_current);
 		
 			reportAccess(rap_current , element, current, current->isNVM, string("UPDATE"), string(str_RD_status[convertRD(rd)]));
+			dataset_file << "Position is " << rd << endl;
 			if(simu_parameters.enableMigration && element.enableMigration )
 				current = checkLazyMigration(rap_current , current , set , inNVM , index, element.isWrite());
 		}
@@ -380,6 +295,104 @@ DBAMBPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access el
 	m_cpt++;
 	Predictor::updatePolicy(set , index , inNVM , element , isWBrequest);
 }
+
+
+int
+DBAMBPredictor::evictPolicy(int set, bool inNVM)
+{	
+	int assoc_victim = -1;
+	assert(m_replacementPolicyNVM_ptr != NULL);
+	assert(m_replacementPolicySRAM_ptr != NULL);
+
+	CacheEntry* current = NULL;
+	if(inNVM)
+	{	
+		assoc_victim = m_replacementPolicyNVM_ptr->evictPolicy(set);
+		current = m_tableNVM[set][assoc_victim];
+	}
+	else
+	{
+		assoc_victim = m_replacementPolicySRAM_ptr->evictPolicy(set);
+		current = m_tableSRAM[set][assoc_victim];		
+	}
+		
+	//DPRINTF("DBAMBPredictor::evictPolicy set %d n assoc_victim %d \n" , set , assoc_victim);
+	DHPEntry* rap_current = lookup(current->signature);
+	//We didn't create an entry for this dataset, probably a good reason =) (instruction mainly) 
+	if(rap_current != NULL)
+	{
+		if(rap_current->des != BYPASS_CACHE)
+		{
+			// A learning cache line on dead dataset goes here
+			if( current->nbWrite == 0 && current->nbRead == 0)
+				rap_current->dead_counter--;
+			else
+				rap_current->dead_counter++;
+		
+			if(rap_current->dead_counter > simu_parameters.deadSaturationCouter)
+				rap_current->dead_counter = simu_parameters.deadSaturationCouter;
+			else if(rap_current->dead_counter < -simu_parameters.deadSaturationCouter)
+				rap_current->dead_counter = -simu_parameters.deadSaturationCouter;
+
+
+			string a =  current->nbWrite == 0 && current->nbRead == 0 ? "DEAD" : "LIVELY";
+			dataset_file << "Dataset n°" << rap_current->id << ": Eviction of a " << a << " CL, Address :" << \
+				std::hex << current->address << std::dec << " DeadCounter=" << rap_current->dead_counter << endl;
+				
+			if(rap_current->dead_counter == -simu_parameters.deadSaturationCouter && simu_parameters.enableBP)
+			{
+				/* Switch the state of the dataset to dead */ 
+				rap_current->des = BYPASS_CACHE;			
+				dataset_file << "Dataset n°" << rap_current->id << ": Going into BYPASS mode " << endl;
+				// Reset the window 
+				RW_TYPE old_rw = rap_current->state_rw;
+				RD_TYPE old_rd = rap_current->state_rd;
+
+				rap_current->state_rd = RD_NOT_ACCURATE;
+				rap_current->state_rw = DEAD;
+				rap_current->rd_history.clear();
+				rap_current->rw_history.clear();
+				rap_current->cptWindow = 0;	
+				rap_current->dead_counter = 0;
+
+				// Monitor state switching 
+				if(!m_isWarmup)
+					stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
+			}
+		}
+	}
+	
+	evictRecording(set , assoc_victim , inNVM);	
+	return assoc_victim;
+}
+
+
+int
+DBAMBPredictor::computeRd(uint64_t set, uint64_t  index , bool inNVM)
+{
+	vector<CacheEntry*> line;
+	int ref_rd;
+	
+	if(inNVM){
+		line = m_tableNVM[set];
+		ref_rd = m_tableNVM[set][index]->policyInfo;
+	}
+	else{
+		line = m_tableSRAM[set];
+		ref_rd = m_tableSRAM[set][index]->policyInfo;
+	}
+	
+	int position = 0;
+	
+	/* Determine the position of the cachel line in the LRU stack, the policyInfo is not enough */
+	for(unsigned i = 0 ; i < line.size() ; i ++)
+	{
+		if(ref_rd < line[i]->policyInfo  && line[i]->isValid)
+			position++;
+	}
+	return position;
+}
+
 
 
 void
@@ -396,7 +409,8 @@ DBAMBPredictor::reportAccess(DHPEntry* rap_current, Access element, CacheEntry* 
 	if(simu_parameters.printDebug)
 	{
 		dataset_file << entete << ":Dataset n°" << rap_current->id << ": [" \
-		<< str_RW_status[rap_current->state_rw] << ","  << str_RD_status[rap_current->state_rd] << "]," \
+		<< str_RW_status[rap_current->state_rw] << ","  << str_RD_status[rap_current->state_rd] \
+		<< "] = " << str_allocDecision[rap_current->des] << "," \
 		<< access_type << " on " << is_learning << " Cl 0x" << std::hex << current->address \
 		<< std::dec << " allocated in " << cl_location<< ", Reuse=" << reuse_class \
 		<< " , " << is_error << ", " << endl;	
@@ -431,7 +445,7 @@ DBAMBPredictor::reportAccess(DHPEntry* rap_current, Access element, CacheEntry* 
 			else if(rap_current->des == ALLOCATE_IN_SRAM && inNVM)
 				dataset_file << "Wrongly allocated cl";
 			else
-				dataset_file << " Des: " << allocDecision_str[rap_current->des] << "UNKNOW Error";
+				dataset_file << " Des: " << str_allocDecision[rap_current->des] << "UNKNOW Error";
 			dataset_file << endl;
 		}
 		
@@ -469,137 +483,67 @@ DBAMBPredictor::reportMigration(DHPEntry* rap_current, CacheEntry* current, bool
 CacheEntry*
 DBAMBPredictor::checkLazyMigration(DHPEntry* rap_current , CacheEntry* current ,uint64_t set,bool inNVM, uint64_t index, bool isWrite)
 {
-	if(rap_current->des == ALLOCATE_IN_NVM && inNVM == false && (simu_parameters.flagTest && !isWrite) )
+	if( inNVM == false && rap_current->des == ALLOCATE_IN_NVM)
 	{
-		//Trigger Migration
-		int id_assoc = evictPolicy(set, true);//Select LRU candidate from NVM cache
-		//DPRINTF("DBAMBPredictor:: Migration Triggered from SRAM, index %ld, id_assoc %d \n" , index, id_assoc);
+		//cl is SRAM , check whether we should migrate to NVM 
 
-		CacheEntry* replaced_entry = m_tableNVM[set][id_assoc];
+		//If NVM tab is busy , don't migrate
+		if(!m_isNVMbusy[set]) 
+		{
+			//Trigger Migration
+			int id_assoc = evictPolicy(set, true);//Select LRU candidate from NVM cache
+			//DPRINTF("DBAMBPredictor:: Migration Triggered from SRAM, index %ld, id_assoc %d \n" , index, id_assoc);
+
+			CacheEntry* replaced_entry = m_tableNVM[set][id_assoc];
 					
-		/** Migration incurs one read and one extra write */ 
-		replaced_entry->nbWrite++;
-		current->nbRead++;
+			/** Migration incurs one read and one extra write */ 
+			replaced_entry->nbWrite++;
+			current->nbRead++;
 		
-		/* Record the write error migration */ 
-		Predictor::migrationRecording();
+			/* Record the write error migration */ 
+			Predictor::migrationRecording();
 		
-		reportMigration(rap_current, current, false);
+			reportMigration(rap_current, current, false);
 		
-		m_cache->triggerMigration(set, index , id_assoc , false);
-		if(!m_isWarmup)
-			stats_nbMigrationsFromNVM.back()[FROMSRAM]++;
+			m_cache->triggerMigration(set, index , id_assoc , false);
+			if(!m_isWarmup)
+				stats_nbMigrationsFromNVM.back()[FROMSRAM]++;
 
 
-		current = replaced_entry;		
+			current = replaced_entry;
+		}
+		else
+			stats_busyness_migrate_change++;
 	}
 	else if( rap_current->des == ALLOCATE_IN_SRAM && inNVM == true)
 	{
-	
-		//DPRINTF("DBAMBPredictor::Migration Triggered from NVM\n");
-
-		int id_assoc = evictPolicy(set, false);
+		//cl is in NVM , check whether we should migrate to SRAM 
+			
+		//If SRAM tab is busy , don't migrate
+		if( !m_isSRAMbusy[set]) 
+		{		
+			int id_assoc = evictPolicy(set, false);
 		
-		CacheEntry* replaced_entry = m_tableSRAM[set][id_assoc];
+			CacheEntry* replaced_entry = m_tableSRAM[set][id_assoc];
 
-		/** Migration incurs one read and one extra write */ 
-		replaced_entry->nbWrite++;
-		current->nbRead++;
-		reportMigration(rap_current, current, true);
+			/** Migration incurs one read and one extra write */ 
+			replaced_entry->nbWrite++;
+			current->nbRead++;
+			reportMigration(rap_current, current, true);
 	
-		m_cache->triggerMigration(set, id_assoc , index , true);
+			m_cache->triggerMigration(set, id_assoc , index , true);
 		
-		if(!m_isWarmup)
-			stats_nbMigrationsFromNVM.back()[FROMNVM]++;
+			if(!m_isWarmup)
+				stats_nbMigrationsFromNVM.back()[FROMNVM]++;
 
-		current = replaced_entry;		
-	}
-//	cout <<" FINISH Lazy Migration "<< endl;
-	return current;
-}
-
-bool
-DBAMBPredictor::hitInSRAM(int set, uint64_t old_time)
-{
-	/*
-	cout <<"old_time=" << old_time << endl;
-	if(old_time == 0)
-		return false;
-	
-	std::set<uint64_t> adresses_access;
-	
-	for(auto item : stats_history_SRAM[set])
-	{
-		if(item.first < old_time)
-			return true;
-		
-		if(adresses_access.count(item.second) == 0)
-		{
-			cout <<"\tRD++"<<endl;		
-			adresses_access.insert(item.second);
-		}
-
-		if(adresses_access.size() >= simu_parameters.sram_assoc)
-			return false;
-	}
-	*/
-	return false;
-}
-
-void
-DBAMBPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access element)
-{
-	CacheEntry* current = NULL;
-	if(inNVM)
-		current = m_tableNVM[set][index];
-	else 
-		current = m_tableSRAM[set][index];
-		
-	current->policyInfo = m_cpt;
-	
-	
-	RD_TYPE reuse_class = RD_NOT_ACCURATE;
-	DHPEntry* rap_current;
-	/*
-	if(simu_parameters.enableReuseErrorComputation)
-	{
-		if(inNVM)
-		{
-			cout <<"DBAMBPredictor::Record history cpt_time=" << m_cpt << " address=" << current->address << " set=" << set << endl; 
-			stats_history_SRAM[set].push_front(pair<uint64_t, uint64_t>(m_cpt, current->address));	
-		}			
-	}*/
-	uint64_t signature = hashingSignature(element);
-	current->signature = signature;
-	
-	if( (rap_current= lookup(signature) ) != NULL )
-	{
-
-		/* Set the flag of learning cache line when bypassing */
-		if(rap_current->des == BYPASS_CACHE)
-		{
-			current->isLearning = true;
+			current = replaced_entry;		
 		}
 		else
-		{
-		
-			if(element.isSRAMerror)
-				reuse_class = RD_MEDIUM; 
+			stats_busyness_migrate_change++;
 
-			rap_current->rd_history.push_back(reuse_class); 
-			rap_current->rw_history.push_back(element.isWrite());
-
-			updateWindow(rap_current);		
-		}
-	
-		reportAccess(rap_current, element, current, inNVM, "INSERTION",  str_RD_status[reuse_class]);
 	}
-	
-	Predictor::insertionPolicy(set , index , inNVM , element);
-	m_cpt++;
+	return current;
 }
-
-
 
 
 void
@@ -653,119 +597,35 @@ DBAMBPredictor::updateWindow(DHPEntry* rap_current)
 }
 
 
-int
-DBAMBPredictor::evictPolicy(int set, bool inNVM)
-{	
-	int assoc_victim = -1;
-	assert(m_replacementPolicyNVM_ptr != NULL);
-	assert(m_replacementPolicySRAM_ptr != NULL);
 
-	CacheEntry* current = NULL;
-	if(inNVM)
-	{	
-		assoc_victim = m_replacementPolicyNVM_ptr->evictPolicy(set);
-		current = m_tableNVM[set][assoc_victim];
-	}
-	else
+void 
+DBAMBPredictor::finishSimu()
+{
+	//DPRINTF("RAPPredictor::FINISH SIMU\n");
+
+	if(simu_parameters.readDatasetFile || simu_parameters.writeDatasetFile)	
+		firstAlloc_dataset_file.close();
+	
+	if(m_isWarmup)
+		return;
+		
+	for(auto lines : m_DHPTable)
 	{
-		assoc_victim = m_replacementPolicySRAM_ptr->evictPolicy(set);
-		current = m_tableSRAM[set][assoc_victim];		
-	}
-		
-	//DPRINTF("DBAMBPredictor::evictPolicy set %d n assoc_victim %d \n" , set , assoc_victim);
-	DHPEntry* rap_current = lookup(current->signature);
-	//We didn't create an entry for this dataset, probably a good reason =) (instruction mainly) 
-	if(rap_current != NULL)
-	{
-		
-		if(rap_current->des == BYPASS_CACHE)
-		{
-			// A learning cache line on dead dataset goes here
-			
-			/*if( !(current->nbWrite == 0 && current->nbRead == 0) )
+		for(auto entry : lines)
+		{		
+			if(entry->isValid)
 			{
-				// Reset the window 
-				RW_TYPE old_rw = rap_current->state_rw;
-				RD_TYPE old_rd = rap_current->state_rd;
-				
-				rap_current->des = ALLOCATE_PREEMPTIVELY;
-				rap_current->state_rd = RD_NOT_ACCURATE;
-				rap_current->state_rw = RW_NOT_ACCURATE;
-				rap_current->dead_counter = 0;
-	
-				if(!m_isWarmup)
-					stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
-			}*/
-			//No reuse on learning line , we stay on bypass mode		
-		}
-		else
-		{
-			// A learning cache line on dead dataset goes here
-			if( current->nbWrite == 0 && current->nbRead == 0)
-				rap_current->dead_counter--;
-			else
-				rap_current->dead_counter++;
-		
-			if(rap_current->dead_counter > simu_parameters.deadSaturationCouter)
-				rap_current->dead_counter = simu_parameters.deadSaturationCouter;
-			else if(rap_current->dead_counter < -simu_parameters.deadSaturationCouter)
-				rap_current->dead_counter = -simu_parameters.deadSaturationCouter;
+				HistoEntry current = {entry->state_rw , entry->state_rd , entry->nbKeepState};
+				entry->stats_history.push_back(current);
 
-
-			string a =  current->nbWrite == 0 && current->nbRead == 0 ? "DEAD" : "LIVELY";
-			dataset_file << "Dataset n°" << rap_current->id << ": Eviction of a " << a << " CL, Address :" << \
-				std::hex << current->address << std::dec << " DeadCounter=" << rap_current->dead_counter << endl;
-				
-			if(rap_current->dead_counter == -simu_parameters.deadSaturationCouter && simu_parameters.enableBP)
-			{
-				if(rap_current->des == ALLOCATE_IN_SRAM && simu_parameters.flagTest)
-				{
-					/* Switch the state of the dataset to NVM */ 
-					rap_current->des = ALLOCATE_IN_NVM;			
-					dataset_file << "Dataset n°" << rap_current->id << ": Going into NVM MEDIUM mode " << endl;
-					// Reset the window 
-					RW_TYPE old_rw = rap_current->state_rw;
-					RD_TYPE old_rd = rap_current->state_rd;
-
-					rap_current->state_rd = RD_MEDIUM;
-					rap_current->rd_history.clear();
-					rap_current->rw_history.clear();
-					rap_current->cptWindow = 0;	
-					rap_current->dead_counter = 0;
-	
-					// Monitor state switching 
-					if(!m_isWarmup)
-						stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
-					
-				}
-				else			
-				{
-					/* Switch the state of the dataset to dead */ 
-					rap_current->des = BYPASS_CACHE;			
-					dataset_file << "Dataset n°" << rap_current->id << ": Going into BYPASS mode " << endl;
-					// Reset the window 
-					RW_TYPE old_rw = rap_current->state_rw;
-					RD_TYPE old_rd = rap_current->state_rd;
-
-					rap_current->state_rd = RD_NOT_ACCURATE;
-					rap_current->state_rw = DEAD;
-					rap_current->rd_history.clear();
-					rap_current->rw_history.clear();
-					rap_current->cptWindow = 0;	
-					rap_current->dead_counter = 0;
-	
-					// Monitor state switching 
-					if(!m_isWarmup)
-						stats_ClassErrors[old_rd + NUM_RD_TYPE*old_rw][rap_current->state_rd + NUM_RD_TYPE*rap_current->state_rw]++;
-			
-				}
+				if(entry->nbKeepState + entry->nbSwitchState  > 0)
+					stats_nbSwitchDst.push_back((double)entry->nbSwitchState / \
+					  (double) (entry->nbKeepState + entry->nbSwitchState) );
 			}
 		}
 	}
-	
-	evictRecording(set , assoc_victim , inNVM);	
-	return assoc_victim;
 }
+
 
 void 
 DBAMBPredictor::determineStatus(DHPEntry* entry)
@@ -1035,7 +895,9 @@ DBAMBPredictor::printStats(std::ostream& out, string entete)
 	*/
 	out << entete << ":DBAMBPredictor:NVM_medium_pred\t" << stats_NVM_medium_pred << endl;
 	out << entete << ":DBAMBPredictor:NVM_medium_pred_errors\t" << stats_NVM_medium_pred_errors << endl;
-
+	out << entete << ":DBAMBPredictor:BusynessMigrate" << stats_busyness_migrate_change << endl;
+	out << entete << ":DBAMBPredictor:BusynessAlloc" << stats_busyness_alloc_change << endl;
+	
 //	out << "\tSource of Error, SRAM error" << endl;
 //	out << "\t\tWrong Policy\t" << stats_error_SRAMwrongpolicy << endl;
 //	out << "\t\tWrong Allocation\t" << stats_error_SRAMwrongallocation << endl;

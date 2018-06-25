@@ -93,7 +93,10 @@ struct SimuParameters
 	int saturation_threshold;
 	int cost_threshold;
 
-	int sizeMTtags;
+	int size_MT_SRAMtags;
+	int size_MT_NVMtags;
+	unsigned MT_counter_th;
+	int MT_timeframe;
 	
 	float ratio_RWcost;	
 	
@@ -161,7 +164,7 @@ extern int miss_counter;
 extern const char* memCmd_str[];
 extern const char* str_RW_status[];
 extern const char* str_RD_status[];
-extern const char* allocDecision_str[];
+extern const char* str_allocDecision[];
 extern const char* directory_state_str[];
 extern std::set<std::string> simulation_debugflags;
 

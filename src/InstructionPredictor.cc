@@ -11,8 +11,8 @@ using namespace std;
 #define WRITE_VALUE 3
 #define READ_VALUE -1
 
-InstructionPredictor::InstructionPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) : \
-	Predictor(nbAssoc, nbSet, nbNVMways, SRAMtable, NVMtable, cache) {
+InstructionPredictor::InstructionPredictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) : \
+	Predictor(id, nbAssoc, nbSet, nbNVMways, SRAMtable, NVMtable, cache) {
 	m_cpt = 1;
 }
 		

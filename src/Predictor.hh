@@ -37,7 +37,7 @@ class Predictor{
 	
 	public : 
 //		Predictor();
-		Predictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable , DataArray& NVMtable, HybridCache* cache);
+		Predictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable , DataArray& NVMtable, HybridCache* cache);
 		virtual ~Predictor();
 
 		virtual allocDecision allocateInNVM(uint64_t set, Access element) = 0; // Return true to allocate in NVM
@@ -57,10 +57,12 @@ class Predictor{
 //		void insertRecord(int set, int assoc, bool inNVM);
 		void migrationRecording();
 		void evictRecording(int id_set , int id_assoc , bool inNVM);
+		void updateCachePressure();
 
 		bool reportMiss(uint64_t block_addr , int id_set);
 		bool hitInBypassTags(uint64_t block_addr , int id_set, bool isMiss);
-		bool hitInMissingTags(uint64_t block_addr, int set);
+		bool hitInSRAMMissingTags(uint64_t block_addr, int set);
+		bool hitInNVMMissingTags(uint64_t block_addr, int set);
 		void updateFUcaches(uint64_t block_addr, bool inNVM);
 		int missingTagCostValue(uint64_t block_addr, int set);
 
@@ -73,7 +75,9 @@ class Predictor{
 		int m_assoc;
 		int m_nbNVMways;
 		int m_nbSRAMways;
-		int m_assoc_MT;
+		int m_SRAMassoc_MT_size , m_NVMassoc_MT_size;
+		
+		int m_ID;
 		
 		ReplacementPolicy* m_replacementPolicyNVM_ptr;
 		ReplacementPolicy* m_replacementPolicySRAM_ptr;
@@ -86,8 +90,13 @@ class Predictor{
 		bool m_isWarmup;
 		bool m_missingTags_SRAMtracking;
 		
-//		std::vector<std::vector<MissingTagEntry*> > SRAM_missing_tags;
-		std::vector< std::vector<MissingTagEntry*> > m_missing_tags;
+		std::vector< std::vector<MissingTagEntry*> > m_SRAM_missing_tags;
+		std::vector< std::vector<MissingTagEntry*> > m_NVM_missing_tags;
+		std::vector<uint64_t> m_SRAM_MT_counters;
+		std::vector<uint64_t> m_NVM_MT_counters;
+		std::vector<bool> m_isSRAMbusy;
+		std::vector<bool> m_isNVMbusy;
+
 		std::vector< std::vector<MissingTagEntry*> >BP_missing_tags;
 
 		std::vector<MissingTagEntry*> m_NVM_FU;
@@ -106,6 +115,8 @@ class Predictor{
 		std::vector<int> stats_MigrationErrors;
 		uint64_t stats_WBerrors;
 		uint64_t stats_COREerrors;
+		
+		uint64_t m_time;
 };
 
 
@@ -113,7 +124,7 @@ class LRUPredictor : public Predictor{
 
 	public :
 //		LRUPredictor() : Predictor(){ m_cpt=0;};
-		LRUPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache);
+		LRUPredictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache);
 			
 		allocDecision allocateInNVM(uint64_t set, Access element);
 		void updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element, bool isWBrequest);
@@ -137,8 +148,8 @@ class PreemptivePredictor : public LRUPredictor {
 	public:
 		
 //		PreemptivePredictor() : LRUPredictor() {};
-		PreemptivePredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, \
-			DataArray& NVMtable, HybridCache* cache) : LRUPredictor(nbAssoc, nbSet, nbNVMways, SRAMtable, NVMtable, cache) {};
+		PreemptivePredictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, \
+			DataArray& NVMtable, HybridCache* cache) : LRUPredictor(id, nbAssoc, nbSet, nbNVMways, SRAMtable, NVMtable, cache) {};
 	
 		allocDecision allocateInNVM(uint64_t set, Access element);
 

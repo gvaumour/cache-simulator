@@ -6,7 +6,7 @@
 using namespace std;
 
 
-Predictor::Predictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable , DataArray& NVMtable, HybridCache* cache) :\
+Predictor::Predictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable , DataArray& NVMtable, HybridCache* cache) :\
 	m_tableSRAM(SRAMtable), m_tableNVM(NVMtable)
 {
 	
@@ -14,6 +14,7 @@ Predictor::Predictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtabl
 	m_assoc = nbAssoc;
 	m_nbNVMways = nbNVMways;
 	m_nbSRAMways = nbAssoc - nbNVMways;
+	m_ID = id;
 	
 	m_replacementPolicyNVM_ptr = new LRUPolicy(m_nbNVMways , m_nb_set , NVMtable);
 	m_replacementPolicySRAM_ptr = new LRUPolicy(m_nbSRAMways , m_nb_set, SRAMtable);	
@@ -25,10 +26,11 @@ Predictor::Predictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtabl
 	stats_BP_errors = vector<int>(1,0);
 	stats_MigrationErrors = vector<int>(1,0);
 	
-	m_trackError = false;
+	m_trackError = (m_ID == -1);
 	stats_COREerrors = 0;
 	stats_WBerrors = 0;
-
+	m_time = 0;
+	
 	/********************************************/ 
 	
 	if(simu_parameters.simulate_conflicts)
@@ -51,10 +53,10 @@ Predictor::Predictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtabl
 			m_SRAM_FU[i] = new MissingTagEntry();
 		}
 	}	 
-	/********************************************/ 
-	m_trackError = false;
-	if(m_nbNVMways != 0 && simu_parameters.sizeMTtags != 0)
-		m_trackError = true;
+//	/********************************************/ 
+//	m_trackError = false;
+//	if(m_nbNVMways != 0 && simu_parameters.size_MT_SRAMtags != 0)
+//		m_trackError = true;
 	
 
 	/* Allocation of the BP missing tags array*/
@@ -68,49 +70,55 @@ Predictor::Predictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtabl
 		}
 	}
 
-	m_assoc_MT = simu_parameters.sizeMTtags;
+	m_SRAMassoc_MT_size = simu_parameters.size_MT_SRAMtags;
+	m_NVMassoc_MT_size = simu_parameters.size_MT_NVMtags;
 	
-	if(m_trackError){
+	if(m_ID == -1){
 	
 		/* Allocation of the SRAM missing tags array*/
-		m_missing_tags.clear();
-		m_missing_tags.resize(m_nb_set);
-		//int assoc_MT = m_nbNVMways - m_nbSRAMways;
+		m_SRAM_missing_tags.resize(m_nb_set);
+		m_SRAM_MT_counters = vector<uint64_t>(m_nb_set , 0);		
+		m_isSRAMbusy = vector<bool>(m_nb_set , false);		
+
+		
+		m_NVM_missing_tags.resize(m_nb_set);
+		m_NVM_MT_counters = vector<uint64_t>(m_nb_set , 0);		
+		m_isNVMbusy = vector<bool>(m_nb_set , false);		
 
 		for(int i = 0 ; i < m_nb_set; i++)
 		{
-			m_missing_tags[i].resize(m_assoc_MT);
-			for(int j = 0 ; j < m_assoc_MT; j++)
-			{
-				m_missing_tags[i][j] = new MissingTagEntry();
-			}
+			m_SRAM_missing_tags[i].resize(m_SRAMassoc_MT_size);
+			m_NVM_missing_tags[i].resize(m_NVMassoc_MT_size);
+
+			for(int j = 0 ; j < m_SRAMassoc_MT_size; j++)
+				m_SRAM_missing_tags[i][j] = new MissingTagEntry();
+			
+			for(int j = 0 ; j < m_NVMassoc_MT_size; j++)
+				m_NVM_missing_tags[i][j] = new MissingTagEntry();
 		}
-	
-		m_missingTags_SRAMtracking = true;
-		if(simu_parameters.sram_assoc >  simu_parameters.nvm_assoc)
-				m_missingTags_SRAMtracking = false;
 	}
 	
 }
 
 Predictor::~Predictor()
+
 {
-	for(unsigned i = 0 ; i < BP_missing_tags.size() ; i++)
-	{
-		for(unsigned j = 0 ; j < BP_missing_tags[i].size() ; j++)
-		{
-			delete BP_missing_tags[i][j];
-		}
-	}
 	if(m_trackError){
-		for(unsigned i = 0 ; i < m_missing_tags.size() ; i++)
+		for(unsigned i = 0 ; i < BP_missing_tags.size() ; i++)
 		{
-			for(unsigned j = 0 ; j < m_missing_tags[i].size() ; j++)
+			for(unsigned j = 0 ; j < BP_missing_tags[i].size() ; j++)
 			{
-				delete m_missing_tags[i][j];
+				delete BP_missing_tags[i][j];
 			}
 		}
-
+	
+		for(int i = 0 ; i < m_nb_set ; i++)
+		{
+			for(unsigned j = 0 ; j < m_SRAM_missing_tags[i].size() ; j++)
+				delete m_SRAM_missing_tags[i][j];
+			for(unsigned j = 0 ; j < m_NVM_missing_tags[i].size() ; j++)
+				delete m_NVM_missing_tags[i][j];
+		}
 	}
 	delete m_replacementPolicyNVM_ptr;
 	delete m_replacementPolicySRAM_ptr;
@@ -136,45 +144,61 @@ Predictor::evictRecording(int set, int assoc_victim , bool inNVM)
 		return;
 
 	CacheEntry* current=NULL;
-	if(m_missingTags_SRAMtracking)
+		
+	if(inNVM)
 	{
-		if(inNVM)
-			return;
-		
-		current = m_tableSRAM[set][assoc_victim];
-	}
-	else 
-	{	//Missing Tag array track the NVM last tags 
-	
-		if(!inNVM)
-			return;
-		
-		current = m_tableNVM[set][assoc_victim];	
-	}
-		
-	
-	//Choose the oldest victim for the missing tags to replace from the current one 	
-	uint64_t cpt_longestime = m_missing_tags[set][0]->last_time_touched;
-	uint64_t index_victim = 0;
-	
-	for(unsigned i = 0 ; i < m_missing_tags[set].size(); i++)
-	{
-		if(!m_missing_tags[set][i]->isValid)
+		//Checking NVM MT tags
+		//Choose the oldest victim for the missing tags to replace from the current one 	
+		uint64_t cpt_longestime = m_NVM_missing_tags[set][0]->last_time_touched;
+		uint64_t index_victim = 0;
+		current = m_tableNVM[set][assoc_victim];
+		for(unsigned i = 0 ; i < m_NVM_missing_tags[set].size(); i++)
 		{
-			index_victim = i;
-			break;
-		}	
+			if(!m_NVM_missing_tags[set][i]->isValid)
+			{
+				index_victim = i;
+				break;
+			}	
 		
-		if(cpt_longestime > m_missing_tags[set][i]->last_time_touched){
-			cpt_longestime = m_missing_tags[set][i]->last_time_touched; 
-			index_victim = i;
-		}	
+			if(cpt_longestime > m_NVM_missing_tags[set][i]->last_time_touched){
+				cpt_longestime = m_NVM_missing_tags[set][i]->last_time_touched; 
+				index_victim = i;
+			}	
+		}
+
+		m_NVM_missing_tags[set][index_victim]->addr = current->address;
+		m_NVM_missing_tags[set][index_victim]->last_time_touched = cpt_time;
+		m_NVM_missing_tags[set][index_victim]->isValid = current->isValid;
+		m_NVM_missing_tags[set][index_victim]->cost_value = current->cost_value;
+	}
+	else
+	{
+		//Checking SRAM MT tags
+		//Choose the oldest victim for the missing tags to replace from the current one 	
+		uint64_t cpt_longestime = m_SRAM_missing_tags[set][0]->last_time_touched;
+		uint64_t index_victim = 0;
+		current = m_tableSRAM[set][assoc_victim];
+		
+		for(unsigned i = 0 ; i < m_SRAM_missing_tags[set].size(); i++)
+		{
+			if(!m_SRAM_missing_tags[set][i]->isValid)
+			{
+				index_victim = i;
+				break;
+			}	
+		
+			if(cpt_longestime > m_SRAM_missing_tags[set][i]->last_time_touched){
+				cpt_longestime = m_SRAM_missing_tags[set][i]->last_time_touched; 
+				index_victim = i;
+			}	
+		}
+
+		m_SRAM_missing_tags[set][index_victim]->addr = current->address;
+		m_SRAM_missing_tags[set][index_victim]->last_time_touched = cpt_time;
+		m_SRAM_missing_tags[set][index_victim]->isValid = current->isValid;
+		m_SRAM_missing_tags[set][index_victim]->cost_value = current->cost_value;
 	}
 
-	m_missing_tags[set][index_victim]->addr = current->address;
-	m_missing_tags[set][index_victim]->last_time_touched = cpt_time;
-	m_missing_tags[set][index_victim]->isValid = current->isValid;
-	m_missing_tags[set][index_victim]->cost_value = current->cost_value;
 
 }
 
@@ -186,6 +210,10 @@ Predictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access elem
 	uint64_t block_addr = bitRemove(element.m_address , 0 , log2(BLOCK_SIZE));
 	updateFUcaches(block_addr , inNVM);
 
+	m_time++;
+	if(m_time % simu_parameters.MT_timeframe == 0 && m_ID == -1)
+		updateCachePressure();
+
 	//Update the missing tag as a new cache line is brough into the cache 
 	//Has to remove the MT entry if it exists there 
 	//DPRINTF("Predictor::insertRecord Begin ");	
@@ -193,11 +221,11 @@ Predictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access elem
 	{
 	
 		CacheEntry* current = m_tableSRAM[set][index];
-		for(unsigned i = 0 ; i < m_missing_tags[set].size(); i++)
+		for(unsigned i = 0 ; i < m_SRAM_missing_tags[set].size(); i++)
 		{
-			if(m_missing_tags[set][i]->addr == current->address)
+			if(m_SRAM_missing_tags[set][i]->addr == current->address)
 			{
-				m_missing_tags[set][i]->isValid = false;
+				m_SRAM_missing_tags[set][i]->isValid = false;
 			}
 		}
 	}	
@@ -208,11 +236,11 @@ Predictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access elem
 int 
 Predictor::missingTagCostValue(uint64_t block_addr, int set)
 {
-	for(unsigned i = 0 ; i < m_missing_tags[set].size() ; i++)
+	for(unsigned i = 0 ; i < m_SRAM_missing_tags[set].size() ; i++)
 	{
-		if(m_missing_tags[set][i]->addr == block_addr && m_missing_tags[set][i]->isValid)
+		if(m_SRAM_missing_tags[set][i]->addr == block_addr && m_SRAM_missing_tags[set][i]->isValid)
 		{
-			return m_missing_tags[set][i]->cost_value;
+			return m_SRAM_missing_tags[set][i]->cost_value;
 		}
 	}	
 	return 0;
@@ -328,9 +356,9 @@ bool
 Predictor::reportMiss(uint64_t block_addr , int id_set)
 {
 
-	/* Miss classification between cold/conflict/capacity */
 	stats_total_miss++;
 	
+	/* Miss classification between cold/conflict/capacity */
 	if(simu_parameters.simulate_conflicts)
 	{
 		DPRINTF(DebugFUcache , "Predictor::reportMiss block %#lx \n" , block_addr);
@@ -365,9 +393,17 @@ Predictor::reportMiss(uint64_t block_addr , int id_set)
 		}
 	 }
 	/************************************************************/ 
-	bool sram_error = hitInMissingTags(block_addr, id_set);
-	if( sram_error ) 
-		stats_SRAM_errors[stats_SRAM_errors.size()-1]++;
+	
+	bool sram_error = hitInSRAMMissingTags(block_addr, id_set);
+	if(sram_error)
+	{
+		stats_SRAM_errors[stats_SRAM_errors.size()-1]++;	
+		m_SRAM_MT_counters[id_set]++;
+	}
+		
+	bool nvm_error = hitInNVMMissingTags(block_addr , id_set);
+	if(nvm_error)
+		m_NVM_MT_counters[id_set]++;
 	
 	bool bypass_error = hitInBypassTags(block_addr , id_set , true);
 	if( bypass_error )
@@ -378,15 +414,33 @@ Predictor::reportMiss(uint64_t block_addr , int id_set)
 }
 
 bool 
-Predictor::hitInMissingTags(uint64_t block_addr, int id_set)
+Predictor::hitInNVMMissingTags(uint64_t block_addr, int id_set)
+{
+	/* Check if the block is in the missing tag array */ 
+	if(m_trackError && !m_isWarmup){
+		//An error in the NVM part is a block that miss in the NVM array 
+		//but not in the MT array
+		for(unsigned i = 0 ; i < m_NVM_missing_tags[id_set].size() ; i++)
+		{
+			if(m_NVM_missing_tags[id_set][i]->addr == block_addr && m_NVM_missing_tags[id_set][i]->isValid)
+			{
+				return true;
+			}
+		}	
+	}
+	return false;
+}		
+
+bool 
+Predictor::hitInSRAMMissingTags(uint64_t block_addr, int id_set)
 {
 	/* Check if the block is in the missing tag array */ 
 	if(m_trackError && !m_isWarmup){
 		//An error in the SRAM part is a block that miss in the SRAM array 
 		//but not in the MT array
-		for(unsigned i = 0 ; i < m_missing_tags[id_set].size() ; i++)
+		for(unsigned i = 0 ; i < m_SRAM_missing_tags[id_set].size() ; i++)
 		{
-			if(m_missing_tags[id_set][i]->addr == block_addr && m_missing_tags[id_set][i]->isValid)
+			if(m_SRAM_missing_tags[id_set][i]->addr == block_addr && m_SRAM_missing_tags[id_set][i]->isValid)
 			{
 				////DPRINTF("BasePredictor::checkMissingTags Found SRAM error as %#lx is present in MT tag %i \n", block_addr ,i);  
 				return true;
@@ -394,7 +448,28 @@ Predictor::hitInMissingTags(uint64_t block_addr, int id_set)
 		}	
 	}
 	return false;
+}
+
+void
+Predictor::updateCachePressure()
+{
+	/*
+	cout << "TIME = " << m_time << endl;
+	for(int i = 0 ; i < m_nb_set ; i++)
+	{
+		if(m_SRAM_MT_counters[i] != 0 || m_NVM_MT_counters[i] != 0)
+			cout << "Set " << i << "\t" << m_SRAM_MT_counters[i] << "\t" << m_NVM_MT_counters[i] << endl;
+	}
+	cout << "-------" << endl;
+	*/
 	
+	for(int i = 0 ; i < m_nb_set ; i++)
+	{
+		m_isNVMbusy[i] = (m_NVM_MT_counters[i] > simu_parameters.MT_counter_th) ? true : false;		
+		m_isSRAMbusy[i] = (m_SRAM_MT_counters[i] > simu_parameters.MT_counter_th) ? true : false;
+		m_NVM_MT_counters[i] = 0;
+		m_SRAM_MT_counters[i] = 0;
+	}
 }
 
 void
@@ -426,10 +501,14 @@ Predictor::migrationRecording()
 void
 Predictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element , bool isWBrequest = false)
 {	
-
+	m_time++;
+	if(m_time % simu_parameters.MT_timeframe == 0 && m_ID == -1)
+		updateCachePressure();
+	
 	uint64_t block_addr = bitRemove(element.m_address , 0 , log2(BLOCK_SIZE));
 	updateFUcaches(block_addr , inNVM);
 	hitInBypassTags(block_addr , set , false);
+
 
 	if(m_isWarmup)
 		return;
@@ -453,7 +532,8 @@ void
 Predictor::printConfig(std::ostream& out, std::string entete)
 {
 //	out << entete << ":Predictor" << endl;
-	out << entete << ":Predictor:SizeMTarray:\t" << m_assoc_MT << endl;	
+	out << entete << ":Predictor:SizeSRAM_MTarray:\t" << m_SRAMassoc_MT_size << endl;	
+	out << entete << ":Predictor:SizeNVM_MTarray:\t" << m_NVMassoc_MT_size << endl;	
 //	else
 //		out << entete << ":Predictor:TrackingEnabled\tFALSE" << endl;
 
@@ -499,8 +579,8 @@ Predictor::printStats(std::ostream& out, string entete)
 }
 
 
-LRUPredictor::LRUPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache)\
- : Predictor(nbAssoc, nbSet, nbNVMways, SRAMtable, NVMtable, cache)
+LRUPredictor::LRUPredictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache)\
+ : Predictor(id, nbAssoc, nbSet, nbNVMways, SRAMtable, NVMtable, cache)
 {
 	/* With LRU policy, the cache is not hybrid, only NVM or only SRAM */ 
 //	assert(m_nbNVMways == 0 || m_nbSRAMways == 0);

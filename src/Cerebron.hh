@@ -23,7 +23,7 @@ class HybridCache;
 class CerebronPredictor : public Predictor {
 
 	public :
-		CerebronPredictor(int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache);
+		CerebronPredictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache);
 		~CerebronPredictor();
 			
 		allocDecision allocateInNVM(uint64_t set, Access element);

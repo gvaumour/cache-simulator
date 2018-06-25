@@ -22,7 +22,7 @@ uint64_t cpt_time;
 const char* memCmd_str[] = { "INST_READ", "INST_PREFETCH", "DATA_READ", "DATA_WRITE", "DATA_PREFETCH", "CLEAN_WRITEBACK", \
 	"DIRTY_WRITEBACK", "SILENT_WRITEBACK", "INSERT", "EVICTION", "ACE"};
 
-const char* allocDecision_str[] = {"ALLOCATE_IN_SRAM", "ALLOCATE_IN_NVM" , "BYPASS_CACHE", "ALLOCATE_PREEMPTIVELY"};
+const char* str_allocDecision[] = {"ALLOCATE_IN_SRAM", "ALLOCATE_IN_NVM" , "BYPASS_CACHE", "ALLOCATE_PREEMPTIVELY"};
 
 
 const char* directory_state_str[] = {"SHARED_L1" , "MODIFIED_L1", "EXCLUSIVE_L1", "CLEAN_LLC", "DIRTY_LLC" , "NOT_PRESENT"};
@@ -293,9 +293,7 @@ init_default_parameters()
 	simu_parameters.enableMigration= false;
 	simu_parameters.flagTest = true;	
 	simu_parameters.printDebug = false;
-	
-	simu_parameters.simulate_conflicts = false;
-	
+		
 	simu_parameters.prefetchDegree = 2;
 	simu_parameters.prefetchStreams = 16; 
 	simu_parameters.enablePrefetch = false;
@@ -303,7 +301,6 @@ init_default_parameters()
 	simu_parameters.sram_assoc = 4;
 	simu_parameters.nvm_assoc = 12;
 	simu_parameters.nb_sets = 2048;
-	simu_parameters.nb_sampled_sets = 64;
 	
 	simu_parameters.saturation_threshold = 2;	
 	simu_parameters.cost_threshold = -5;
@@ -311,6 +308,14 @@ init_default_parameters()
 	simu_parameters.mediumrd_def = 4;
 
 	simu_parameters.traceLLC = false;
+
+	/********* Predictor Config *************/ 
+	simu_parameters.nb_sampled_sets = 64;
+	simu_parameters.simulate_conflicts = false;
+	simu_parameters.size_MT_NVMtags = 4;
+	simu_parameters.size_MT_SRAMtags = 4;
+	simu_parameters.MT_counter_th = 10;
+	simu_parameters.MT_timeframe = 100000;
 
 	/********* DBAMB Config *************/ 
 	simu_parameters.window_size = 20; 
@@ -321,8 +326,7 @@ init_default_parameters()
 	simu_parameters.rap_sets = 128;
 	
 	simu_parameters.ratio_RWcost = -1;
-	simu_parameters.sizeMTtags = 4;
-	
+		
 	simu_parameters.readDatasetFile = false;
 	simu_parameters.writeDatasetFile = false;
 	simu_parameters.datasetFile = RAP_DATASET_FIRSTALLOC;
