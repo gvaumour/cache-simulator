@@ -212,6 +212,8 @@ int main(int argc , char* argv[]){
 			simu_parameters.perceptron_drawFeatureMaps = true;		
 		else if(string(argv[i]) == "--Perceptron-enableBP")
 			simu_parameters.perceptron_enableBypass = true;		
+		else if(string(argv[i]) == "--enableDatasetSpilling")
+			simu_parameters.enableDatasetSpilling = true;		
 		else if(string(argv[i]) == "--Perceptron-BPThreshold")
 		{	i++;
 			simu_parameters.perceptron_bypass_threshold = atoi(argv[i]);		

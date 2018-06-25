@@ -329,6 +329,7 @@ init_default_parameters()
 		
 	simu_parameters.readDatasetFile = false;
 	simu_parameters.writeDatasetFile = false;
+	simu_parameters.enableDatasetSpilling = false;
 	simu_parameters.datasetFile = RAP_DATASET_FIRSTALLOC;
 
 	simu_parameters.optTarget = EnergyParameters();

@@ -104,7 +104,7 @@ struct SimuParameters
 	std::string DBAMB_signature;
 	int DBAMB_begin_bit;
 	int DBAMB_end_bit;
-	
+	bool enableDatasetSpilling;
 	bool readDatasetFile;
 	bool writeDatasetFile;
 	std::string datasetFile;
