@@ -534,6 +534,9 @@ Predictor::printConfig(std::ostream& out, std::string entete)
 //	out << entete << ":Predictor" << endl;
 	out << entete << ":Predictor:SizeSRAM_MTarray:\t" << m_SRAMassoc_MT_size << endl;	
 	out << entete << ":Predictor:SizeNVM_MTarray:\t" << m_NVMassoc_MT_size << endl;	
+	out << entete << ":Predictor:MT_counter_th:\t" << simu_parameters.MT_counter_th << endl;	
+	out << entete << ":Predictor:MT_timeframe:\t" << simu_parameters.MT_timeframe << endl;	
+
 //	else
 //		out << entete << ":Predictor:TrackingEnabled\tFALSE" << endl;
 

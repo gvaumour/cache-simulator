@@ -314,7 +314,7 @@ init_default_parameters()
 	simu_parameters.simulate_conflicts = false;
 	simu_parameters.size_MT_NVMtags = 4;
 	simu_parameters.size_MT_SRAMtags = 4;
-	simu_parameters.MT_counter_th = 10;
+	simu_parameters.MT_counter_th = 5;
 	simu_parameters.MT_timeframe = 100000;
 
 	/********* DBAMB Config *************/ 

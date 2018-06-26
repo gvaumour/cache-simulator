@@ -895,8 +895,8 @@ DBAMBPredictor::printStats(std::ostream& out, string entete)
 	*/
 	out << entete << ":DBAMBPredictor:NVM_medium_pred\t" << stats_NVM_medium_pred << endl;
 	out << entete << ":DBAMBPredictor:NVM_medium_pred_errors\t" << stats_NVM_medium_pred_errors << endl;
-	out << entete << ":DBAMBPredictor:BusynessMigrate" << stats_busyness_migrate_change << endl;
-	out << entete << ":DBAMBPredictor:BusynessAlloc" << stats_busyness_alloc_change << endl;
+	out << entete << ":DBAMBPredictor:BusynessMigrate\t" << stats_busyness_migrate_change << endl;
+	out << entete << ":DBAMBPredictor:BusynessAlloc\t" << stats_busyness_alloc_change << endl;
 	
 //	out << "\tSource of Error, SRAM error" << endl;
 //	out << "\t\tWrong Policy\t" << stats_error_SRAMwrongpolicy << endl;
