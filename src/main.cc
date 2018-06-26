@@ -158,6 +158,14 @@ int main(int argc , char* argv[]){
 		{	i++;
 			simu_parameters.DBAMB_signature = string(argv[i]);		
 		}
+		else if(string(argv[i]) == "--MT-counter-th")
+		{	i++;
+			simu_parameters.MT_counter_th = atoi(argv[i]);		
+		}
+		else if(string(argv[i]) == "--MT-timeframe")
+		{	i++;
+			simu_parameters.MT_timeframe = atoi(argv[i]);		
+		}		
 		else if(string(argv[i]) == "--Perceptron-BP-Features")
 		{	i++;
 			simu_parameters.perceptron_BP_features.clear();
