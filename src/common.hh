@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "Cache.hh"
 
 #define DPRINTF(FLAG, ...) if(simu_parameters.enable_debugflags.count(#FLAG) != 0) {printf(__VA_ARGS__);} 
+#define BOOL_STR(a) if(a){"TRUE";}else{"FALSE";};
 
 #define CONFIG_FILE "config.ini"
 #define OUTPUT_FILE "results.out"

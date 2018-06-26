@@ -170,7 +170,7 @@ DBAMBPredictor::allocateInNVM(uint64_t set, Access element)
 	{
 		if(rap_current->des == ALLOCATE_IN_NVM)
 		{
-			if(m_isNVMbusy[set] && !m_isSRAMbusy[set])
+			if( (m_isNVMbusy[set] && !m_isSRAMbusy[set]) && simu_parameters.enableDatasetSpilling)
 			{
 				stats_busyness_alloc_change++;
 				return ALLOCATE_IN_SRAM;
@@ -180,7 +180,7 @@ DBAMBPredictor::allocateInNVM(uint64_t set, Access element)
 		}
 		else if(rap_current->des == ALLOCATE_IN_SRAM)
 		{
-			if(!m_isNVMbusy[set] && m_isSRAMbusy[set])
+			if(!m_isNVMbusy[set] && m_isSRAMbusy[set] && simu_parameters.enableDatasetSpilling)
 			{
 				stats_busyness_alloc_change++;
 				return ALLOCATE_IN_NVM;
@@ -486,9 +486,9 @@ DBAMBPredictor::checkLazyMigration(DHPEntry* rap_current , CacheEntry* current ,
 	if( inNVM == false && rap_current->des == ALLOCATE_IN_NVM)
 	{
 		//cl is SRAM , check whether we should migrate to NVM 
-
-		//If NVM tab is busy , don't migrate
-		if(!m_isNVMbusy[set]) 
+		if(simu_parameters.enableDatasetSpilling && m_isNVMbusy[set])
+			stats_busyness_migrate_change++; //If NVM tab is busy , don't migrate
+		else
 		{
 			//Trigger Migration
 			int id_assoc = evictPolicy(set, true);//Select LRU candidate from NVM cache
@@ -512,15 +512,16 @@ DBAMBPredictor::checkLazyMigration(DHPEntry* rap_current , CacheEntry* current ,
 
 			current = replaced_entry;
 		}
-		else
-			stats_busyness_migrate_change++;
+
 	}
 	else if( rap_current->des == ALLOCATE_IN_SRAM && inNVM == true)
 	{
 		//cl is in NVM , check whether we should migrate to SRAM 
 			
 		//If SRAM tab is busy , don't migrate
-		if( !m_isSRAMbusy[set]) 
+		if(simu_parameters.enableDatasetSpilling && m_isSRAMbusy[set])
+			stats_busyness_migrate_change++; //If NVM tab is busy , don't migrate
+		else 
 		{		
 			int id_assoc = evictPolicy(set, false);
 		
@@ -538,8 +539,6 @@ DBAMBPredictor::checkLazyMigration(DHPEntry* rap_current , CacheEntry* current ,
 
 			current = replaced_entry;		
 		}
-		else
-			stats_busyness_migrate_change++;
 
 	}
 	return current;
@@ -823,7 +822,8 @@ DBAMBPredictor::printConfig(std::ostream& out, string entete)
 	out << entete << "LearningThreshold\t" << simu_parameters.learningTH << endl;
 	a =  simu_parameters.enableMigration ? "TRUE" : "FALSE"; 
 	out << entete << "MigrationEnable\t" << a << endl;
-	out << entete << "OptTarget\t" << m_optTarget << endl;
+	a =  simu_parameters.enableDatasetSpilling ? "TRUE" : "FALSE"; 
+	out << entete << "DatasetSpilling\t" << a << endl;
 	if(simu_parameters.ratio_RWcost != -1)
 		out << entete << "CostRWRatio\t" << simu_parameters.ratio_RWcost << endl;
 	out << entete << "CostReadNVM\t" << m_costParameters.costNVM[READ_ACCESS] << endl;
