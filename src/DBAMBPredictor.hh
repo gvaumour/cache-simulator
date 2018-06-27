@@ -156,6 +156,8 @@ class DBAMBPredictor : public Predictor {
 
 		void reportAccess(DHPEntry* rap_current, Access element, CacheEntry* current, bool inNVM, std::string entete, std::string reuse_class);
 		void reportMigration(DHPEntry* rap_current, CacheEntry* current, bool fromNVM);
+		void reportSpilling(DHPEntry* rap_current, uint64_t addr, bool isAlloc,  bool inNVM);
+		
 		uint64_t hashingSignature(Access element);
 		uint64_t hashingFunction(Access element);
 

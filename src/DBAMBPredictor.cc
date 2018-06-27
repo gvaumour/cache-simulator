@@ -173,6 +173,8 @@ DBAMBPredictor::allocateInNVM(uint64_t set, Access element)
 		{
 			if( (m_isNVMbusy[set] && !m_isSRAMbusy[set]) && simu_parameters.enableDatasetSpilling)
 			{
+	
+				reportSpilling(rap_current , element.m_address , true , false);
 				stats_busyness_alloc_change++;
 				return ALLOCATE_IN_SRAM;
 			}
@@ -184,6 +186,7 @@ DBAMBPredictor::allocateInNVM(uint64_t set, Access element)
 			if(!m_isNVMbusy[set] && m_isSRAMbusy[set] && simu_parameters.enableDatasetSpilling)
 			{
 				stats_busyness_alloc_change++;
+				reportSpilling(rap_current , element.m_address , true , true);
 				return ALLOCATE_IN_NVM;
 			}
 			else
@@ -395,6 +398,16 @@ DBAMBPredictor::computeRd(uint64_t set, uint64_t  index , bool inNVM)
 }
 
 
+void 
+DBAMBPredictor::reportSpilling(DHPEntry* rap_current, uint64_t addr, bool isAlloc,  bool inNVM)
+{
+	string cl_location = inNVM ? "NVM" : "SRAM";
+	string a = isAlloc ? "ALLOC" : "MIGRATION";
+	
+	dataset_file << "SPILLING:Dataset n°" << rap_current->id << ": DEFLECT " <<  a \
+		<< ", Cl 0x" << std::hex << addr << std::dec <<  " cl alloc=" \
+		<< cl_location << ", Dataset alloc=" << str_allocDecision[rap_current->des] << endl;
+}
 
 void
 DBAMBPredictor::reportAccess(DHPEntry* rap_current, Access element, CacheEntry* current, bool inNVM, string entete, string reuse_class)
@@ -488,7 +501,10 @@ DBAMBPredictor::checkLazyMigration(DHPEntry* rap_current , CacheEntry* current ,
 	{
 		//cl is SRAM , check whether we should migrate to NVM 
 		if(simu_parameters.enableDatasetSpilling && m_isNVMbusy[set])
+		{
+			reportSpilling(rap_current, current->address, false ,  inNVM);
 			stats_busyness_migrate_change++; //If NVM tab is busy , don't migrate
+		}
 		else
 		{
 			//Trigger Migration
@@ -521,7 +537,10 @@ DBAMBPredictor::checkLazyMigration(DHPEntry* rap_current , CacheEntry* current ,
 			
 		//If SRAM tab is busy , don't migrate
 		if(simu_parameters.enableDatasetSpilling && m_isSRAMbusy[set])
+		{
+			reportSpilling(rap_current, current->address, false ,  inNVM);
 			stats_busyness_migrate_change++; //If NVM tab is busy , don't migrate
+		}
 		else 
 		{		
 			int id_assoc = evictPolicy(set, false);
