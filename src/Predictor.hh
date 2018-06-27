@@ -113,10 +113,11 @@ class Predictor{
 		std::vector<int> stats_SRAM_errors;		
 		std::vector<int> stats_BP_errors;		
 		std::vector<int> stats_MigrationErrors;
+		std::vector <std::vector<bool> > stats_SRAMpressure;
 		uint64_t stats_WBerrors;
 		uint64_t stats_COREerrors;
 		
-		uint64_t m_time;
+		uint64_t stats_beginTimeFrame;
 };
 
 

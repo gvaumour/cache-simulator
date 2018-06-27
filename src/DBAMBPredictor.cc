@@ -89,6 +89,7 @@ DBAMBPredictor::DBAMBPredictor(int id, int nbAssoc , int nbSet, int nbNVMways, D
 	stats_error_SRAMlearning = 0;
 	stats_error_SRAMwrongpolicy = 0;
 
+	stats_busyness_alloc_change = 0, stats_busyness_migrate_change = 0;
 }
 
 
@@ -807,9 +808,9 @@ DBAMBPredictor::convertState(DHPEntry* rap_current)
 
 
 void 
-DBAMBPredictor::printConfig(std::ostream& out, string entete)
+DBAMBPredictor::printConfig(std::ostream& out, string entete1)
 {
-	entete +=":DBAMBPredictor:";
+	string entete =entete1 + ":DBAMBPredictor:";
 	
 	out << entete << "DHPTableAssoc\t" << m_RAP_assoc << endl;
 	out << entete << "DHPTableNBSets\t" << m_RAP_sets << endl;
@@ -832,7 +833,7 @@ DBAMBPredictor::printConfig(std::ostream& out, string entete)
 	out << entete << "HashingBeginBit\t" << simu_parameters.DBAMB_begin_bit << endl;
 	out << entete << "HashingEndBit\t" << simu_parameters.DBAMB_end_bit << endl;
 	
-	Predictor::printConfig(out, entete);
+	Predictor::printConfig(out, entete1);
 }
 
 void 

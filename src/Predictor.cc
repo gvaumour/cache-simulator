@@ -29,10 +29,14 @@ Predictor::Predictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& 
 	m_trackError = (m_ID == -1);
 	stats_COREerrors = 0;
 	stats_WBerrors = 0;
-	m_time = 0;
 	
+	stats_beginTimeFrame = 0;
+	
+	if(simu_parameters.printDebug)
+	{
+		stats_SRAMpressure = vector< vector<bool> >();
+	}
 	/********************************************/ 
-	
 	if(simu_parameters.simulate_conflicts)
 	{
 	
@@ -209,10 +213,8 @@ Predictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access elem
 
 	uint64_t block_addr = bitRemove(element.m_address , 0 , log2(BLOCK_SIZE));
 	updateFUcaches(block_addr , inNVM);
+	updateCachePressure();
 
-	m_time++;
-	if(m_time % simu_parameters.MT_timeframe == 0 && m_ID == -1)
-		updateCachePressure();
 
 	//Update the missing tag as a new cache line is brough into the cache 
 	//Has to remove the MT entry if it exists there 
@@ -453,22 +455,26 @@ Predictor::hitInSRAMMissingTags(uint64_t block_addr, int id_set)
 void
 Predictor::updateCachePressure()
 {
-	/*
-	cout << "TIME = " << m_time << endl;
-	for(int i = 0 ; i < m_nb_set ; i++)
+	if(m_ID != -1 || !m_trackError)
+		return;
+		
+	if( (cpt_time - stats_beginTimeFrame) > simu_parameters.MT_timeframe)
 	{
-		if(m_SRAM_MT_counters[i] != 0 || m_NVM_MT_counters[i] != 0)
-			cout << "Set " << i << "\t" << m_SRAM_MT_counters[i] << "\t" << m_NVM_MT_counters[i] << endl;
-	}
-	cout << "-------" << endl;
-	*/
-	
-	for(int i = 0 ; i < m_nb_set ; i++)
-	{
-		m_isNVMbusy[i] = (m_NVM_MT_counters[i] > simu_parameters.MT_counter_th) ? true : false;		
-		m_isSRAMbusy[i] = (m_SRAM_MT_counters[i] > simu_parameters.MT_counter_th) ? true : false;
-		m_NVM_MT_counters[i] = 0;
-		m_SRAM_MT_counters[i] = 0;
+		for(int i = 0 ; i < m_nb_set ; i++)
+		{
+			m_isNVMbusy[i] = (m_NVM_MT_counters[i] > simu_parameters.MT_counter_th) ? true : false;		
+			m_isSRAMbusy[i] = (m_SRAM_MT_counters[i] > simu_parameters.MT_counter_th) ? true : false;
+		
+			m_NVM_MT_counters[i] = 0;
+			m_SRAM_MT_counters[i] = 0;
+		}
+
+		if(simu_parameters.printDebug)
+		{
+			stats_SRAMpressure.push_back(m_isSRAMbusy);
+		}
+
+		stats_beginTimeFrame = cpt_time;	
 	}
 }
 
@@ -484,6 +490,7 @@ Predictor::openNewTimeFrame()
 	stats_BP_errors.push_back(0);
 	stats_MigrationErrors.push_back(0);
 	stats_nbLLCaccessPerFrame = 0;
+
 }
 
 void
@@ -501,9 +508,7 @@ Predictor::migrationRecording()
 void
 Predictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element , bool isWBrequest = false)
 {	
-	m_time++;
-	if(m_time % simu_parameters.MT_timeframe == 0 && m_ID == -1)
-		updateCachePressure();
+	updateCachePressure();
 	
 	uint64_t block_addr = bitRemove(element.m_address , 0 , log2(BLOCK_SIZE));
 	updateFUcaches(block_addr , inNVM);
@@ -544,25 +549,38 @@ Predictor::printConfig(std::ostream& out, std::string entete)
 	out << entete << ":Predictor:MediumRDdef\t" << simu_parameters.mediumrd_def << endl;
 }
 
-				 
+
+					 
 void 
 Predictor::printStats(std::ostream& out, string entete)
 {
 
 	uint64_t totalNVMerrors = 0, totalSRAMerrors= 0, totalBPerrors = 0, totalMigration = 0;	
 	ofstream output_file;
-	output_file.open(PREDICTOR_OUTPUT_FILE);
+	output_file.open(PREDICTOR_OUTPUT_FILE);	
+	for(int i = 0 ; i < m_nb_set ; i++)
+	{
+		output_file << "Set " << i << "\t";
+		for(int j = 0 ; j < stats_SRAMpressure.size() ; j++)
+		{
+			string a  = stats_SRAMpressure[j][i] ? "High" : "Low";
+			output_file << a << ",";
+		}
+		output_file << endl;
+	}
+	output_file.close();
+
+
 	for(unsigned i = 0 ; i <  stats_NVM_errors.size(); i++)
 	{	
-		output_file << stats_NVM_errors[i] << "\t" << stats_SRAM_errors[i] << "\t" << stats_BP_errors[i] << "\t"<< stats_BP_errors[i] << endl;	
 		totalNVMerrors += stats_NVM_errors[i];
 		totalSRAMerrors += stats_SRAM_errors[i];
 		totalBPerrors += stats_BP_errors[i];
 		totalMigration += stats_MigrationErrors[i];
 	}
-	output_file.close();
+	
 	out << entete << ":Predictor:TotalMiss:\t" << stats_total_miss << endl;
-
+	
 	if(simu_parameters.simulate_conflicts)
 	{
 		out << entete << ":Predictor:NVMConflictMiss:\t" << stats_nvm_conflict_miss << endl;

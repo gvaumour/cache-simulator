@@ -378,8 +378,7 @@ void my_handler(int s){
 	cout << endl;
 	cout << "Ctrl+C event caught, printing results and exiting" << endl;
 	
-	printResults(false , 0);
-		
+	printResults(false , 1);
 	exit(1); 
 
 }
@@ -392,7 +391,7 @@ void printResults(bool mergingResults, int id_trace)
 		return;
 		
 		
-	string suffixe = mergingResults ? "_"+to_string(id_trace) : ""; 
+	string suffixe = "_" + to_string(id_trace); 
 	
 	ofstream configFile;
 	configFile.open("config" + suffixe + ".ini");
