@@ -96,6 +96,7 @@ class Predictor{
 		std::vector<uint64_t> m_NVM_MT_counters;
 		std::vector<bool> m_isSRAMbusy;
 		std::vector<bool> m_isNVMbusy;
+		int m_nb_MTcouters_sampling;
 
 		std::vector< std::vector<MissingTagEntry*> >BP_missing_tags;
 

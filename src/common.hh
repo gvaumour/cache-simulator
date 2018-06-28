@@ -97,7 +97,8 @@ struct SimuParameters
 	int size_MT_SRAMtags;
 	int size_MT_NVMtags;
 	unsigned MT_counter_th;
-	int MT_timeframe;
+	uint64_t MT_timeframe;
+	int nb_MTcouters_sampling;
 	
 	float ratio_RWcost;	
 	

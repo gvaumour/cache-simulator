@@ -316,6 +316,7 @@ init_default_parameters()
 	simu_parameters.size_MT_SRAMtags = 4;
 	simu_parameters.MT_counter_th = 2;
 	simu_parameters.MT_timeframe = 1E4;
+	simu_parameters.nb_MTcouters_sampling = 1;
 
 	/********* DBAMB Config *************/ 
 	simu_parameters.window_size = 20; 

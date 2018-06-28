@@ -76,7 +76,8 @@ Predictor::Predictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& 
 
 	m_SRAMassoc_MT_size = simu_parameters.size_MT_SRAMtags;
 	m_NVMassoc_MT_size = simu_parameters.size_MT_NVMtags;
-	
+	m_nb_MTcouters_sampling = simu_parameters.nb_MTcouters_sampling;
+
 	if(m_ID == -1){
 	
 		/* Allocation of the SRAM missing tags array*/
@@ -400,7 +401,9 @@ Predictor::reportMiss(uint64_t block_addr , int id_set)
 	if(sram_error)
 	{
 		stats_SRAM_errors[stats_SRAM_errors.size()-1]++;	
-		m_SRAM_MT_counters[id_set]++;
+		int starting_set = (id_set/m_nb_MTcouters_sampling) * m_nb_MTcouters_sampling; 
+		for(int i = starting_set ; i < starting_set + m_nb_MTcouters_sampling ; i++)
+			m_SRAM_MT_counters[id_set]++;
 	}
 		
 	bool nvm_error = hitInNVMMissingTags(block_addr , id_set);
@@ -541,6 +544,7 @@ Predictor::printConfig(std::ostream& out, std::string entete)
 	out << entete << ":Predictor:SizeNVM_MTarray:\t" << m_NVMassoc_MT_size << endl;	
 	out << entete << ":Predictor:MT_counter_th:\t" << simu_parameters.MT_counter_th << endl;	
 	out << entete << ":Predictor:MT_timeframe:\t" << simu_parameters.MT_timeframe << endl;	
+	out << entete << ":Predictor:MT_sampling_sets:\t" << simu_parameters.nb_MTcouters_sampling << endl;	
 
 //	else
 //		out << entete << ":Predictor:TrackingEnabled\tFALSE" << endl;
@@ -561,7 +565,7 @@ Predictor::printStats(std::ostream& out, string entete)
 	for(int i = 0 ; i < m_nb_set ; i++)
 	{
 		output_file << "Set " << i << "\t";
-		for(int j = 0 ; j < stats_SRAMpressure.size() ; j++)
+		for(unsigned j = 0 ; j < stats_SRAMpressure.size() ; j++)
 		{
 			string a  = stats_SRAMpressure[j][i] ? "High" : "Low";
 			output_file << a << ",";

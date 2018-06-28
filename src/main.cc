@@ -166,6 +166,10 @@ int main(int argc , char* argv[]){
 		{	i++;
 			simu_parameters.MT_timeframe = atoi(argv[i]);		
 		}		
+		else if(string(argv[i]) == "--MT-sampling")
+		{	i++;
+			simu_parameters.nb_MTcouters_sampling = atoi(argv[i]);		
+		}		
 		else if(string(argv[i]) == "--Perceptron-BP-Features")
 		{	i++;
 			simu_parameters.perceptron_BP_features.clear();
