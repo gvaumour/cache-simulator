@@ -185,6 +185,7 @@ class DBAMBPredictor : public Predictor {
 		
 		unsigned stats_RAP_miss;
 		unsigned stats_RAP_hits;
+		uint64_t stats_allocate_NVM, stats_allocate_SRAM;
 
 		unsigned stats_NVM_medium_pred_errors;
 		unsigned stats_NVM_medium_pred;

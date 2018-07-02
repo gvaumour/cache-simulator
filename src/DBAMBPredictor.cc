@@ -89,6 +89,7 @@ DBAMBPredictor::DBAMBPredictor(int id, int nbAssoc , int nbSet, int nbNVMways, D
 	stats_error_SRAMlearning = 0;
 	stats_error_SRAMwrongpolicy = 0;
 
+	stats_allocate_NVM = 0, stats_allocate_SRAM = 0;
 	stats_busyness_alloc_change = 0, stats_busyness_migrate_change = 0;
 }
 
@@ -163,7 +164,7 @@ DBAMBPredictor::allocateInNVM(uint64_t set, Access element)
 	if(rap_current->des == ALLOCATE_PREEMPTIVELY)
 	{
 		if(element.isWrite())
-			return ALLOCATE_IN_SRAM;
+			return ALLOCATE_IN_SRAM;		
 		else
 			return ALLOCATE_IN_NVM;
 	}
@@ -214,7 +215,12 @@ DBAMBPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access
 	RD_TYPE reuse_class = RD_NOT_ACCURATE;
 	DHPEntry* rap_current;
 
-		
+	if(inNVM)
+		stats_allocate_NVM++;			
+	else
+		stats_allocate_SRAM++;			
+
+
 	if( (rap_current= lookup(current->signature) ) != NULL )
 	{
 
@@ -917,6 +923,8 @@ DBAMBPredictor::printStats(std::ostream& out, string entete)
 	out << entete << ":DBAMBPredictor:NVM_medium_pred_errors\t" << stats_NVM_medium_pred_errors << endl;
 	out << entete << ":DBAMBPredictor:BusynessMigrate\t" << stats_busyness_migrate_change << endl;
 	out << entete << ":DBAMBPredictor:BusynessAlloc\t" << stats_busyness_alloc_change << endl;
+	out << entete << ":DBAMBPredictor:AllocateSRAM\t" << stats_allocate_SRAM << endl;
+	out << entete << ":DBAMBPredictor:AllocateNVM\t" << stats_allocate_NVM << endl;
 	
 //	out << "\tSource of Error, SRAM error" << endl;
 //	out << "\t\tWrong Policy\t" << stats_error_SRAMwrongpolicy << endl;
