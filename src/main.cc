@@ -290,6 +290,11 @@ int main(int argc , char* argv[]){
 		simu_parameters.enableBP = true;
 		simu_parameters.enableMigration = true;
 	}
+	else if(simu_parameters.policy == "DBAM")
+	{
+		simu_parameters.enableBP = false;
+		simu_parameters.enableMigration = true;
+	}
 	
 	if( (simu_parameters.nvm_assoc == 0 || simu_parameters.sram_assoc == 0) && simu_parameters.policy != "Perceptron" )
 	 {
