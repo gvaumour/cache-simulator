@@ -275,7 +275,7 @@ DBAMBPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access el
 		rap_current->rw_history.push_back(element.isWrite());		
 		
 		//A learning cl shows some reuse so we quit dead state 
-		if(current->isLearning)
+		if(current->isLearning && rap_current->des == BYPASS_CACHE)
 		{
 			// Reset the window 
 			RW_TYPE old_rw = rap_current->state_rw;
