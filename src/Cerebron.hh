@@ -37,7 +37,9 @@ class CerebronPredictor : public Predictor {
 		void drawFeatureMaps();
 		void finishSimu();
 		
-		
+		void doLearning(CacheEntry* entry, bool inNVM);
+
+
 		allocDecision activationFunction(Access element);
 		allocDecision convertToAllocDecision(int alloc_counter, bool isLearning);
 		
