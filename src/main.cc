@@ -290,6 +290,12 @@ int main(int argc , char* argv[]){
 		simu_parameters.enableBP = true;
 		simu_parameters.enableMigration = true;
 	}
+	else if(simu_parameters.policy == "DBAMBS")
+	{
+		simu_parameters.enableBP = true;
+		simu_parameters.enableMigration = true;
+		simu_parameters.enableDatasetSpilling = true;
+	}
 	else if(simu_parameters.policy == "DBAM")
 	{
 		simu_parameters.enableBP = false;

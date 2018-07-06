@@ -97,7 +97,7 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		 m_predictor = new CerebronPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "Perceptron")
 		 m_predictor = new PerceptronPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
-	else if(m_policy == "DBAMB" || m_policy == "DBA"|| m_policy == "DBAM")
+	else if(m_policy == "DBAMB" || m_policy == "DBA" || m_policy == "DBAM" || m_policy == "DBAMBS")
 		 m_predictor = new DBAMBPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else {
 		assert(false && "Cannot initialize predictor for HybridCache");
