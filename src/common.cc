@@ -374,6 +374,9 @@ init_default_parameters()
 	/************ Cerebron Config ************/ 
 	simu_parameters.Cerebron_activation_function = "linear";
 	simu_parameters.Cerebron_independantLearning = false;
+	simu_parameters.Cerebron_fastlearning = false;
+
+
 	simu_parameters.nbCores = 1;
 	simu_parameters.policy = "Cerebron";
 

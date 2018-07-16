@@ -204,17 +204,14 @@ int main(int argc , char* argv[]){
 			simu_parameters.PHC_features.clear();
 			simu_parameters.PHC_features = split(string(argv[i]) , ',');
 		}
-		else if(string(argv[i]) == "--PHC-Features")
-		{	i++;
-			simu_parameters.PHC_features.clear();
-			simu_parameters.PHC_features = split(string(argv[i]) , ',');
-		}
 		else if(string(argv[i]) == "--Cerebron-function")
 		{	i++;
 			simu_parameters.Cerebron_activation_function = string(argv[i]);
 		}
 		else if(string(argv[i]) == "--Cerebron-independantLearning")
 			simu_parameters.Cerebron_independantLearning = true;
+		else if(string(argv[i]) == "--Cerebron-fastLearning")
+			simu_parameters.Cerebron_fastlearning = true;
 		else if(string(argv[i]) == "--Perceptron-Alloc-Features")
 		{	i++;
 			simu_parameters.perceptron_Allocation_features.clear();

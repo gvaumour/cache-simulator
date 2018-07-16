@@ -27,9 +27,10 @@ class MissingTagEntry{
 		int cost_value;
 		bool isValid;
 		bool isBypassed;
-	
-		MissingTagEntry() : addr(0) , last_time_touched(0), cost_value(0), isValid(false), isBypassed(false) { };
-		MissingTagEntry(uint64_t a , uint64_t t, bool v) : addr(a) , last_time_touched(t), isValid(v), isBypassed(false) {};
+		bool allocSite;
+			
+		MissingTagEntry() : addr(0) , last_time_touched(0), cost_value(0), isValid(false), isBypassed(false), allocSite(false) { };
+		MissingTagEntry(uint64_t a , uint64_t t, bool v) : addr(a) , last_time_touched(t), isValid(v), isBypassed(false), allocSite(false){};
 	
 };
 
@@ -60,7 +61,10 @@ class Predictor{
 		void updateCachePressure();
 
 		bool reportMiss(uint64_t block_addr , int id_set);
-		bool hitInBypassTags(uint64_t block_addr , int id_set, bool isMiss);
+		bool checkBypassTag(uint64_t block_addr , int set);
+		void updateBypassTag(uint64_t block_addr , int set, bool inNVM);
+		bool getHitPerDataArray(uint64_t block_addr, int set , bool inNVM);
+
 		bool hitInSRAMMissingTags(uint64_t block_addr, int set);
 		bool hitInNVMMissingTags(uint64_t block_addr, int set);
 		void updateFUcaches(uint64_t block_addr, bool inNVM);

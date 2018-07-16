@@ -784,17 +784,17 @@ HybridCache::classifyRD(int set , int index)
 	
 	int position = 0;
 	
-	//cout << "classifyRD, set = " << set  << " index = " << index << " ref_rd = " << m_tableSRAM[set][index]->policyInfo << endl;
+	cout << "classifyRD, set = " << set  << " index = " << index << " ref_rd = " << m_tableSRAM[set][index]->policyInfo << endl;
 	/* Determine the position of the cache line in the LRU stack */
 	for(unsigned i = 0 ; i < line.size() ; i ++)
 	{
-	//	cout << "\tPolicy info = " << line[i]->policyInfo << endl;
+		cout << "\tPolicy info = " << line[i]->policyInfo << endl;
 
 		if(line[i]->policyInfo < ref_rd && line[i]->isValid)
 			position++;
 	}	
 
-	//cout << "Position = " << position << endl;
+	cout << "Position = " << position << endl;
 	if(position < 4)
 		return RD_SHORT;
 	else

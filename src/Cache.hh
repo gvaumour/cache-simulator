@@ -60,6 +60,7 @@ enum RD_TYPE
 	NUM_RD_TYPE
 };
 
+
 enum RW_TYPE
 {
 	DEAD = 0,
@@ -210,7 +211,7 @@ class CacheEntry{
 		
 		//field used only by the SaturationCounter Predictor
 		int saturation_counter; 
-		int cost_value; 
+		double cost_value;
 		
 		//field used only by the RAP predictor
 		bool isLearning;

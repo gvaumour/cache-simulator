@@ -212,16 +212,17 @@ CerebronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 void
 CerebronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element, bool isWBrequest)
 {
-	update_globalPChistory(element.m_pc);
-	
-	stats_update++;
-	
 	CacheEntry *entry = get_entry(set , index , inNVM);
-	entry->policyInfo = m_cpt++;
-
 	RD_TYPE rd = classifyRD( set , index , inNVM );
-	stats_access_class[rd][element.isWrite()]++;
-
+	/*
+	bool hitSRAM = getHitPerDataArray(element.block_addr , set , false);
+	bool hitNVM = getHitPerDataArray(element.block_addr , set , true);
+	*/
+	
+	entry->policyInfo = m_cpt++;
+	
+	update_globalPChistory(element.m_pc);	
+	
 	entry->cost_value += m_costAccess[element.isWrite()][rd];
 
 	if(entry->isLearning)
@@ -233,14 +234,17 @@ CerebronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access
 			int hash = m_features_hash[i](element.block_addr , element.m_pc);
 			m_features[i]->recordAccess(hash, element.isWrite() , rd);		
 		}
-	
-		doLearning(entry, inNVM);
+		if(simu_parameters.Cerebron_fastlearning)
+			doLearning(entry, inNVM);
 	}
 
-	stats_nbHits++;
-	miss_counter--;
 	if(miss_counter < 0)
 		miss_counter = 0;
+
+	stats_access_class[rd][element.isWrite()]++;
+	stats_update++;
+	stats_nbHits++;
+	miss_counter--;
 
 	Predictor::updatePolicy(set , index , inNVM , element , isWBrequest);
 }
@@ -300,7 +304,7 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 				
 		}
 
-	}		
+	}
 		
 	if( (entry->cost_value < 0 && !inNVM) || \
 		(entry->cost_value > 0 && inNVM) )
@@ -311,9 +315,9 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 		stats_good_alloc++;
 		
 	/* Trigger the learning process */ 
-	/*if( entry->isLearning)
+	if( entry->isLearning && !simu_parameters.Cerebron_fastlearning)
 		doLearning(entry, inNVM);
-	*/
+	
 
 	if(entry->nbWrite == 0 && entry->nbRead == 0)
 		stats_nbDeadLine[stats_nbDeadLine.size()-1]++;
@@ -663,11 +667,14 @@ CerebronPredictor::classifyRD(int set , int index, bool inNVM)
 	
 	int position = 0;
 	/* Determine the position of the cache line in the LRU stack */
+//	cout << "classifyRD, cpt_time =  " << cpt_time << ", set = " << set << " col = " << index << ", ref_rd = " << ref_rd << endl;
 	for(unsigned i = 0 ; i < line.size() ; i ++)
 	{
-		if(line[i]->policyInfo < ref_rd && line[i]->isValid)
+//		cout << "\tPolicy[" << i << "] = " << line[i]->policyInfo << endl;
+		if(line[i]->policyInfo > ref_rd && line[i]->isValid)
 			position++;
 	}	
+//	cout << "Position = " << position << endl;
 
 	if(simu_parameters.nvm_assoc > simu_parameters.sram_assoc)
 	{

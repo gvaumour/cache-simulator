@@ -231,6 +231,8 @@ Predictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access elem
 				m_SRAM_missing_tags[set][i]->isValid = false;
 			}
 		}
+		
+		updateBypassTag( block_addr, set, inNVM);
 	}	
 	//DPRINTF("Predictor::insertRecord Begin ");
 
@@ -250,51 +252,53 @@ Predictor::missingTagCostValue(uint64_t block_addr, int set)
 }
 
 bool
-Predictor::hitInBypassTags(uint64_t block_addr , int set , bool isMiss)
+Predictor::checkBypassTag(uint64_t block_addr , int set)
 {	
+	for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
+	{	
+		if(BP_missing_tags[set][i]->addr == block_addr)
+			return true;
+	}
+	return false;
+}
 
-	bool find = false , isBPerror = false;
+void
+Predictor::updateBypassTag(uint64_t block_addr, int set, bool inNVM)
+{
 	//DPRINTF("Predictor::recordAllocationDecision Set %d, block_addr = 0x%lx\n ", set, block_addr);
 
 	//Look if the entry already exists, if yes => BP Error, if No insert it
 	for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
 	{	
 		if(BP_missing_tags[set][i]->addr == block_addr)
-		{
-			find = true;
 			BP_missing_tags[set][i]->last_time_touched = cpt_time;
-			isBPerror = isMiss ? true : false;
+			return;
+	}
+	//DPRINTF("Predictor::recordAllocationDecision Didn't find the entry in the BP Missing Tags\n");
+	int index_oldest =0;
+	uint64_t oldest = BP_missing_tags[set][0]->last_time_touched;
+	for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
+	{
+		if(!BP_missing_tags[set][i]->isValid)		
+		{
+			index_oldest= i;
 			break;
 		}
-	}
-	if(!find)
-	{
-		//DPRINTF("Predictor::recordAllocationDecision Didn't find the entry in the BP Missing Tags\n");
-		int index_oldest =0;
-		uint64_t oldest = BP_missing_tags[set][0]->last_time_touched;
-		for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
+	
+		if(BP_missing_tags[set][i]->last_time_touched < oldest)
 		{
-			if(!BP_missing_tags[set][i]->isValid)		
-			{
-				index_oldest= i;
-				break;
-			}
-		
-			if(BP_missing_tags[set][i]->last_time_touched < oldest)
-			{
-				index_oldest = i;
-				oldest = BP_missing_tags[set][i]->last_time_touched;
-			}
-			
+			index_oldest = i;
+			oldest = BP_missing_tags[set][i]->last_time_touched;
 		}
-		//DPRINTF("Predictor::Insertion of the new entry at assoc %d\n", index_oldest);
-		
-		BP_missing_tags[set][index_oldest]->last_time_touched = cpt_time;
-		BP_missing_tags[set][index_oldest]->addr = block_addr;
-		BP_missing_tags[set][index_oldest]->isValid = true;		
 	}
-	return isBPerror;
+	//DPRINTF("Predictor::Insertion of the new entry at assoc %d\n", index_oldest);
+	
+	BP_missing_tags[set][index_oldest]->last_time_touched = cpt_time;
+	BP_missing_tags[set][index_oldest]->addr = block_addr;
+	BP_missing_tags[set][index_oldest]->isValid = true;		
+	BP_missing_tags[set][index_oldest]->allocSite = inNVM;		
 }
+
 
 
 void 
@@ -410,7 +414,7 @@ Predictor::reportMiss(uint64_t block_addr , int id_set)
 	if(nvm_error)
 		m_NVM_MT_counters[id_set]++;
 	
-	bool bypass_error = hitInBypassTags(block_addr , id_set , true);
+	bool bypass_error = checkBypassTag(block_addr , id_set);
 	if( bypass_error )
 		stats_BP_errors[stats_BP_errors.size()-1]++;
 	
@@ -458,7 +462,7 @@ Predictor::hitInSRAMMissingTags(uint64_t block_addr, int id_set)
 void
 Predictor::updateCachePressure()
 {
-	if(m_ID != -1 || !m_trackError)
+	if(!m_trackError)
 		return;
 		
 	if( (cpt_time - stats_beginTimeFrame) > simu_parameters.MT_timeframe)
@@ -515,8 +519,9 @@ Predictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element
 	
 	uint64_t block_addr = bitRemove(element.m_address , 0 , log2(BLOCK_SIZE));
 	updateFUcaches(block_addr , inNVM);
-	hitInBypassTags(block_addr , set , false);
 
+	if(m_trackError)
+		updateBypassTag(block_addr , set , inNVM);
 
 	if(m_isWarmup)
 		return;
@@ -531,10 +536,41 @@ Predictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element
 		else
 			stats_COREerrors++;
 	}
-	
-	
 }
 
+
+bool
+Predictor::getHitPerDataArray(uint64_t block_addr, int set , bool inNVM)
+{
+	uint64_t ref_time = 0;
+	
+	for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
+	{
+		if( block_addr == BP_missing_tags[set][i]->addr)
+		{
+			ref_time = BP_missing_tags[set][i]->last_time_touched;
+			break;		
+		}
+	}
+	
+	int pos = 0;
+	//If the block is not present , the ref_time is 0, all valid block allocated to (inNVM) will increment pos
+	
+	for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
+	{
+		if( BP_missing_tags[set][i]->isValid && \
+			BP_missing_tags[set][i]->allocSite == inNVM && \
+			ref_time < BP_missing_tags[set][i]->last_time_touched)
+		{
+			pos++;
+		}
+	}
+
+	if(inNVM)
+		return pos < simu_parameters.nvm_assoc ? true : false;
+	else
+		return pos < simu_parameters.sram_assoc ? true : false;
+}
 
 void 
 Predictor::printConfig(std::ostream& out, std::string entete)

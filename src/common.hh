@@ -135,6 +135,7 @@ struct SimuParameters
 	/****/
 	std::string Cerebron_activation_function;
 	bool Cerebron_independantLearning; 
+	bool Cerebron_fastlearning;
 };
 
 std::vector<std::string> split(std::string s, char delimiter);
