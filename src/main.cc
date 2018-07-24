@@ -212,6 +212,8 @@ int main(int argc , char* argv[]){
 			simu_parameters.Cerebron_independantLearning = true;
 		else if(string(argv[i]) == "--Cerebron-fastLearning")
 			simu_parameters.Cerebron_fastlearning = true;
+		else if(string(argv[i]) == "--Cerebron-RDmodel")
+			simu_parameters.Cerebron_RDmodel = true;
 		else if(string(argv[i]) == "--Perceptron-Alloc-Features")
 		{	i++;
 			simu_parameters.perceptron_Allocation_features.clear();

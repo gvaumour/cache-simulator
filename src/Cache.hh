@@ -24,8 +24,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <vector>
 #include <ostream>
 
-#define READ_ACCESS 0
-#define WRITE_ACCESS 1
+#define READ_ACCESS false
+#define WRITE_ACCESS true
 
 
 enum MemCmd{
@@ -168,6 +168,7 @@ class CacheEntry{
 			signature = 0;
 			last_time_access = 0;
 			coherence_state = COHERENCE_INVALID;
+			e_nvm = 0, e_sram = 0;
 		}
 		
 		void copyCL(CacheEntry* a)
@@ -212,6 +213,8 @@ class CacheEntry{
 		//field used only by the SaturationCounter Predictor
 		int saturation_counter; 
 		double cost_value;
+		double e_sram;
+		double e_nvm;
 		
 		//field used only by the RAP predictor
 		bool isLearning;

@@ -37,6 +37,8 @@ class CerebronPredictor : public Predictor {
 		void drawFeatureMaps();
 		void finishSimu();
 		
+		void recordAccess(CacheEntry* entry,uint64_t block_addr, uint64_t pc, int set, bool isWrite , bool inNVM, int index);
+
 		void doLearning(CacheEntry* entry, bool inNVM);
 
 
@@ -44,6 +46,8 @@ class CerebronPredictor : public Predictor {
 		allocDecision convertToAllocDecision(int alloc_counter, bool isLearning);
 		
 		RD_TYPE classifyRD(int set , int index , bool inNVM);
+		allocDecision getDecision(CacheEntry* entry);
+
 		CacheEntry* get_entry(uint64_t set , uint64_t index , bool inNVM);
 
 		void update_globalPChistory(uint64_t pc);
@@ -71,7 +75,7 @@ class CerebronPredictor : public Predictor {
 		std::map<uint64_t,int> m_callee_map;
 		
 		bool m_enableAllocation;
-		
+		CostFunctionParameters m_costParameters;
 		/* Stats */ 
 		std::vector<uint64_t> stats_nbBPrequests;
 		std::vector<uint64_t> stats_nbDeadLine;

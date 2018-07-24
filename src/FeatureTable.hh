@@ -13,12 +13,17 @@ class FeatureEntry
 		FeatureEntry() { initEntry(); isValid = false; };
 		
 		void initEntry() {
-		 	cpts =  std::vector< std::vector<int> >(NUM_RW_TYPE, std::vector<int>(NUM_RD_TYPE, 0));
-		 					
+			if(simu_parameters.Cerebron_RDmodel)
+			{
+			 	SRAM_seq = std::vector< std::vector<int> >(2, std::vector<int>(2, 0));	
+			 	NVM_seq = std::vector< std::vector<int> >(2, std::vector<int>(2, 0));				
+			}
+			else
+			 	cpts =  std::vector< std::vector<int> >(NUM_RW_TYPE, std::vector<int>(NUM_RD_TYPE, 0));
+
 			isValid = true;
-			cptWindow = 0;			
-//			allocation_counter = 0;
-//			bypass_counter = 0;
+			cptWindow = 0;
+
 			weight = simu_parameters.perceptron_counter_size/2;
 			des = ALLOCATE_PREEMPTIVELY;
 		 };
@@ -26,6 +31,8 @@ class FeatureEntry
 		void updateDatasetState();
 		
 		std::vector< std::vector<int> > cpts;
+		std::vector< std::vector<int> > SRAM_seq;
+		std::vector< std::vector<int> > NVM_seq;
 
 		int cptWindow;
 		
@@ -53,8 +60,9 @@ class FeatureTable
 
 		void openNewTimeFrame();
 		void finishSimu();
-		void recordEvict(int index , bool hasBeenReused);		
+		void recordEvict(int index , bool hasBeenReused);
 		void recordAccess(int index, bool isWrite, RD_TYPE rd);
+		void recordAccess(int index, bool isWrite, bool isHitSRAM, bool isHitNVM);
 
 //		void decreaseBPConfidence(int index);
 //		void increaseBPConfidence(int index);

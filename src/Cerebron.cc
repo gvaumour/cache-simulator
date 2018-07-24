@@ -50,7 +50,8 @@ CerebronPredictor::CerebronPredictor(int id, int nbAssoc , int nbSet, int nbNVMw
 	m_costAccess[false][RD_MEDIUM] = simu_parameters.PHC_cost_mediumRead;
 	m_costAccess[true][RD_SHORT] = simu_parameters.PHC_cost_shortWrite;
 	m_costAccess[false][RD_SHORT] = simu_parameters.PHC_cost_shortRead;
-		
+	
+	m_costParameters = simu_parameters.optTarget;
 	
 	miss_counter = 0;
 	m_cpt = 0;
@@ -173,6 +174,8 @@ void
 CerebronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access element)
 {
 	CacheEntry* entry = get_entry(set , index , inNVM);
+	recordAccess(entry, element.block_addr, element.m_pc, set , element.isWrite() , inNVM, index);
+
 	entry->policyInfo = m_cpt++;
 
 	stats_allocate++;
@@ -194,11 +197,18 @@ CerebronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 			m_features[i]->recordAccess(hash, element.isWrite() , rd);		
 		}
 		
-		entry->cost_value = m_costAccess[element.isWrite()][RD_SHORT];	
+		if( simu_parameters.Cerebron_RDmodel)
+		{
+			entry->e_sram = m_costParameters.costSRAM[element.isWrite()];
+			entry->e_nvm = m_costParameters.costNVM[element.isWrite()];
+		}
+		else
+			entry->cost_value = m_costAccess[element.isWrite()][RD_SHORT];	
+
 		if( element.isSRAMerror)
 		{
 			entry->cost_value = missingTagCostValue(element.block_addr , set) +  m_costAccess[element.isWrite()][RD_MEDIUM];
-			stats_cptLearningSRAMerror++;		
+			stats_cptLearningSRAMerror++;
 		}
 		else
 			entry->cost_value = m_costAccess[element.isWrite()][RD_SHORT];
@@ -214,26 +224,17 @@ CerebronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access
 {
 	CacheEntry *entry = get_entry(set , index , inNVM);
 	RD_TYPE rd = classifyRD( set , index , inNVM );
-	/*
-	bool hitSRAM = getHitPerDataArray(element.block_addr , set , false);
-	bool hitNVM = getHitPerDataArray(element.block_addr , set , true);
-	*/
+	stats_access_class[rd][element.isWrite()]++;
+
+	recordAccess( entry , element.block_addr, entry->m_pc, set, element.isWrite() , inNVM, index);
 	
 	entry->policyInfo = m_cpt++;
-	
-	update_globalPChistory(element.m_pc);	
-	
-	entry->cost_value += m_costAccess[element.isWrite()][rd];
+	update_globalPChistory(element.m_pc);
 
 	if(entry->isLearning)
 	{
 //		cout << "UpdatePolicy Learning Cache line 0x" << std::hex << element.block_addr
 //			<< std::dec << " Cost Value " << entry->cost_value << endl;
-		for(unsigned i = 0 ; i < m_features.size() ; i++)
-		{
-			int hash = m_features_hash[i](element.block_addr , element.m_pc);
-			m_features[i]->recordAccess(hash, element.isWrite() , rd);		
-		}
 		if(simu_parameters.Cerebron_fastlearning)
 			doLearning(entry, inNVM);
 	}
@@ -241,7 +242,6 @@ CerebronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access
 	if(miss_counter < 0)
 		miss_counter = 0;
 
-	stats_access_class[rd][element.isWrite()]++;
 	stats_update++;
 	stats_nbHits++;
 	miss_counter--;
@@ -270,10 +270,10 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 	if(!entry->isValid)
 		return assoc_victim;
 
+	allocDecision des = getDecision(entry);
 	if(simu_parameters.perceptron_drawFeatureMaps)
 	{
 		bool global_error = false;
-		allocDecision des = entry->cost_value > 0 ? ALLOCATE_IN_SRAM : ALLOCATE_IN_NVM;
 		
 		if(( des == ALLOCATE_IN_SRAM && inNVM ) || \
 			( des == ALLOCATE_IN_NVM && !inNVM ))
@@ -306,8 +306,8 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 
 	}
 		
-	if( (entry->cost_value < 0 && !inNVM) || \
-		(entry->cost_value > 0 && inNVM) )
+	if( (des == ALLOCATE_IN_NVM && !inNVM) || \
+		(des == ALLOCATE_IN_SRAM && inNVM) )
 	{
 		stats_wrong_alloc++;
 	}
@@ -326,6 +326,7 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 	return assoc_victim;
 }
 
+
 void
 CerebronPredictor::evictRecording( int id_set , int id_assoc , bool inNVM)
 { 
@@ -335,13 +336,13 @@ CerebronPredictor::evictRecording( int id_set , int id_assoc , bool inNVM)
 void 
 CerebronPredictor::doLearning(CacheEntry* entry, bool inNVM)
 {
-
+	allocDecision des = getDecision(entry);
 	if( simu_parameters.Cerebron_independantLearning)
 	{
 		for(unsigned i = 0; i < m_features.size() ; i++)
 		{
-			if( (entry->cost_value < 0 && entry->PHC_allocation_pred[i].second == ALLOCATE_IN_SRAM ) || \
-			(entry->cost_value > 0 && entry->PHC_allocation_pred[i].second == ALLOCATE_IN_NVM) )
+			if( (des == ALLOCATE_IN_NVM && entry->PHC_allocation_pred[i].second == ALLOCATE_IN_SRAM ) || \
+			( des == ALLOCATE_IN_SRAM && entry->PHC_allocation_pred[i].second == ALLOCATE_IN_NVM) )
 				m_features[i]->decreaseConfidence(entry->PHC_allocation_pred[i].first);
 			else 
 				m_features[i]->increaseConfidence(entry->PHC_allocation_pred[i].first);
@@ -349,8 +350,8 @@ CerebronPredictor::doLearning(CacheEntry* entry, bool inNVM)
 	}
 	else
 	{		
-		if( (entry->cost_value < 0 && !inNVM) || \
-			(entry->cost_value > 0 && inNVM) )
+		if( ( des == ALLOCATE_IN_NVM && !inNVM) || \
+			(des == ALLOCATE_IN_SRAM && inNVM) )
 		{
 			for(unsigned i = 0; i < m_features.size() ; i++)
 			{
@@ -368,7 +369,65 @@ CerebronPredictor::doLearning(CacheEntry* entry, bool inNVM)
 		}
 	}
 }
-		
+
+allocDecision 
+CerebronPredictor::getDecision(CacheEntry* entry)
+{
+	if(simu_parameters.Cerebron_RDmodel)
+	{
+		if( entry->e_sram > entry->e_nvm )
+			return ALLOCATE_IN_SRAM;
+		else 
+			return ALLOCATE_IN_NVM;
+	}
+	else
+	{
+		if( entry->cost_value > 0)
+			return ALLOCATE_IN_SRAM;
+		else
+			return ALLOCATE_IN_NVM;
+	}
+}
+
+void
+CerebronPredictor::recordAccess(CacheEntry* entry,uint64_t block_addr, uint64_t pc, int set, bool isWrite , bool inNVM, int index)
+{
+	if(simu_parameters.Cerebron_RDmodel)
+	{
+		bool hitSRAM = false, hitNVM = false;
+		hitSRAM = getHitPerDataArray( block_addr , set , false);
+		hitNVM = getHitPerDataArray( block_addr , set , true);
+
+		entry->e_sram += m_costParameters.costSRAM[isWrite];
+		entry->e_sram +=  hitSRAM ? m_costParameters.costDRAM[isWrite] : 0;
+
+		entry->e_nvm += m_costParameters.costNVM[isWrite];
+		entry->e_nvm += hitNVM ? m_costParameters.costDRAM[isWrite] : 0;
+	
+		if(entry->isLearning)
+		{
+			for(unsigned i = 0 ; i < m_features.size() ; i++)
+			{
+				int hash = m_features_hash[i](block_addr , pc);
+				m_features[i]->recordAccess(hash, isWrite , hitSRAM , hitNVM);
+			}		
+		}
+	}
+	else
+	{
+		RD_TYPE rd = RD_NOT_ACCURATE;
+		rd = classifyRD( set , index , inNVM );		
+		entry->cost_value += m_costAccess[isWrite][rd];
+		if(entry->isLearning)
+		{
+			for(unsigned i = 0 ; i < m_features.size() ; i++)
+			{
+				int hash = m_features_hash[i]( block_addr , pc);
+				m_features[i]->recordAccess(hash, isWrite , rd);	
+			}		
+		}
+	}	
+}
 
 allocDecision
 CerebronPredictor::activationFunction(Access element)
@@ -518,7 +577,12 @@ void CerebronPredictor::printConfig(std::ostream& out, std::string entete) {
 	out << entete << ":Cerebron:ActivationFunction\t" << simu_parameters.Cerebron_activation_function  << endl;
 	string b = simu_parameters.Cerebron_independantLearning ? "TRUE" : "FALSE";
 	out << entete << ":Cerebron:IndependantLearning\t" << b  << endl;
+	string c = simu_parameters.Cerebron_fastlearning ? "TRUE" : "FALSE";
+	out << entete << ":Cerebron:FastLearning\t" << c << endl;
 	
+	string d = simu_parameters.Cerebron_RDmodel ? "TRUE" : "FALSE";
+	out << entete << ":Cerebron:UsingRDModel\t" << d << endl;
+
 //	out << entete << ":Cerebron:CostLearning\t" << simu_parameters.perceptron_allocation_learning << endl; 
 	out << entete << ":Cerebron:AllocFeatures\t"; 
 	for(auto p : m_criterias_names)

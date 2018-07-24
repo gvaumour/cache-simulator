@@ -71,6 +71,7 @@ with open(config_file) as f:
 		if m != None:
 			ratio = int(m.group(1));
 
+print "ratio is " + str(ratio);
 if ratio != -1:
 	costNVM[WRITE_ACCESS] = ratio * costNVM[READ_ACCESS];
 
