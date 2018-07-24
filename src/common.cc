@@ -310,7 +310,7 @@ init_default_parameters()
 	simu_parameters.traceLLC = false;
 
 	/********* Predictor Config *************/ 
-	simu_parameters.nb_sampled_sets = 2048;
+	simu_parameters.nb_sampled_sets = 64;
 	simu_parameters.simulate_conflicts = false;
 	simu_parameters.size_MT_NVMtags = 4;
 	simu_parameters.size_MT_SRAMtags = 4;
