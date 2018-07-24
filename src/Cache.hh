@@ -169,6 +169,7 @@ class CacheEntry{
 			last_time_access = 0;
 			coherence_state = COHERENCE_INVALID;
 			e_nvm = 0, e_sram = 0;
+			missPC = 0;
 		}
 		
 		void copyCL(CacheEntry* a)
@@ -184,12 +185,14 @@ class CacheEntry{
 			coherence_state = a->coherence_state; 
 			isPrefetch = a->isPrefetch;
 			pc_history = a->pc_history;
+			missPC = a->missPC;
 		}
 		bool isValid;
 		bool isDirty;
 		uint64_t address;
 		uint64_t m_pc;
 		uint64_t signature;
+		uint64_t missPC;
 		uint64_t value;
 		uint64_t last_time_access;
 		

@@ -48,9 +48,9 @@ FeatureEntry::updateDatasetState()
 	}
 
 	if(E_SRAM > E_NVM)
-		des = ALLOCATE_IN_SRAM;
-	else
 		des = ALLOCATE_IN_NVM;
+	else
+		des = ALLOCATE_IN_SRAM;
 		
 		
 	cpts = vector< vector<int> >(NUM_RW_TYPE, vector<int>(NUM_RD_TYPE, 0));
@@ -149,9 +149,9 @@ FeatureTable::getAllocDecision(int index, bool isWrite)
 	if(result == ALLOCATE_PREEMPTIVELY)
 	{
 		if(isWrite)
-			result = ALLOCATE_IN_NVM;
-		else 
 			result = ALLOCATE_IN_SRAM;
+		else 
+			result = ALLOCATE_IN_NVM;
 	}
 
 	if(simu_parameters.perceptron_drawFeatureMaps)

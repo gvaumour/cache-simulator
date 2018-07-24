@@ -15,7 +15,7 @@
 #include "Cache.hh"
 
 #define FILE_OUTPUT_Cerebron "output_Cerebron.out"
-
+#define CEREBRON_DEBUG_FILE "cerebron_debug.out"
 
 class Predictor;
 class HybridCache;
@@ -37,7 +37,9 @@ class CerebronPredictor : public Predictor {
 		void drawFeatureMaps();
 		void finishSimu();
 		
-		void recordAccess(CacheEntry* entry,uint64_t block_addr, uint64_t pc, int set, bool isWrite , bool inNVM, int index);
+		void recordAccess(CacheEntry* entry,uint64_t block_addr, uint64_t missPC, int set, bool isWrite , bool inNVM, int index, RD_TYPE rd);
+		void reportAccess(FeatureEntry* feature_entry, Access element, CacheEntry* current,\
+					 bool inNVM, std::string entete, std::string reuse_class, int hash);
 
 		void doLearning(CacheEntry* entry, bool inNVM);
 

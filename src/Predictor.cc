@@ -399,8 +399,8 @@ Predictor::reportMiss(uint64_t block_addr , int id_set)
 				stats_capacity_miss++;
 		}
 	 }
-	/************************************************************/ 
-	
+	 
+	/************************************************************/
 	bool sram_error = hitInSRAMMissingTags(block_addr, id_set);
 	if(sram_error)
 	{

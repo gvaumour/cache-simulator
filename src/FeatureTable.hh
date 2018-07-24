@@ -78,7 +78,7 @@ class FeatureTable
 		allocDecision getAllocDecision(int index, bool isWrite);
 		
 //		std::vector< std::vector<int> > resize_image(std::vector< std::vector<int> >& img);
-
+		FeatureEntry* getEntry(int hash){ return m_table[hash];};
 		
 	private:
 		int m_size;
