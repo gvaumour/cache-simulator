@@ -300,7 +300,7 @@ init_default_parameters()
 
 	simu_parameters.sram_assoc = 4;
 	simu_parameters.nvm_assoc = 12;
-	simu_parameters.nb_sets = 64;
+	simu_parameters.nb_sets = 2048;
 	
 	simu_parameters.saturation_threshold = 2;	
 	simu_parameters.cost_threshold = -5;
@@ -310,7 +310,7 @@ init_default_parameters()
 	simu_parameters.traceLLC = false;
 
 	/********* Predictor Config *************/ 
-	simu_parameters.nb_sampled_sets = 64;
+	simu_parameters.nb_sampled_sets = 2048;
 	simu_parameters.simulate_conflicts = false;
 	simu_parameters.size_MT_NVMtags = 4;
 	simu_parameters.size_MT_SRAMtags = 4;
