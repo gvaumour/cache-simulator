@@ -19,7 +19,6 @@ FeatureEntry::updateDatasetState()
 	
 	if(simu_parameters.Cerebron_RDmodel)
 	{
-		
 		E_SRAM = SRAM_seq[WRITE_ACCESS][false] * (params.costDRAM[WRITE_ACCESS] + params.costSRAM[WRITE_ACCESS]) +\
 			 SRAM_seq[WRITE_ACCESS][true] * (params.costSRAM[WRITE_ACCESS]) +\
 			 SRAM_seq[READ_ACCESS][false] * (params.costDRAM[READ_ACCESS] + params.costSRAM[READ_ACCESS]) +\
@@ -32,17 +31,19 @@ FeatureEntry::updateDatasetState()
 	}
 	else
 	{
-		E_SRAM = (params.costDRAM[WRITE_ACCESS] + params.costSRAM[WRITE_ACCESS]) * \
-			       		 (cpts[WRITE_ACCESS][RD_NOT_ACCURATE] + cpts[WRITE_ACCESS][RD_MEDIUM]) + \
-				(params.costDRAM[READ_ACCESS] + params.costSRAM[WRITE_ACCESS]) * \
-			       		 (cpts[READ_ACCESS][RD_NOT_ACCURATE] + cpts[READ_ACCESS][RD_MEDIUM]) + \
-			       params.costSRAM[READ_ACCESS] * cpts[READ_ACCESS][RD_SHORT] + \
-			       params.costSRAM[WRITE_ACCESS] * cpts[WRITE_ACCESS][RD_SHORT];	
+		E_SRAM =(params.costDRAM[READ_ACCESS] + params.costSRAM[READ_ACCESS])* \
+				(cpts[READ_ACCESS][RD_NOT_ACCURATE]) + \
+			(params.costDRAM[WRITE_ACCESS] + params.costSRAM[WRITE_ACCESS])* \
+				(cpts[WRITE_ACCESS][RD_NOT_ACCURATE]) + \
+			 params.costDRAM[READ_ACCESS] * cpts[READ_ACCESS][RD_MEDIUM] + \
+		         params.costDRAM[WRITE_ACCESS] * cpts[WRITE_ACCESS][RD_MEDIUM] + \
+			 params.costSRAM[READ_ACCESS] * cpts[READ_ACCESS][RD_SHORT] + \
+			 params.costSRAM[WRITE_ACCESS] * cpts[WRITE_ACCESS][RD_SHORT];	
 
-		E_NVM = (params.costDRAM[WRITE_ACCESS] + params.costNVM[WRITE_ACCESS]) * \
-		       		cpts[WRITE_ACCESS][RD_NOT_ACCURATE] + \
-				(params.costDRAM[READ_ACCESS] + params.costNVM[WRITE_ACCESS]) * \
-			       		 cpts[READ_ACCESS][RD_NOT_ACCURATE] + \
+		E_NVM = (params.costDRAM[READ_ACCESS] + params.costNVM[READ_ACCESS])* \
+				(cpts[READ_ACCESS][RD_NOT_ACCURATE]) + \
+			(params.costDRAM[WRITE_ACCESS] + params.costNVM[WRITE_ACCESS])* \
+				(cpts[WRITE_ACCESS][RD_NOT_ACCURATE]) + \
 			       params.costNVM[READ_ACCESS] *  ( cpts[READ_ACCESS][RD_MEDIUM] + cpts[READ_ACCESS][RD_SHORT]) + \
 			       params.costNVM[WRITE_ACCESS] * ( cpts[WRITE_ACCESS][RD_MEDIUM] + cpts[WRITE_ACCESS][RD_SHORT]);	
 	}

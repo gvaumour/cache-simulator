@@ -15,6 +15,7 @@ Predictor::Predictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& 
 	m_nbNVMways = nbNVMways;
 	m_nbSRAMways = nbAssoc - nbNVMways;
 	m_ID = id;
+	m_policy = cache->getPolicy();
 	
 	m_replacementPolicyNVM_ptr = new LRUPolicy(m_nbNVMways , m_nb_set , NVMtable);
 	m_replacementPolicySRAM_ptr = new LRUPolicy(m_nbSRAMways , m_nb_set, SRAMtable);	
@@ -32,7 +33,7 @@ Predictor::Predictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& 
 	
 	stats_beginTimeFrame = 0;
 	
-	if(simu_parameters.printDebug)
+	if(simu_parameters.printDebug && simu_parameters.enableDatasetSpilling)
 	{
 		stats_SRAMpressure = vector< vector<bool> >();
 	}
@@ -82,24 +83,35 @@ Predictor::Predictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& 
 	
 		/* Allocation of the SRAM missing tags array*/
 		m_SRAM_missing_tags.resize(m_nb_set);
-		m_SRAM_MT_counters = vector<uint64_t>(m_nb_set , 0);		
-		m_isSRAMbusy = vector<bool>(m_nb_set , false);		
-
-		
-		m_NVM_missing_tags.resize(m_nb_set);
-		m_NVM_MT_counters = vector<uint64_t>(m_nb_set , 0);		
-		m_isNVMbusy = vector<bool>(m_nb_set , false);		
+		//m_NVM_missing_tags.resize(m_nb_set);
 
 		for(int i = 0 ; i < m_nb_set; i++)
 		{
 			m_SRAM_missing_tags[i].resize(m_SRAMassoc_MT_size);
-			m_NVM_missing_tags[i].resize(m_NVMassoc_MT_size);
+			//m_NVM_missing_tags[i].resize(m_NVMassoc_MT_size);
 
 			for(int j = 0 ; j < m_SRAMassoc_MT_size; j++)
+			{
 				m_SRAM_missing_tags[i][j] = new MissingTagEntry();
-			
+				if(m_policy == "Cerebron")
+					m_SRAM_missing_tags[i][j]->initFeaturesHash();
+			}
+			/*
 			for(int j = 0 ; j < m_NVMassoc_MT_size; j++)
+			{
 				m_NVM_missing_tags[i][j] = new MissingTagEntry();
+				if(m_policy == "Cerebron")
+					m_NVM_missing_tags[i][j]->initFeaturesHash();
+			}*/
+		}
+		if(simu_parameters.enableDatasetSpilling)
+		{
+		
+			m_SRAM_MT_counters = vector<uint64_t>(m_nb_set , 0);		
+			m_isSRAMbusy = vector<bool>(m_nb_set , false);		
+
+			m_NVM_MT_counters = vector<uint64_t>(m_nb_set , 0);		
+			m_isNVMbusy = vector<bool>(m_nb_set , false);		
 		}
 	}
 	
@@ -121,8 +133,9 @@ Predictor::~Predictor()
 		{
 			for(unsigned j = 0 ; j < m_SRAM_missing_tags[i].size() ; j++)
 				delete m_SRAM_missing_tags[i][j];
-			for(unsigned j = 0 ; j < m_NVM_missing_tags[i].size() ; j++)
+			/*for(unsigned j = 0 ; j < m_NVM_missing_tags[i].size() ; j++)
 				delete m_NVM_missing_tags[i][j];
+			*/
 		}
 	}
 	delete m_replacementPolicyNVM_ptr;
@@ -154,6 +167,7 @@ Predictor::evictRecording(int set, int assoc_victim , bool inNVM)
 	{
 		//Checking NVM MT tags
 		//Choose the oldest victim for the missing tags to replace from the current one 	
+		/*
 		uint64_t cpt_longestime = m_NVM_missing_tags[set][0]->last_time_touched;
 		uint64_t index_victim = 0;
 		current = m_tableNVM[set][assoc_victim];
@@ -175,6 +189,7 @@ Predictor::evictRecording(int set, int assoc_victim , bool inNVM)
 		m_NVM_missing_tags[set][index_victim]->last_time_touched = cpt_time;
 		m_NVM_missing_tags[set][index_victim]->isValid = current->isValid;
 		m_NVM_missing_tags[set][index_victim]->cost_value = current->cost_value;
+		*/
 	}
 	else
 	{
@@ -202,9 +217,17 @@ Predictor::evictRecording(int set, int assoc_victim , bool inNVM)
 		m_SRAM_missing_tags[set][index_victim]->last_time_touched = cpt_time;
 		m_SRAM_missing_tags[set][index_victim]->isValid = current->isValid;
 		m_SRAM_missing_tags[set][index_victim]->cost_value = current->cost_value;
+		
+		if(m_policy == "Cerebron")
+		{
+			for(unsigned i = 0 ; i < simu_parameters.PHC_features.size() ; i++)
+			{
+				m_SRAM_missing_tags[set][index_victim]->features_hash[i] = current->PHC_allocation_pred[i].first;
+			}
+		
+			m_SRAM_missing_tags[set][index_victim]->missPC = current->missPC;
+		}
 	}
-
-
 }
 
 
@@ -220,19 +243,21 @@ Predictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access elem
 	//Update the missing tag as a new cache line is brough into the cache 
 	//Has to remove the MT entry if it exists there 
 	//DPRINTF("Predictor::insertRecord Begin ");	
-	if(!inNVM && m_trackError)
+	if(m_trackError)
 	{
 	
-		CacheEntry* current = m_tableSRAM[set][index];
-		for(unsigned i = 0 ; i < m_SRAM_missing_tags[set].size(); i++)
+		CacheEntry* current = inNVM ? m_tableNVM[set][index] : m_tableSRAM[set][index];
+		
+		if(inNVM)
 		{
-			if(m_SRAM_missing_tags[set][i]->addr == current->address)
+			for(unsigned i = 0 ; i < m_SRAM_missing_tags[set].size(); i++)
 			{
-				m_SRAM_missing_tags[set][i]->isValid = false;
-			}
+				if(m_SRAM_missing_tags[set][i]->addr == current->address)
+					m_SRAM_missing_tags[set][i]->isValid = false;
+			}		
 		}
 		
-		updateBypassTag( block_addr, set, inNVM);
+		updateBypassTag( current , set, inNVM);
 	}	
 	//DPRINTF("Predictor::insertRecord Begin ");
 
@@ -251,6 +276,35 @@ Predictor::missingTagCostValue(uint64_t block_addr, int set)
 	return 0;
 }
 
+uint64_t 
+Predictor::missingTagMissPC(uint64_t block_addr, int set)
+{
+	for(unsigned i = 0 ; i < m_SRAM_missing_tags[set].size() ; i++)
+	{
+		if(m_SRAM_missing_tags[set][i]->addr == block_addr && m_SRAM_missing_tags[set][i]->isValid)
+		{
+			return m_SRAM_missing_tags[set][i]->missPC;
+		}
+	}
+	return 0;
+}
+
+vector<int>
+Predictor::missingTagFeaturesHash(uint64_t block_addr, int set)
+{
+	if( m_policy == "Cerebron")
+	{
+		for(unsigned i = 0 ; i < m_SRAM_missing_tags[set].size() ; i++)
+		{
+			if(m_SRAM_missing_tags[set][i]->addr == block_addr && m_SRAM_missing_tags[set][i]->isValid)
+			{
+				return m_SRAM_missing_tags[set][i]->features_hash;
+			}
+		}	
+	}
+	return vector<int>();
+}
+
 bool
 Predictor::checkBypassTag(uint64_t block_addr , int set)
 {	
@@ -263,11 +317,12 @@ Predictor::checkBypassTag(uint64_t block_addr , int set)
 }
 
 void
-Predictor::updateBypassTag(uint64_t block_addr, int set, bool inNVM)
+Predictor::updateBypassTag(CacheEntry* entry, int set, bool inNVM)
 {
 	//DPRINTF("Predictor::recordAllocationDecision Set %d, block_addr = 0x%lx\n ", set, block_addr);
 
 	//Look if the entry already exists, if yes => BP Error, if No insert it
+	uint64_t block_addr = entry->address;
 	for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
 	{	
 		if(BP_missing_tags[set][i]->addr == block_addr)
@@ -296,7 +351,18 @@ Predictor::updateBypassTag(uint64_t block_addr, int set, bool inNVM)
 	BP_missing_tags[set][index_oldest]->last_time_touched = cpt_time;
 	BP_missing_tags[set][index_oldest]->addr = block_addr;
 	BP_missing_tags[set][index_oldest]->isValid = true;		
-	BP_missing_tags[set][index_oldest]->allocSite = inNVM;		
+	BP_missing_tags[set][index_oldest]->allocSite = inNVM;
+	
+	/*
+	if(m_policy == "Cerebron")
+	{
+		for(int i = 0 ; i < simu_parameters.PHC_features.size() ; i++)
+		{		
+			BP_missing_tags[set][index_oldest]->features_hash[i] = entry->PHC_allocation_pred[i].first;
+			
+		}
+	}*/
+		
 }
 
 
@@ -405,14 +471,22 @@ Predictor::reportMiss(uint64_t block_addr , int id_set)
 	if(sram_error)
 	{
 		stats_SRAM_errors[stats_SRAM_errors.size()-1]++;	
-		int starting_set = (id_set/m_nb_MTcouters_sampling) * m_nb_MTcouters_sampling; 
-		for(int i = starting_set ; i < starting_set + m_nb_MTcouters_sampling ; i++)
-			m_SRAM_MT_counters[id_set]++;
-	}
 		
-	bool nvm_error = hitInNVMMissingTags(block_addr , id_set);
-	if(nvm_error)
-		m_NVM_MT_counters[id_set]++;
+		if(simu_parameters.enableDatasetSpilling)
+		{
+			int starting_set = (id_set/m_nb_MTcouters_sampling) * m_nb_MTcouters_sampling; 
+			for(int i = starting_set ; i < starting_set + m_nb_MTcouters_sampling ; i++)
+				m_SRAM_MT_counters[id_set]++;
+		
+		}
+	}
+	/*
+	if(simu_parameters.enableDatasetSpilling)
+	{	
+		bool nvm_error = hitInNVMMissingTags(block_addr , id_set);
+		if(nvm_error)
+			m_NVM_MT_counters[id_set]++;
+	}*/
 	
 	bool bypass_error = checkBypassTag(block_addr , id_set);
 	if( bypass_error )
@@ -462,7 +536,7 @@ Predictor::hitInSRAMMissingTags(uint64_t block_addr, int id_set)
 void
 Predictor::updateCachePressure()
 {
-	if(!m_trackError)
+	if(!m_trackError || !simu_parameters.enableDatasetSpilling)
 		return;
 		
 	if( (cpt_time - stats_beginTimeFrame) > simu_parameters.MT_timeframe)
@@ -521,20 +595,23 @@ Predictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element
 	updateFUcaches(block_addr , inNVM);
 
 	if(m_trackError)
-		updateBypassTag(block_addr , set , inNVM);
+	{
+		CacheEntry* current = inNVM ? m_tableNVM[set][index] : m_tableSRAM[set][index];
+		updateBypassTag( current , set , inNVM);
+	}
 
-	if(m_isWarmup)
-		return;
-	
-	stats_nbLLCaccessPerFrame++;
-	//An error in the NVM side is when handling a write 
-	if(inNVM && element.isWrite()){
-		stats_NVM_errors[stats_NVM_errors.size()-1]++;
+	if(!m_isWarmup)
+	{	
+		stats_nbLLCaccessPerFrame++;
+		//An error in the NVM side is when handling a write 
+		if(inNVM && element.isWrite()){
+			stats_NVM_errors[stats_NVM_errors.size()-1]++;
 
-		if(isWBrequest)
-			stats_WBerrors++;
-		else
-			stats_COREerrors++;
+			if(isWBrequest)
+				stats_WBerrors++;
+			else
+				stats_COREerrors++;
+		}
 	}
 }
 
@@ -596,20 +673,23 @@ Predictor::printStats(std::ostream& out, string entete)
 {
 
 	uint64_t totalNVMerrors = 0, totalSRAMerrors= 0, totalBPerrors = 0, totalMigration = 0;	
-	ofstream output_file;
-	output_file.open(PREDICTOR_OUTPUT_FILE);	
-	for(int i = 0 ; i < m_nb_set ; i++)
-	{
-		output_file << "Set " << i << "\t";
-		for(unsigned j = 0 ; j < stats_SRAMpressure.size() ; j++)
+	
+	if(simu_parameters.printDebug && simu_parameters.enableDatasetSpilling)
+	{	
+		ofstream output_file;
+		output_file.open(PREDICTOR_OUTPUT_FILE);	
+		for(int i = 0 ; i < m_nb_set ; i++)
 		{
-			string a  = stats_SRAMpressure[j][i] ? "High" : "Low";
-			output_file << a << ",";
+			output_file << "Set " << i << "\t";
+			for(unsigned j = 0 ; j < stats_SRAMpressure.size() ; j++)
+			{
+				string a  = stats_SRAMpressure[j][i] ? "High" : "Low";
+				output_file << a << ",";
+			}
+			output_file << endl;
 		}
-		output_file << endl;
+		output_file.close();
 	}
-	output_file.close();
-
 
 	for(unsigned i = 0 ; i <  stats_NVM_errors.size(); i++)
 	{	

@@ -99,7 +99,7 @@ struct SimuParameters
 	unsigned MT_counter_th;
 	uint64_t MT_timeframe;
 	int nb_MTcouters_sampling;
-	
+			
 	float ratio_RWcost;	
 	
 	CostFunctionParameters optTarget;

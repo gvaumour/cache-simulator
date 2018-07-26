@@ -186,28 +186,48 @@ CerebronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 	}
 	entry->policyInfo = m_cpt++;
 	
-	recordAccess(entry, element.block_addr, entry->missPC, set , element.isWrite() , inNVM, index, rd);
 
 	if(entry->isLearning)
 	{
+		
+		for(unsigned i = 0 ; i < m_features.size() ; i++)
+		{
+			pair<int , allocDecision> dummy;
+			dummy.first = m_features_hash[i](element.block_addr , entry->missPC);
+			dummy.second = m_features[i]->getAllocDecision(dummy.first, false);
+			entry->PHC_allocation_pred[i] = dummy;
+		}
+		
+		if( element.isSRAMerror)
+		{
+			debug_file << "SRAM error detected on Block Addr = 0x" \
+					<< std::hex << element.block_addr << std::dec << endl;
+			
+			uint64_t missPC = missingTagMissPC(element.block_addr , set);
+			entry->missPC = missPC;
+			/*
+			vector<int> hashes = missingTagFeaturesHash(element.block_addr , set);
+			for(unsigned i = 0 ; i < hashes.size() ; i++)
+			{
+				m_features[i]->decreaseConfidence(hashes[i]);
+				m_features[i]->decreaseConfidence(hashes[i]);
+				debug_file << "\tFeature " << i << " hash = " << hashes[i] << ", confidence = "\
+					   << m_features[i]->getConfidence(hashes[i], false) << endl;
+
+			}*/
+			stats_cptLearningSRAMerror++;
+		}
+		
+		recordAccess(entry, element.block_addr, entry->missPC, set , element.isWrite() , inNVM, index, rd);
+
 		if( simu_parameters.Cerebron_RDmodel)
 		{
 			entry->e_sram = m_costParameters.costSRAM[element.isWrite()];
 			entry->e_nvm = m_costParameters.costNVM[element.isWrite()];
 		}
 		else
-			entry->cost_value = m_costAccess[element.isWrite()][RD_SHORT];	
-		/*
-		if( element.isSRAMerror)
-		{
-			entry->cost_value = missingTagCostValue(element.block_addr , set) +  m_costAccess[element.isWrite()][RD_MEDIUM];
-			stats_cptLearningSRAMerror++;
-		}
-		else
 			entry->cost_value = m_costAccess[element.isWrite()][RD_SHORT];
-		*/
 	}
-
 	if(simu_parameters.printDebug)
 	{
 		int hash = m_features_hash[0](element.block_addr , entry->missPC);	
@@ -318,6 +338,21 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 	if( (des == ALLOCATE_IN_NVM && !inNVM) || \
 		(des == ALLOCATE_IN_SRAM && inNVM) )
 	{
+		if(simu_parameters.printDebug)
+		{
+			string a = inNVM ? "NVM" : "SRAM"; 
+			debug_file << cpt_time << ": Eviction of 0x" << std::hex  << entry->address \
+				   << std::dec << " , wrongly allocated in " << a << ", cost=" << entry->cost_value << endl;
+			
+			for(unsigned i = 0; i < m_features.size() ; i++)
+			{
+				int hash = m_features_hash[i](entry->address , entry->missPC);
+				int confidence = m_features[i]->getConfidence(hash, false);
+				allocDecision des = m_features[i]->getAllocDecision(hash, false);
+				debug_file << "\t-Feature " << i << "\t" << str_allocDecision[des] << "\t" << confidence << endl;
+			}		
+		}
+		
 		stats_wrong_alloc++;
 	}
 	else
@@ -385,9 +420,9 @@ CerebronPredictor::getDecision(CacheEntry* entry)
 	if(simu_parameters.Cerebron_RDmodel)
 	{
 		if( entry->e_sram > entry->e_nvm )
-			return ALLOCATE_IN_SRAM;
-		else 
 			return ALLOCATE_IN_NVM;
+		else 
+			return ALLOCATE_IN_SRAM;
 	}
 	else
 	{
@@ -782,11 +817,11 @@ CerebronPredictor::reportAccess(FeatureEntry* feature_entry, Access element, Cac
 	
 	if(simu_parameters.printDebug)
 	{
-		debug_file << entete << ":Dataset n°" << hash << ": [" \
-		<< "] = " << str_allocDecision[feature_entry->des] << "," \
+		debug_file << entete << ":Dataset n°" << hash << ": "
+		<< str_allocDecision[feature_entry->des] << "," \
 		<< access_type << " on " << is_learning << " Cl 0x" << std::hex << current->address \
 		<< std::dec << " allocated in " << cl_location<< ", Reuse=" << reuse_class \
-		<< " , " << is_error << ", " << endl;	
+		<< " , " << is_error << ", cost = " << current->cost_value << endl;	
 	}
 }
 

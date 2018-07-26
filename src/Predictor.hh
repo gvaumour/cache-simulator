@@ -28,10 +28,18 @@ class MissingTagEntry{
 		bool isValid;
 		bool isBypassed;
 		bool allocSite;
+		uint64_t missPC;
+		
+		std::vector<int> features_hash;
 			
-		MissingTagEntry() : addr(0) , last_time_touched(0), cost_value(0), isValid(false), isBypassed(false), allocSite(false) { };
-		MissingTagEntry(uint64_t a , uint64_t t, bool v) : addr(a) , last_time_touched(t), isValid(v), isBypassed(false), allocSite(false){};
+		MissingTagEntry() : addr(0) , last_time_touched(0), cost_value(0), isValid(false),\
+			 isBypassed(false), allocSite(false), missPC(0) {};		
+		MissingTagEntry(uint64_t a , uint64_t t, bool v) : addr(a) , last_time_touched(t), isValid(v), isBypassed(false), allocSite(false) {};
 	
+		void initFeaturesHash()
+		{
+			features_hash = std::vector<int>( simu_parameters.PHC_features.size() , 0);
+		};
 };
 
 class Predictor{
@@ -62,13 +70,15 @@ class Predictor{
 
 		bool reportMiss(uint64_t block_addr , int id_set);
 		bool checkBypassTag(uint64_t block_addr , int set);
-		void updateBypassTag(uint64_t block_addr , int set, bool inNVM);
+		void updateBypassTag(CacheEntry* entry , int set, bool inNVM);
 		bool getHitPerDataArray(uint64_t block_addr, int set , bool inNVM);
 
 		bool hitInSRAMMissingTags(uint64_t block_addr, int set);
 		bool hitInNVMMissingTags(uint64_t block_addr, int set);
 		void updateFUcaches(uint64_t block_addr, bool inNVM);
 		int missingTagCostValue(uint64_t block_addr, int set);
+		std::vector<int> missingTagFeaturesHash(uint64_t block_addr, int set);
+		uint64_t missingTagMissPC(uint64_t block_addr, int set);
 
 
 	protected : 		
@@ -82,6 +92,7 @@ class Predictor{
 		int m_SRAMassoc_MT_size , m_NVMassoc_MT_size;
 		
 		int m_ID;
+		std::string m_policy; 
 		
 		ReplacementPolicy* m_replacementPolicyNVM_ptr;
 		ReplacementPolicy* m_replacementPolicySRAM_ptr;
