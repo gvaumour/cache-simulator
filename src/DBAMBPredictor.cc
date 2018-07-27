@@ -170,30 +170,33 @@ DBAMBPredictor::allocateInNVM(uint64_t set, Access element)
 	}
 	else
 	{
-		if(rap_current->des == ALLOCATE_IN_NVM)
+
+		if(simu_parameters.enableDatasetSpilling)
 		{
-			if( (m_isNVMbusy[set] && !m_isSRAMbusy[set]) && simu_parameters.enableDatasetSpilling)
+			if(rap_current->des == ALLOCATE_IN_NVM)
 			{
-	
-				reportSpilling(rap_current , element.m_address , true , false);
-				stats_busyness_alloc_change++;
-				return ALLOCATE_IN_SRAM;
+				if( (m_isNVMbusy[set] && !m_isSRAMbusy[set]))
+				{
+					reportSpilling(rap_current , element.m_address , true , false);
+					stats_busyness_alloc_change++;
+					return ALLOCATE_IN_SRAM;
+				}
+				else
+					return ALLOCATE_IN_NVM;			
 			}
-			else
-				return ALLOCATE_IN_NVM;		
-		}
-		else if(rap_current->des == ALLOCATE_IN_SRAM)
-		{
-			if(!m_isNVMbusy[set] && m_isSRAMbusy[set] && simu_parameters.enableDatasetSpilling)
+			else if(rap_current->des == ALLOCATE_IN_SRAM)
 			{
-				stats_busyness_alloc_change++;
-				reportSpilling(rap_current , element.m_address , true , true);
-				return ALLOCATE_IN_NVM;
+				if(!m_isNVMbusy[set] && m_isSRAMbusy[set] && simu_parameters.enableDatasetSpilling)
+				{
+					stats_busyness_alloc_change++;
+					reportSpilling(rap_current , element.m_address , true , true);
+					return ALLOCATE_IN_NVM;
+				}
+				else
+					return ALLOCATE_IN_SRAM;		
 			}
-			else
-				return ALLOCATE_IN_SRAM;		
+			
 		}
-		
 		return rap_current->des;
 	}
 }

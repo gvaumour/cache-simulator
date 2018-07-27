@@ -204,7 +204,15 @@ CerebronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 					<< std::hex << element.block_addr << std::dec << endl;
 			
 			uint64_t missPC = missingTagMissPC(element.block_addr , set);
+			uint64_t cost_value = missingTagCostValue(element.block_addr , set);
 			entry->missPC = missPC;
+			for(unsigned i = 0 ; i < m_features.size() ; i++)
+			{
+				int hash = m_features_hash[i](element.block_addr , entry->missPC);
+				m_features[i]->decreaseConfidence(hash);
+				if(cost_value > 0)
+					m_features[i]->decreaseConfidence(hash);
+			}
 			/*
 			vector<int> hashes = missingTagFeaturesHash(element.block_addr , set);
 			for(unsigned i = 0 ; i < hashes.size() ; i++)
@@ -350,7 +358,7 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 				int confidence = m_features[i]->getConfidence(hash, false);
 				allocDecision des = m_features[i]->getAllocDecision(hash, false);
 				debug_file << "\t-Feature " << i << "\t" << str_allocDecision[des] << "\t" << confidence << endl;
-			}		
+			}
 		}
 		
 		stats_wrong_alloc++;

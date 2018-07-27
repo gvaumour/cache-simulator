@@ -137,6 +137,7 @@ struct SimuParameters
 	bool Cerebron_independantLearning; 
 	bool Cerebron_fastlearning;
 	bool Cerebron_RDmodel;
+	int Cerebron_decrement_value;
 };
 
 std::vector<std::string> split(std::string s, char delimiter);

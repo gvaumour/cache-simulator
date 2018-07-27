@@ -216,7 +216,7 @@ void
 FeatureTable::decreaseConfidence(int index)
 {
 	FeatureEntry* feature_entry = lookup(index);
-	feature_entry->weight--;
+	feature_entry->weight -= simu_parameters.Cerebron_decrement_value;
 	if(feature_entry->weight < 0)
 		feature_entry->weight = 0;	
 }

@@ -204,6 +204,10 @@ int main(int argc , char* argv[]){
 			simu_parameters.PHC_features.clear();
 			simu_parameters.PHC_features = split(string(argv[i]) , ',');
 		}
+		else if(string(argv[i]) == "--Cerebron-decrementValue")
+		{	i++;
+			simu_parameters.Cerebron_decrement_value = atoi(argv[i]);
+		}
 		else if(string(argv[i]) == "--Cerebron-function")
 		{	i++;
 			simu_parameters.Cerebron_activation_function = string(argv[i]);
