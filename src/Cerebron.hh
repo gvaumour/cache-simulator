@@ -20,6 +20,7 @@
 class Predictor;
 class HybridCache;
 
+
 class CerebronPredictor : public Predictor {
 
 	public :
@@ -43,6 +44,7 @@ class CerebronPredictor : public Predictor {
 
 		void doLearning(CacheEntry* entry, bool inNVM);
 
+		params_hash parseFeatureName(std::string feature_name);
 
 		allocDecision activationFunction(Access element);
 		allocDecision convertToAllocDecision(int alloc_counter, bool isLearning);
@@ -61,10 +63,10 @@ class CerebronPredictor : public Predictor {
 
 				
 	protected : 
-
+		
 		/* FeatureTable Handlers */
 		std::vector<FeatureTable*> m_features;
-		std::vector<hashing_function> m_features_hash;
+		std::vector<params_hash> m_features_hash;
 		std::vector<std::string> m_criterias_names;
 		std::string m_activation_function;
 

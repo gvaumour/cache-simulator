@@ -346,7 +346,7 @@ init_default_parameters()
 
 	/********* Perceptron Config *************/ 	
 //	simu_parameters.perceptron_features = { "Addr_LSB", "Addr_MSB", "PC_LSB", "PC_MSB"};
-	simu_parameters.perceptron_BP_features = { "MissCounter1"};
+	simu_parameters.perceptron_BP_features = { "MissCounter_2" , "Addr_2_1" };
 	simu_parameters.perceptron_Allocation_features = { "MissPC_LSB"};
 	simu_parameters.perceptron_windowSize = 16;
 	
@@ -364,7 +364,7 @@ init_default_parameters()
 	/***************************************/ 
 	
 	/*********** PHC Config ******************/ 
-	simu_parameters.PHC_features = {"MissPC_LSB"};
+	simu_parameters.PHC_features = {"MissCounter_0" , "Addr_2_1"};
 	simu_parameters.PHC_cost_threshold = 0;
 	simu_parameters.PHC_cost_mediumRead = -4124;
 	simu_parameters.PHC_cost_mediumWrite = -3702;

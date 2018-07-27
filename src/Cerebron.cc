@@ -106,12 +106,15 @@ void
 CerebronPredictor::initFeatures()
 {
 	vector<string>* criterias_name = &m_criterias_names;
-	vector<hashing_function>* features_hash = &m_features_hash;
+	vector<params_hash>* features_hash = &m_features_hash;
 	vector<FeatureTable*>* features = &m_features;		
 
 	for(auto feature : *criterias_name)
 	{
 		features->push_back( new FeatureTable(m_tableSize, feature, false));
+		features_hash->push_back( parseFeatureName(feature) );
+		
+		/*
 		if(feature == "MissPC_LSB")
 			features_hash->push_back(hashingMissPC_LSB);
 		else if(feature == "MissPC_LSB1")
@@ -146,10 +149,11 @@ CerebronPredictor::initFeatures()
 			features_hash->push_back(hashingcurrentPC_1);
 		else
 			assert(false && "Error while initializing the features , wrong name\n");
-
-
+		
+		
 		if(feature == "CallStack" || feature == "CallStack1")
 			m_need_callee_file = true;
+		*/
 	}	
 }
 
@@ -190,14 +194,6 @@ CerebronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 	if(entry->isLearning)
 	{
 		
-		for(unsigned i = 0 ; i < m_features.size() ; i++)
-		{
-			pair<int , allocDecision> dummy;
-			dummy.first = m_features_hash[i](element.block_addr , entry->missPC);
-			dummy.second = m_features[i]->getAllocDecision(dummy.first, false);
-			entry->PHC_allocation_pred[i] = dummy;
-		}
-		
 		if( element.isSRAMerror)
 		{
 			debug_file << "SRAM error detected on Block Addr = 0x" \
@@ -208,23 +204,21 @@ CerebronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 			entry->missPC = missPC;
 			for(unsigned i = 0 ; i < m_features.size() ; i++)
 			{
-				int hash = m_features_hash[i](element.block_addr , entry->missPC);
+				int hash = hashing_function1(m_features_hash[i] , element.block_addr , entry->missPC);
 				m_features[i]->decreaseConfidence(hash);
 				if(cost_value > 0)
 					m_features[i]->decreaseConfidence(hash);
 			}
-			/*
-			vector<int> hashes = missingTagFeaturesHash(element.block_addr , set);
-			for(unsigned i = 0 ; i < hashes.size() ; i++)
-			{
-				m_features[i]->decreaseConfidence(hashes[i]);
-				m_features[i]->decreaseConfidence(hashes[i]);
-				debug_file << "\tFeature " << i << " hash = " << hashes[i] << ", confidence = "\
-					   << m_features[i]->getConfidence(hashes[i], false) << endl;
-
-			}*/
 			stats_cptLearningSRAMerror++;
 		}
+
+		for(unsigned i = 0 ; i < m_features.size() ; i++)
+		{
+			pair<int , allocDecision> dummy;
+			dummy.first = hashing_function1(m_features_hash[i] , element.block_addr , entry->missPC);
+			dummy.second = m_features[i]->getAllocDecision(dummy.first, false);
+			entry->PHC_allocation_pred[i] = dummy;
+		}		
 		
 		recordAccess(entry, element.block_addr, entry->missPC, set , element.isWrite() , inNVM, index, rd);
 
@@ -238,7 +232,7 @@ CerebronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 	}
 	if(simu_parameters.printDebug)
 	{
-		int hash = m_features_hash[0](element.block_addr , entry->missPC);	
+		int hash = hashing_function1(m_features_hash[0] , element.block_addr , entry->missPC);	
 		reportAccess( m_features[0]->getEntry(hash) , element, entry , entry->isNVM, string("INSERTION"), string(str_RD_status[rd]), hash);
 	}
 	
@@ -279,7 +273,7 @@ CerebronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access
 
 	if(simu_parameters.printDebug)
 	{
-		int hash = m_features_hash[0](element.block_addr , entry->missPC);	
+		int hash = hashing_function1(m_features_hash[0] , element.block_addr , entry->missPC);
 		reportAccess( m_features[0]->getEntry(hash) , element, entry , entry->isNVM, string("UPDATE"), string(str_RD_status[rd]), hash);
 	}
 
@@ -316,8 +310,8 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 			( des == ALLOCATE_IN_NVM && !inNVM ))
 			global_error = true;
 
-		int hash1 = m_features_hash[0](entry->address , entry->missPC);
-		int hash2 = (m_features.size() > 1) ? m_features_hash[1](entry->address , entry->missPC) : 0;
+		int hash1 = hashing_function1(m_features_hash[0] , entry->address , entry->missPC);
+		int hash2 = (m_features.size() > 1) ? hashing_function1(m_features_hash[1], entry->address , entry->missPC) : 0;
 		if(global_error)
 			stats_global_error[hash1][hash2].first++;
 		else
@@ -326,7 +320,7 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 	
 		for(unsigned i = 0; i < m_features.size() ; i++)
 		{
-			int hash = m_features_hash[i](entry->address , entry->missPC);
+			int hash = hashing_function1( m_features_hash[i] , entry->address , entry->missPC);
 
 			bool local_error = false;
 			if( des == ALLOCATE_IN_NVM && entry->PHC_allocation_pred[i].second == ALLOCATE_IN_SRAM)
@@ -354,7 +348,7 @@ int CerebronPredictor::evictPolicy(int set, bool inNVM)
 			
 			for(unsigned i = 0; i < m_features.size() ; i++)
 			{
-				int hash = m_features_hash[i](entry->address , entry->missPC);
+				int hash = hashing_function1( m_features_hash[i] , entry->address , entry->missPC);
 				int confidence = m_features[i]->getConfidence(hash, false);
 				allocDecision des = m_features[i]->getAllocDecision(hash, false);
 				debug_file << "\t-Feature " << i << "\t" << str_allocDecision[des] << "\t" << confidence << endl;
@@ -407,7 +401,7 @@ CerebronPredictor::doLearning(CacheEntry* entry, bool inNVM)
 		{
 			for(unsigned i = 0; i < m_features.size() ; i++)
 			{
-				int hash = m_features_hash[i](entry->address , entry->missPC);
+				int hash = hashing_function1( m_features_hash[i] , entry->address , entry->missPC);
 				m_features[i]->decreaseConfidence(hash);
 			}
 		}			
@@ -415,7 +409,7 @@ CerebronPredictor::doLearning(CacheEntry* entry, bool inNVM)
 		{
 			for(unsigned i = 0; i < m_features.size() ; i++)
 			{
-				int hash = m_features_hash[i](entry->address , entry->missPC);
+				int hash = hashing_function1 ( m_features_hash[i] , entry->address , entry->missPC);
 				m_features[i]->increaseConfidence(hash);
 			}
 		}
@@ -460,7 +454,7 @@ CerebronPredictor::recordAccess(CacheEntry* entry,uint64_t block_addr, uint64_t 
 		{
 			for(unsigned i = 0 ; i < m_features.size() ; i++)
 			{
-				int hash = m_features_hash[i](block_addr , missPC);
+				int hash = hashing_function1( m_features_hash[i] , block_addr , missPC);
 				m_features[i]->recordAccess(hash, isWrite , hitSRAM , hitNVM);
 			}		
 		}
@@ -472,7 +466,7 @@ CerebronPredictor::recordAccess(CacheEntry* entry,uint64_t block_addr, uint64_t 
 		{
 			for(unsigned i = 0 ; i < m_features.size() ; i++)
 			{
-				int hash = m_features_hash[i]( block_addr , missPC);
+				int hash = hashing_function1( m_features_hash[i] , block_addr , missPC);
 				m_features[i]->recordAccess(hash, isWrite , rd);	
 			}		
 		}
@@ -489,7 +483,7 @@ CerebronPredictor::activationFunction(Access element)
 		int sum_pred = 0;
 		for(unsigned i = 0 ; i < m_features.size() ; i++)
 		{
-			int hash = m_features_hash[i](element.block_addr , element.m_pc);
+			int hash = hashing_function1 ( m_features_hash[i] , element.block_addr , element.m_pc);
 			int confidence = m_features[i]->getConfidence(hash, true);
 			allocDecision des = m_features[i]->getAllocDecision(hash, element.isWrite());
 
@@ -510,7 +504,7 @@ CerebronPredictor::activationFunction(Access element)
 		int max_confidence = 0;
 		for(unsigned i = 0 ; i < m_features.size() ; i++)
 		{
-			int hash = m_features_hash[i](element.block_addr , element.m_pc);
+			int hash = hashing_function1( m_features_hash[i] , element.block_addr , element.m_pc);
 			int confidence = m_features[i]->getConfidence(hash, true);
 			
 			if(max_confidence < confidence)
@@ -831,6 +825,24 @@ CerebronPredictor::reportAccess(FeatureEntry* feature_entry, Access element, Cac
 		<< std::dec << " allocated in " << cl_location<< ", Reuse=" << reuse_class \
 		<< " , " << is_error << ", cost = " << current->cost_value << endl;	
 	}
+}
+
+
+params_hash
+CerebronPredictor::parseFeatureName(string feature_name)
+{
+	params_hash result;
+
+	vector<string> split_line = split(feature_name , '_');
+	result.index = split_line[0];
+	result.nbBlock = atoi(split_line[1].c_str());
+	
+	if(split_line.size() == 3)
+		result.xorWithPC = split_line[2] == "1" ? true : false;
+	else
+		result.xorWithPC = false;
+		
+	return result;
 }
 
 
