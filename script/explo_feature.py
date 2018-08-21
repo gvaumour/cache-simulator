@@ -29,7 +29,7 @@ pc_name=subprocess.check_output("hostname -f", shell=True);
 if pc_name == "gvaumour-HP-EliteBook-840-G3\n":
 	working_dir =  "/home/gvaumour/Dev/apps/pin/cache-simulator/"
 else:
-	working_dir="/home/gvaumour/proj/gvaumour/pin";
+	working_dir="/home/gvaumour/proj/gvaumour/pin/cache-simulator/";
 	
 simulator= working_dir + "obj-intel64/roeval_release";
 launch_energy = working_dir + "utils/others/launch_energy.sh";
