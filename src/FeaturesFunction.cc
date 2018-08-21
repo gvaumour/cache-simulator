@@ -1,5 +1,6 @@
 #include "common.hh"
 #include "Perceptron.hh"
+#include "Cerebron.hh"
 #include "FeaturesFunction.hh"
 
 
@@ -21,20 +22,19 @@ int hashing_function1(params_hash a , uint64_t addr , uint64_t missPC)
 	else if( index == "Addr")
 		tag = bitSelect( addr , 8*block , 8*block+7);
 	else if( index == "currentPC")
-		tag = bitSelect( PerceptronPredictor::m_global_PChistory[0] , 8*block , 8*block+7);
+		tag = bitSelect( CerebronPredictor::m_global_PChistory[0] , 8*block , 8*block+7);
 	else if( index == "currentPC1")
-		tag = bitSelect( PerceptronPredictor::m_global_PChistory[1] , 8*block , 8*block+7);
+		tag = bitSelect( CerebronPredictor::m_global_PChistory[1] , 8*block , 8*block+7);
 	else if( index == "currentPC2")
-		tag = bitSelect( PerceptronPredictor::m_global_PChistory[2] , 8*block , 8*block+7);
+		tag = bitSelect( CerebronPredictor::m_global_PChistory[2] , 8*block , 8*block+7);
 	else if( index == "currentPC3")
-		tag = bitSelect( PerceptronPredictor::m_global_PChistory[3] , 8*block , 8*block+7);
+		tag = bitSelect( CerebronPredictor::m_global_PChistory[3] , 8*block , 8*block+7);
 	/*else if( index == "MissCounter")
 	{
 	
 	}*/
 	else
 		assert(false && "Hashing Function failed");
-	
 	
 	if( hash_with_PC)
 		tag = (tag ^ PerceptronPredictor::m_global_PChistory[0])%256;

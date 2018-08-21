@@ -210,7 +210,8 @@ CerebronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access
 	stats_access_class[rd][element.isWrite()]++;
 	
 	entry->policyInfo = m_cpt++;
-	update_globalPChistory(element.m_pc);
+	if ( element.isDemandAccess())
+		update_globalPChistory(element.m_pc);
 
 	entry->cost_value += m_costAccess[element.isWrite()][rd];
 	if(entry->isLearning_policy)
@@ -510,6 +511,7 @@ CerebronPredictor::update_globalPChistory(uint64_t pc)
 	if( m_global_PChistory.size() == 11)
 		m_global_PChistory.pop_back();
 	
+
 	if(!m_need_callee_file)
 		return;
 	
