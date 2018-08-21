@@ -1,0 +1,7 @@
+
+default_bypass="true"
+default_window_size=20
+default_innacuracy=0.7
+default_learning_th=20
+default_dead_counter=3
+default_lazy="false"
