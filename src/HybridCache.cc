@@ -38,7 +38,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "DBAMBPredictor.hh"
 #include "Perceptron.hh"
 //#include "monitorPredictor.hh"
-#include "SimplePerceptron.hh"
+//#include "SimplePerceptron.hh"
 
 #define LLC_TRACE_BUFFER_SIZE 50
 
@@ -101,8 +101,8 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		 m_predictor = new monitorPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);*/
 	else if(m_policy == "Perceptron")
 		 m_predictor = new PerceptronPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
-	else if(m_policy == "SimplePerceptron")
-		 m_predictor = new SimplePerceptronPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
+	//else if(m_policy == "SimplePerceptron")
+	//	 m_predictor = new SimplePerceptronPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "DBAMB" || m_policy == "DBA" || m_policy == "DBAM" || m_policy == "DBAMBS")
 		 m_predictor = new DBAMBPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else {
