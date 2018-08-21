@@ -17,6 +17,7 @@ Predictor::Predictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& 
 	m_ID = id;
 	m_policy = cache->getPolicy();
 	
+	m_cpt_bypassTag = 0;
 	m_replacementPolicyNVM_ptr = new LRUPolicy(m_nbNVMways , m_nb_set , NVMtable);
 	m_replacementPolicySRAM_ptr = new LRUPolicy(m_nbSRAMways , m_nb_set, SRAMtable);	
 	
@@ -35,7 +36,7 @@ Predictor::Predictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& 
 	
 	if(simu_parameters.printDebug && simu_parameters.enableDatasetSpilling)
 	{
-		stats_SRAMpressure = vector< vector<bool> >();
+		//stats_SRAMpressure = vector< vector<bool> >();
 	}
 	/********************************************/ 
 	if(simu_parameters.simulate_conflicts)
@@ -195,37 +196,38 @@ Predictor::evictRecording(int set, int assoc_victim , bool inNVM)
 	{
 		//Checking SRAM MT tags
 		//Choose the oldest victim for the missing tags to replace from the current one 	
-		uint64_t cpt_longestime = m_SRAM_missing_tags[set][0]->last_time_touched;
-		uint64_t index_victim = 0;
-		current = m_tableSRAM[set][assoc_victim];
-		
-		for(unsigned i = 0 ; i < m_SRAM_missing_tags[set].size(); i++)
+		if(!simu_parameters.enableFullSRAMtraffic)
 		{
-			if(!m_SRAM_missing_tags[set][i]->isValid)
-			{
-				index_victim = i;
-				break;
-			}	
+			uint64_t cpt_longestime = m_SRAM_missing_tags[set][0]->last_time_touched;
+			uint64_t index_victim = 0;
+			current = m_tableSRAM[set][assoc_victim];
 		
-			if(cpt_longestime > m_SRAM_missing_tags[set][i]->last_time_touched){
-				cpt_longestime = m_SRAM_missing_tags[set][i]->last_time_touched; 
-				index_victim = i;
-			}	
-		}
-
-		m_SRAM_missing_tags[set][index_victim]->addr = current->address;
-		m_SRAM_missing_tags[set][index_victim]->last_time_touched = cpt_time;
-		m_SRAM_missing_tags[set][index_victim]->isValid = current->isValid;
-		m_SRAM_missing_tags[set][index_victim]->cost_value = current->cost_value;
-		
-		if(m_policy == "Cerebron")
-		{
-			for(unsigned i = 0 ; i < simu_parameters.PHC_features.size() ; i++)
+			for(unsigned i = 0 ; i < m_SRAM_missing_tags[set].size(); i++)
 			{
-				m_SRAM_missing_tags[set][index_victim]->features_hash[i] = current->PHC_allocation_pred[i].first;
+				if(!m_SRAM_missing_tags[set][i]->isValid)
+				{
+					index_victim = i;
+					break;
+				}	
+		
+				if(cpt_longestime > m_SRAM_missing_tags[set][i]->last_time_touched){
+					cpt_longestime = m_SRAM_missing_tags[set][i]->last_time_touched; 
+					index_victim = i;
+				}	
 			}
+
+			m_SRAM_missing_tags[set][index_victim]->addr = current->address;
+			m_SRAM_missing_tags[set][index_victim]->last_time_touched = cpt_time;
+			m_SRAM_missing_tags[set][index_victim]->isValid = current->isValid;
+			m_SRAM_missing_tags[set][index_victim]->cost_value = current->cost_value;
 		
-			m_SRAM_missing_tags[set][index_victim]->missPC = current->missPC;
+			if(m_policy == "Cerebron")
+			{
+				for(unsigned i = 0 ; i < simu_parameters.PHC_features.size() ; i++)
+					m_SRAM_missing_tags[set][index_victim]->features_hash[i] = current->PHC_allocation_pred[i].first;
+		
+				m_SRAM_missing_tags[set][index_victim]->missPC = current->missPC;
+			}		
 		}
 	}
 }
@@ -234,7 +236,7 @@ Predictor::evictRecording(int set, int assoc_victim , bool inNVM)
 void
 Predictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access element)
 {
-
+	CacheEntry* entry = inNVM ? m_tableNVM[set][index] : m_tableSRAM[set][index];
 	uint64_t block_addr = bitRemove(element.m_address , 0 , log2(BLOCK_SIZE));
 	updateFUcaches(block_addr , inNVM);
 	updateCachePressure();
@@ -245,24 +247,75 @@ Predictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access elem
 	//DPRINTF("Predictor::insertRecord Begin ");	
 	if(m_trackError)
 	{
-	
-		CacheEntry* current = inNVM ? m_tableNVM[set][index] : m_tableSRAM[set][index];
-		
-		if(inNVM)
+		if( simu_parameters.enableFullSRAMtraffic )
 		{
-			for(unsigned i = 0 ; i < m_SRAM_missing_tags[set].size(); i++)
-			{
-				if(m_SRAM_missing_tags[set][i]->addr == current->address)
-					m_SRAM_missing_tags[set][i]->isValid = false;
-			}		
+			//insertIntoSRAMMT(set , inNVM, element );
 		}
-		
-		updateBypassTag( current , set, inNVM);
+		else
+		{
+			if(inNVM)
+			{
+				for(unsigned i = 0 ; i < m_SRAM_missing_tags[set].size(); i++)
+				{
+					if(m_SRAM_missing_tags[set][i]->addr == entry->address)
+						m_SRAM_missing_tags[set][i]->isValid = false;
+				}		
+			}		
+		}	
+		updateBypassTag( entry , set, inNVM);
 	}	
 	//DPRINTF("Predictor::insertRecord Begin ");
 
 }
+/*
+void 
+Predictor::insertIntoSRAMMT(uint64_t set , bool inNVM, Access element )
+{
+	uint64_t cpt_longestime = m_SRAM_missing_tags[set][0]->last_time_touched;
+	uint64_t index_victim = 0;
+	uint64_t block_addr = element.block_addr;
+	
+	//If block already present, update LRU position
+	for(unsigned i = 0 ; i < m_SRAM_missing_tags[set].size(); i++)
+	{
+		if(m_SRAM_missing_tags[set][i].block_addr == block_addr )
+		{
+			m_SRAM_missing_tags[set][i].last_time_touched = cpt_time;
+			return;
+		}	
+	}
+	int index_victim = 0;
+	uint64_t cpt_longestime = cpt_time;
+	for(unsigned i = 0 ; i < m_SRAM_missing_tags[set].size(); i++)
+	{
+		if(!m_SRAM_missing_tags[set][i]->isValid)
+		{
+			index_victim = i;
+			break;
+		}	
 
+		if(cpt_longestime > m_SRAM_missing_tags[set][i]->last_time_touched){
+			cpt_longestime = m_SRAM_missing_tags[set][i]->last_time_touched; 
+			index_victim = i;
+		}	
+	}
+	
+	m_SRAM_missing_tags[set][index_victim]->addr = current->address;
+	m_SRAM_missing_tags[set][index_victim]->last_time_touched = cpt_time;
+	m_SRAM_missing_tags[set][index_victim]->isValid = true;
+	m_SRAM_missing_tags[set][index_victim]->cost_value = 0;// current->cost_value;
+
+
+	if(m_policy == "Cerebron")
+	{
+		
+		//for(unsigned i = 0 ; i < simu_parameters.PHC_features.size() ; i++)
+		//	m_SRAM_missing_tags[set][index_victim]->features_hash[i] = current->PHC_allocation_pred[i].first;
+		
+		m_SRAM_missing_tags[set][index_victim]->missPC = element.m_pc;
+	}
+}
+*/
 int 
 Predictor::missingTagCostValue(uint64_t block_addr, int set)
 {
@@ -319,17 +372,19 @@ Predictor::checkBypassTag(uint64_t block_addr , int set)
 void
 Predictor::updateBypassTag(CacheEntry* entry, int set, bool inNVM)
 {
-	//DPRINTF("Predictor::recordAllocationDecision Set %d, block_addr = 0x%lx\n ", set, block_addr);
+	uint64_t block_addr = entry->address;
+	DPRINTF(DebugCache, "Predictor::recordAllocationDecision Set %d, block_addr = 0x%lx\n ", set, block_addr);
 
 	//Look if the entry already exists, if yes => BP Error, if No insert it
-	uint64_t block_addr = entry->address;
 	for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
 	{	
 		if(BP_missing_tags[set][i]->addr == block_addr)
-			BP_missing_tags[set][i]->last_time_touched = cpt_time;
-			return;
+		{
+			BP_missing_tags[set][i]->last_time_touched = m_cpt_bypassTag++;
+			return;		
+		}
 	}
-	//DPRINTF("Predictor::recordAllocationDecision Didn't find the entry in the BP Missing Tags\n");
+	DPRINTF(DebugCache, "Predictor::recordAllocationDecision Didn't find the entry in the BP Missing Tags\n");
 	int index_oldest =0;
 	uint64_t oldest = BP_missing_tags[set][0]->last_time_touched;
 	for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
@@ -346,9 +401,9 @@ Predictor::updateBypassTag(CacheEntry* entry, int set, bool inNVM)
 			oldest = BP_missing_tags[set][i]->last_time_touched;
 		}
 	}
-	//DPRINTF("Predictor::Insertion of the new entry at assoc %d\n", index_oldest);
+	DPRINTF(DebugCache, "Predictor::Insertion of the new entry at assoc %d\n", index_oldest);
 	
-	BP_missing_tags[set][index_oldest]->last_time_touched = cpt_time;
+	BP_missing_tags[set][index_oldest]->last_time_touched = m_cpt_bypassTag++;
 	BP_missing_tags[set][index_oldest]->addr = block_addr;
 	BP_missing_tags[set][index_oldest]->isValid = true;		
 	BP_missing_tags[set][index_oldest]->allocSite = inNVM;
@@ -552,7 +607,7 @@ Predictor::updateCachePressure()
 
 		if(simu_parameters.printDebug)
 		{
-			stats_SRAMpressure.push_back(m_isSRAMbusy);
+			//stats_SRAMpressure.push_back(m_isSRAMbusy);
 		}
 
 		stats_beginTimeFrame = cpt_time;	
@@ -620,18 +675,33 @@ bool
 Predictor::getHitPerDataArray(uint64_t block_addr, int set , bool inNVM)
 {
 	uint64_t ref_time = 0;
-	
-	for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
+	bool find = false;
+	for(unsigned i = 0 ; i < BP_missing_tags[set].size() && !find; i++)
 	{
 		if( block_addr == BP_missing_tags[set][i]->addr)
 		{
 			ref_time = BP_missing_tags[set][i]->last_time_touched;
-			break;		
+			find = true;		
 		}
 	}
 	
+	if(!find)
+		return false;
+	
+	/*string str_inNVM = inNVM ? "TRUE" : "FALSE";
+	cout << "*** Call getHitPerDataArray with inNVM =" << str_inNVM << endl;
+	cout << "Block is " << std::hex << block_addr << ", ref_time = " << ref_time << endl;
+	for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
+	{
+		if(BP_missing_tags[set][i]->isValid)
+		{
+			string alloc_site = BP_missing_tags[set][i]->allocSite ? "NVM" : "SRAM";
+			cout << "Index " << i << " - Addr = " << std::hex << BP_missing_tags[set][i]->addr \
+			<< std::dec << " - Time = " << BP_missing_tags[set][i]->last_time_touched << " - Allocation = " << alloc_site << endl;		
+		}
+	}
+	*/
 	int pos = 0;
-	//If the block is not present , the ref_time is 0, all valid block allocated to (inNVM) will increment pos
 	
 	for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
 	{
@@ -643,6 +713,7 @@ Predictor::getHitPerDataArray(uint64_t block_addr, int set , bool inNVM)
 		}
 	}
 
+	//cout << "pos = " << pos << endl;
 	if(inNVM)
 		return pos < simu_parameters.nvm_assoc ? true : false;
 	else
@@ -675,7 +746,7 @@ Predictor::printStats(std::ostream& out, string entete)
 	uint64_t totalNVMerrors = 0, totalSRAMerrors= 0, totalBPerrors = 0, totalMigration = 0;	
 	
 	if(simu_parameters.printDebug && simu_parameters.enableDatasetSpilling)
-	{	
+	{	/*
 		ofstream output_file;
 		output_file.open(PREDICTOR_OUTPUT_FILE);	
 		for(int i = 0 ; i < m_nb_set ; i++)
@@ -688,7 +759,7 @@ Predictor::printStats(std::ostream& out, string entete)
 			}
 			output_file << endl;
 		}
-		output_file.close();
+		output_file.close();*/
 	}
 
 	for(unsigned i = 0 ; i <  stats_NVM_errors.size(); i++)
@@ -761,8 +832,8 @@ LRUPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access e
 	else
 		m_replacementPolicySRAM_ptr->insertionPolicy(set, index , 0);
 	
+	
 	Predictor::insertionPolicy(set, index , inNVM , element);
-	//DPRINTF("END OF INSERTIONPolicy");
 	m_cpt++;
 }
 

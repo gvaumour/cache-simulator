@@ -99,6 +99,7 @@ struct SimuParameters
 	unsigned MT_counter_th;
 	uint64_t MT_timeframe;
 	int nb_MTcouters_sampling;
+	bool enableFullSRAMtraffic;
 			
 	float ratio_RWcost;	
 	
@@ -135,9 +136,16 @@ struct SimuParameters
 	/****/
 	std::string Cerebron_activation_function;
 	bool Cerebron_independantLearning; 
+	bool Cerebron_separateLearning;
 	bool Cerebron_fastlearning;
 	bool Cerebron_RDmodel;
 	int Cerebron_decrement_value;
+	
+	/****************/ 
+	std::vector<std::string> SimplePerceptron_write_features;
+	std::vector<std::string> SimplePerceptron_reuse_features;
+	int SimplePerceptron_write_threshold;
+	
 };
 
 std::vector<std::string> split(std::string s, char delimiter);
@@ -153,6 +161,7 @@ std::string convert_hex(int n);
 const char * StripPath(const char * path);
 void init_default_parameters();
 std::string buildHash(uint64_t a, uint64_t p);
+std::vector<std::string> splitAddr_Bytes(uint64_t a);
 
 
 std::vector< std::vector<int> > resize_image(std::vector< std::vector<int> >& img);

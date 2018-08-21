@@ -53,8 +53,10 @@ CompressedTrace::readNext(Access& element)
 	if(!gzread(m_compressedTrace, mybuffer_dummy, TRACE_BUFFER_SIZE))
 		return false;
 	
+
 	readNext_addr = string(strtok(mybuffer_dummy, " "));
 
+	
 	if(readNext_addr[0] != '#' || readNext_addr[1] != '!')
 	{
 		cout << "Line passed - Wrong Format" << endl;

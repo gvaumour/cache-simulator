@@ -136,14 +136,12 @@ class Access{
 };
 
 
-
-
-
-
 class CacheEntry{
 	public :
 		CacheEntry() { 
 			isNVM = false;
+			isLearning_policy = false;
+			isLearning_weight = false;
 			isLearning = false;
 			initEntry();
 		};
@@ -156,11 +154,13 @@ class CacheEntry{
 			
 			isPrefetch = false;
 			address = 0;
+
 			policyInfo = 0; 
 			saturation_counter = 0;
 			m_pc = 0;
 			nbRead = 0;
 			nbWrite = 0;
+			write_counter = 0;
 			m_compilerHints = 0;
 			justMigrate = false;
 			value = 0;
@@ -208,6 +208,12 @@ class CacheEntry{
 
 		std::vector<bool> predictedReused;
 		std::vector< std::pair<int,allocDecision> > PHC_allocation_pred;
+
+		bool simple_perceptron_writepred;
+		std::vector<int> simple_perceptron_writeHash;
+		bool simple_perceptron_mediumReuse;
+		std::vector<int> simple_perceptron_reuseHash;
+		int write_counter;
 		
 		int nbWrite;
 		int nbRead;
@@ -221,6 +227,9 @@ class CacheEntry{
 		
 		//field used only by the RAP predictor
 		bool isLearning;
+		bool isLearning_policy;
+		bool isLearning_weight;
+		
 		bool isPrefetch;
 		bool justMigrate;
 		std::vector<uint64_t> pc_history;

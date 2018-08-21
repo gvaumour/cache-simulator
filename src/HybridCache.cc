@@ -37,6 +37,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "PHC.hh"
 #include "DBAMBPredictor.hh"
 #include "Perceptron.hh"
+//#include "monitorPredictor.hh"
+#include "SimplePerceptron.hh"
 
 #define LLC_TRACE_BUFFER_SIZE 50
 
@@ -95,8 +97,12 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		 m_predictor = new PHCPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "Cerebron")
 		 m_predictor = new CerebronPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
+	/*else if(m_policy == "Monitor")
+		 m_predictor = new monitorPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);*/
 	else if(m_policy == "Perceptron")
 		 m_predictor = new PerceptronPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
+	else if(m_policy == "SimplePerceptron")
+		 m_predictor = new SimplePerceptronPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "DBAMB" || m_policy == "DBA" || m_policy == "DBAM" || m_policy == "DBAMBS")
 		 m_predictor = new DBAMBPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else {
@@ -105,23 +111,43 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 	
 	if(m_ID == -1 && m_policy != "DBAMB")
 	{
-		int constituency = m_nb_set / simu_parameters.nb_sampled_sets;
-		int index = 0;
 		
-		for(int i = 0 ; i+index < m_nb_set; i += constituency)
-		{
-			for(int j = 0 ; j < m_nbSRAMways ; j++){
-				m_tableSRAM[i+index][j]->isLearning = true;
-			}
-			for(int j = 0 ; j < m_nbNVMways ; j++)
+		if(m_policy == "Cerebron" )
+		{		
+			int learning_policy_sets = simu_parameters.Cerebron_separateLearning ? m_nb_set/2 : m_nb_set;
+			int learning_weight_sets = simu_parameters.Cerebron_separateLearning ? m_nb_set/2 : 0;
+
+			for(int i = 0 ; i < learning_policy_sets; i++)
 			{
-				m_tableNVM[i+index][j]->isLearning = true;
-				//initializeLearningCl(m_tableNVM[i+index][j]);
+				for(int j = 0 ; j < m_nbSRAMways ; j++)
+					m_tableSRAM[i][j]->isLearning_policy = true;
+				for(int j = 0 ; j < m_nbNVMways ; j++)
+					m_tableNVM[i][j]->isLearning_policy = true;
 			}
-			index = (index+1)%constituency;
+			for(int i = learning_weight_sets ; i < m_nb_set; i++)
+			{
+				for(int j = 0 ; j < m_nbSRAMways ; j++)
+					m_tableSRAM[i][j]->isLearning_weight = true;
+				for(int j = 0 ; j < m_nbNVMways ; j++)
+					m_tableNVM[i][j]->isLearning_weight = true;
+			}
 		}
-	}
+		else
+		{
+			int constituency = m_nb_set / simu_parameters.nb_sampled_sets;
+			int index = 0;
+		
+			for(int i = 0 ; i+index < m_nb_set; i += constituency)
+			{
+				for(int j = 0 ; j < m_nbSRAMways ; j++)
+					m_tableSRAM[i+index][j]->isLearning = true;
+				for(int j = 0 ; j < m_nbNVMways ; j++)
+					m_tableNVM[i+index][j]->isLearning = true;
 	
+				index = (index+1)%constituency;
+			}
+		}		
+	}
 	
 	m_start_index = log2(blocksize)-1;
 	m_end_index = log2(m_blocksize) + log2(m_nb_set);
@@ -187,6 +213,15 @@ HybridCache::initializeLearningCl(CacheEntry* entry)
 	{
 		entry->PHC_allocation_pred = vector< pair<int,allocDecision> >(simu_parameters.PHC_features.size()\
 			 , pair<int,allocDecision>(0, ALLOCATE_IN_SRAM) );
+	}
+	
+	if( m_policy == "SimplePerceptron")
+	{
+		entry->simple_perceptron_writepred =  false;
+		entry->simple_perceptron_writeHash = vector<int>(simu_parameters.SimplePerceptron_write_features.size() , 0);
+
+		entry->simple_perceptron_mediumReuse = false;
+		entry->simple_perceptron_reuseHash = vector<int>(simu_parameters.SimplePerceptron_reuse_features.size() , 0);
 	}
 }
 
@@ -784,17 +819,13 @@ HybridCache::classifyRD(int set , int index)
 	
 	int position = 0;
 	
-	cout << "classifyRD, set = " << set  << " index = " << index << " ref_rd = " << m_tableSRAM[set][index]->policyInfo << endl;
 	/* Determine the position of the cache line in the LRU stack */
 	for(unsigned i = 0 ; i < line.size() ; i ++)
 	{
-		cout << "\tPolicy info = " << line[i]->policyInfo << endl;
-
 		if(line[i]->policyInfo < ref_rd && line[i]->isValid)
 			position++;
 	}	
 
-	cout << "Position = " << position << endl;
 	if(position < 4)
 		return RD_SHORT;
 	else

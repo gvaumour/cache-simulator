@@ -36,7 +36,6 @@ class SaturationCounter;
 class Access;
 class CacheEntry;
 
-
 class HybridLocation
 {
 	public: 

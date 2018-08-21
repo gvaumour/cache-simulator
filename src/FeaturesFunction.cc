@@ -11,8 +11,7 @@ int hashing_function1(params_hash a , uint64_t addr , uint64_t missPC)
 	string index = a.index;
 	bool hash_with_PC = a.xorWithPC;
 	int block = a.nbBlock;
-	string b = hash_with_PC ? "TRUE" : "FALSE";
-	
+	//string b = hash_with_PC ? "TRUE" : "FALSE";
 	//cout << "index = " << index << " block = " << block << " hash_with_PC = " << b << endl;
 	assert( block < 8);
 	uint64_t tag = 0;
@@ -29,10 +28,10 @@ int hashing_function1(params_hash a , uint64_t addr , uint64_t missPC)
 		tag = bitSelect( PerceptronPredictor::m_global_PChistory[2] , 8*block , 8*block+7);
 	else if( index == "currentPC3")
 		tag = bitSelect( PerceptronPredictor::m_global_PChistory[3] , 8*block , 8*block+7);
-	else if( index == "MissCounter")
+	/*else if( index == "MissCounter")
 	{
 	
-	}
+	}*/
 	else
 		assert(false && "Hashing Function failed");
 	

@@ -218,6 +218,8 @@ int main(int argc , char* argv[]){
 			simu_parameters.Cerebron_fastlearning = true;
 		else if(string(argv[i]) == "--Cerebron-RDmodel")
 			simu_parameters.Cerebron_RDmodel = true;
+		else if(string(argv[i]) == "--Cerebron-separateLearning")
+			simu_parameters.Cerebron_separateLearning = true;
 		else if(string(argv[i]) == "--Perceptron-Alloc-Features")
 		{	i++;
 			simu_parameters.perceptron_Allocation_features.clear();
@@ -305,7 +307,9 @@ int main(int argc , char* argv[]){
 		simu_parameters.enableMigration = true;
 	}
 	
-	if( (simu_parameters.nvm_assoc == 0 || simu_parameters.sram_assoc == 0) && simu_parameters.policy != "Perceptron" )
+
+	if( (simu_parameters.nvm_assoc == 0 || simu_parameters.sram_assoc == 0) && \
+		(simu_parameters.policy != "Perceptron" && simu_parameters.policy != "Monitor" ) )
 	 {
 	 	simu_parameters.policy = "LRU";
 	 }

@@ -92,6 +92,8 @@ class Predictor{
 		int m_SRAMassoc_MT_size , m_NVMassoc_MT_size;
 		
 		int m_ID;
+		uint64_t m_cpt_bypassTag;
+		
 		std::string m_policy; 
 		
 		ReplacementPolicy* m_replacementPolicyNVM_ptr;

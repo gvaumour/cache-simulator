@@ -151,6 +151,26 @@ string splitFilename(string str)
 	return str.substr(0 , found);
 }
 
+
+vector<string> splitAddr_Bytes(uint64_t a)
+{
+	stringstream ss;
+	ss << std::hex << a;
+   	string addr = ss.str();
+	while(addr.size() < 16)
+		addr = string(1,'0') + addr;
+
+	vector<string> result;
+	for(unsigned i = 0 ; i < addr.size(); i+=2)
+	{
+		stringstream ss1;
+		ss1 << addr.at(i);
+		ss1 << addr.at(i+1);
+		result.push_back(ss1.str());
+	}
+	return result;
+}
+
 string buildHash(uint64_t a, uint64_t p)
 {
 	stringstream ss;
@@ -317,6 +337,7 @@ init_default_parameters()
 	simu_parameters.MT_counter_th = 2;
 	simu_parameters.MT_timeframe = 1E4;
 	simu_parameters.nb_MTcouters_sampling = 1;
+	simu_parameters.enableFullSRAMtraffic = false;
 
 	/********* DBAMB Config *************/ 
 	simu_parameters.window_size = 20; 
@@ -346,7 +367,7 @@ init_default_parameters()
 
 	/********* Perceptron Config *************/ 	
 //	simu_parameters.perceptron_features = { "Addr_LSB", "Addr_MSB", "PC_LSB", "PC_MSB"};
-	simu_parameters.perceptron_BP_features = { "MissCounter_2" , "Addr_2_1" };
+	simu_parameters.perceptron_BP_features = { "MissPC_0" , "Addr_2" };
 	simu_parameters.perceptron_Allocation_features = { "MissPC_LSB"};
 	simu_parameters.perceptron_windowSize = 16;
 	
@@ -364,7 +385,7 @@ init_default_parameters()
 	/***************************************/ 
 	
 	/*********** PHC Config ******************/ 
-	simu_parameters.PHC_features = {"MissCounter_0" , "Addr_2_1"};
+	simu_parameters.PHC_features = {"MissPC_0" , "Addr_3"};
 	simu_parameters.PHC_cost_threshold = 0;
 	simu_parameters.PHC_cost_mediumRead = -4124;
 	simu_parameters.PHC_cost_mediumWrite = -3702;
@@ -373,10 +394,16 @@ init_default_parameters()
 
 	/************ Cerebron Config ************/ 
 	simu_parameters.Cerebron_activation_function = "linear";
-	simu_parameters.Cerebron_independantLearning = false;
-	simu_parameters.Cerebron_fastlearning = false;
+	simu_parameters.Cerebron_independantLearning = true;
+	simu_parameters.Cerebron_fastlearning = true;
+	simu_parameters.Cerebron_separateLearning = false;
 	simu_parameters.Cerebron_RDmodel = false;
-	simu_parameters.Cerebron_decrement_value = 1;
+	simu_parameters.Cerebron_decrement_value = 5;
+
+	/************ SimplePerceptron Config *********/ 
+	simu_parameters.SimplePerceptron_reuse_features = {"MissPC_0" , "Addr_3"};
+	simu_parameters.SimplePerceptron_write_features = {"MissPC_0" , "Addr_3"};
+	simu_parameters.SimplePerceptron_write_threshold = 10;
 
 	simu_parameters.nbCores = 1;
 	simu_parameters.policy = "Cerebron";
