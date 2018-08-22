@@ -496,26 +496,33 @@ CerebronPredictor::activationFunction(Access element)
 allocDecision
 CerebronPredictor::convertToAllocDecision(int alloc_counter, bool isWrite)
 {
-	if( alloc_counter < 0 )
-		return ALLOCATE_IN_SRAM;
-	else
-		return ALLOCATE_IN_NVM;
-
-	/*
-	if( abs(alloc_counter) < simu_parameters.perceptron_allocation_threshold )
+	if(simu_parameters.Cerebron_lowConfidence)
 	{
-		if( isWrite )
-			return ALLOCATE_IN_SRAM;
-		else 
-			return ALLOCATE_IN_NVM;
+		
+		if( abs(alloc_counter) < simu_parameters.perceptron_allocation_threshold )
+		{
+			if( isWrite )
+				return ALLOCATE_IN_SRAM;
+			else 
+				return ALLOCATE_IN_NVM;
+		}
+		else
+		{
+			if( alloc_counter < simu_parameters.perceptron_allocation_threshold )
+				return ALLOCATE_IN_SRAM;
+			else
+				return ALLOCATE_IN_NVM;
+		}
 	}
 	else
 	{
-		if( alloc_counter < simu_parameters.perceptron_allocation_threshold )
+		if( alloc_counter < 0 )
 			return ALLOCATE_IN_SRAM;
 		else
 			return ALLOCATE_IN_NVM;
-	}*/
+	
+	}
+	
 }
 
 
@@ -604,10 +611,16 @@ void CerebronPredictor::printConfig(std::ostream& out, std::string entete) {
 	out << entete << ":Cerebron:CostValueThreshold\t" << simu_parameters.PHC_cost_threshold  << endl;
 	out << entete << ":Cerebron:AllocationThreshold\t" << simu_parameters.perceptron_allocation_threshold  << endl;
 	out << entete << ":Cerebron:ActivationFunction\t" << simu_parameters.Cerebron_activation_function  << endl;
+	
 	string b = simu_parameters.Cerebron_independantLearning ? "TRUE" : "FALSE";
 	out << entete << ":Cerebron:IndependantLearning\t" << b  << endl;
+	
 	string c = simu_parameters.Cerebron_fastlearning ? "TRUE" : "FALSE";
 	out << entete << ":Cerebron:FastLearning\t" << c << endl;
+	
+	string f = simu_parameters.Cerebron_lowConfidence ? "TRUE" : "FALSE";
+	out << entete << ":Cerebron:LowConfidence\t" << c << endl;
+	
 	string e = simu_parameters.Cerebron_separateLearning ? "TRUE" : "FALSE";
 	out << entete << ":Cerebron:SeparateLearning\t" << e << endl;
 	

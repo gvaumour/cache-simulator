@@ -397,6 +397,7 @@ init_default_parameters()
 	simu_parameters.Cerebron_independantLearning = false;
 	simu_parameters.Cerebron_fastlearning = false;
 	simu_parameters.Cerebron_separateLearning = false;
+	simu_parameters.Cerebron_lowConfidence = false;
 	simu_parameters.Cerebron_RDmodel = false;
 	simu_parameters.Cerebron_decrement_value = 5;
 

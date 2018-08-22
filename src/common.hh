@@ -136,6 +136,7 @@ struct SimuParameters
 	/****/
 	std::string Cerebron_activation_function;
 	bool Cerebron_independantLearning; 
+	bool Cerebron_lowConfidence; 	
 	bool Cerebron_separateLearning;
 	bool Cerebron_fastlearning;
 	bool Cerebron_RDmodel;
