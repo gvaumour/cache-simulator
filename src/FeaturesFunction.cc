@@ -37,7 +37,7 @@ int hashing_function1(params_hash a , uint64_t addr , uint64_t missPC)
 		assert(false && "Hashing Function failed");
 	
 	if( hash_with_PC)
-		tag = (tag ^ PerceptronPredictor::m_global_PChistory[0])%256;
+		tag = (tag ^ CerebronPredictor::m_global_PChistory[0])%256;
 
 	return tag;
 }

@@ -155,7 +155,7 @@ CerebronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 			
 
 	if(entry->isLearning_policy)
-		recordAccess(entry, element.block_addr, entry->missPC, set , element.isWrite() , inNVM, index, rd);
+		recordAccess(entry, element.block_addr, entry->missPC, set , element.isWrite() , inNVM, index, rd , false);
 
 	if(entry->isLearning_weight)
 	{
@@ -216,7 +216,7 @@ CerebronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access
 	entry->cost_value += m_costAccess[element.isWrite()][rd];
 	if(entry->isLearning_policy)
 	{
-		recordAccess( entry , element.block_addr, entry->missPC, set, element.isWrite() , inNVM, index, rd);
+		recordAccess( entry , element.block_addr, entry->missPC, set, element.isWrite() , inNVM, index, rd , true);
 	}
 	if(entry->isLearning_weight)
 	{
@@ -392,17 +392,32 @@ CerebronPredictor::getDecision(CacheEntry* entry)
 }
 
 void
-CerebronPredictor::recordAccess(CacheEntry* entry,uint64_t block_addr, uint64_t missPC, int set, bool isWrite , bool inNVM, int index, RD_TYPE rd)
+CerebronPredictor::recordAccess(CacheEntry* entry,uint64_t block_addr, uint64_t missPC, int set,\
+			bool isWrite , bool inNVM, int index, RD_TYPE rd , bool isUpdate)
 {
 	if(simu_parameters.Cerebron_RDmodel)
 	{
 		bool hitSRAM = false, hitNVM = false;
-		hitSRAM = getHitPerDataArray( block_addr , set , false);
 		hitNVM = getHitPerDataArray( block_addr , set , true);
+		hitSRAM = getHitPerDataArray( block_addr , set , false);
+		/*
+		if( !inNVM && isUpdate)
+			hitSRAM = true;
+		else
+			hitSRAM = getHitPerDataArray( block_addr , set , false);
+				
+	
+		if( inNVM && isUpdate)
+			hitNVM = true;
+		else 
+			hitNVM = getHitPerDataArray( block_addr , set , true);
+		*/
+		/*
 		string hitSRAM_str = hitSRAM ? "TRUE" : "FALSE";
 		string hitNVM_str = hitNVM ? "TRUE" : "FALSE";		
 		//debug_file << "hitSRAM = " << hitSRAM_str << " , hitNVM = " << hitNVM_str << endl;
 		//debug_file << "BEFORE : entry->e_sram = " << entry->e_sram << endl;
+		*/
 		entry->e_sram += m_costParameters.costSRAM[isWrite];
 		entry->e_sram +=  !hitSRAM ? m_costParameters.costDRAM[isWrite] : 0;
 
@@ -814,12 +829,25 @@ CerebronPredictor::reportAccess(Access element, CacheEntry* current, int set, bo
 	<< access_type << " on " << is_learning << " Cl 0x" << std::hex << current->address \
 	<< std::dec << " allocated in " << cl_location<< ", Reuse=" << reuse_class \
 	<< is_error << ", Features Hashes=" << hashes << "] , " \
-        << "Des=" << des << "] , Confidence=" << confidence;
+        << "Des=" << des << "] , Confidence=" << confidence << "]";
         
 	if( simu_parameters.Cerebron_RDmodel)
 	{
-		string hitSRAM_str = getHitPerDataArray( current->address , set , false) ? "TRUE" : "FALSE";
-		string hitNVM_str = getHitPerDataArray( current->address , set , true) ? "TRUE" : "FALSE";
+		bool hitSRAM = false, hitNVM = false;
+		if( !inNVM && entete == "UPDATE")
+			hitSRAM = true;
+		else
+			hitSRAM = getHitPerDataArray( current->address , set , false);
+				
+	
+		if( inNVM && entete == "UPDATE")
+			hitNVM = true;
+		else 
+			hitNVM = getHitPerDataArray( current->address , set , true);
+			
+		string hitSRAM_str = hitSRAM ? "TRUE" : "FALSE";
+		string hitNVM_str = hitNVM ? "TRUE" : "FALSE";
+		
 		
 		debug_file << ", E_SRAM = " << current->e_sram << " , E_NVM = " << current->e_nvm\
 			 << ", HitSRAM=" << hitSRAM_str << ", HitNVM=" << hitNVM_str;	

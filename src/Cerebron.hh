@@ -38,7 +38,8 @@ class CerebronPredictor : public Predictor {
 		void drawFeatureMaps();
 		void finishSimu();
 		
-		void recordAccess(CacheEntry* entry,uint64_t block_addr, uint64_t missPC, int set, bool isWrite , bool inNVM, int index, RD_TYPE rd);
+		void recordAccess(CacheEntry* entry,uint64_t block_addr, uint64_t missPC, int set, bool isWrite,\
+					bool inNVM, int index, RD_TYPE rd, bool isUpdate);
 		void reportAccess(Access element, CacheEntry* current,int set , bool inNVM, std::string entete, std::string reuse_class);
 
 

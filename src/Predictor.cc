@@ -670,7 +670,20 @@ Predictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element
 	}
 }
 
-
+void
+Predictor::printBParray(int set , ofstream& out)
+{
+	for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
+	{
+		if(BP_missing_tags[set][i]->isValid)
+		{
+			string alloc_site = BP_missing_tags[set][i]->allocSite ? "NVM" : "SRAM";
+			out << "Index " << i << " - Addr = " << std::hex << BP_missing_tags[set][i]->addr \
+			<< std::dec << " - Time = " << BP_missing_tags[set][i]->last_time_touched << " - Allocation = " << alloc_site << endl;		
+		}
+	}
+	
+}
 bool
 Predictor::getHitPerDataArray(uint64_t block_addr, int set , bool inNVM)
 {

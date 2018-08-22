@@ -80,6 +80,7 @@ class Predictor{
 		std::vector<int> missingTagFeaturesHash(uint64_t block_addr, int set);
 		uint64_t missingTagMissPC(uint64_t block_addr, int set);
 
+		void printBParray(int set , std::ofstream& out);
 
 	protected : 		
 		DataArray& m_tableSRAM;
