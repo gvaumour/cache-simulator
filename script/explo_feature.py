@@ -67,14 +67,16 @@ for i in range(4):
 
 		if not os.path.exists(features_str):
 			os.makedirs(features_str);
+		
 		os.chdir(features_str);
+		if not os.path.exists("energy.out"):
 	
-		cmd += features_str + " ";
-		cmd += trace;
-		subprocess.check_call(cmd , shell=True);
+			cmd += features_str + " ";
+			cmd += trace;
+			subprocess.check_call(cmd , shell=True);
 	
 	
-		subprocess.check_call(launch_energy , shell="True");
+			subprocess.check_call(launch_energy , shell="True");
 	
 		energy_file = open("energy.out", "r");
 		line = energy_file.readline();
