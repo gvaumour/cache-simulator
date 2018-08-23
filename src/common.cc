@@ -373,7 +373,7 @@ init_default_parameters()
 	
 	simu_parameters.perceptron_bypass_threshold = 3;
 	simu_parameters.perceptron_bypass_learning = 11;
-	simu_parameters.perceptron_allocation_threshold = 3;
+	simu_parameters.perceptron_allocation_threshold = 5;
 	simu_parameters.perceptron_allocation_learning = 11;
 
 	simu_parameters.perceptron_compute_variance = false;
@@ -397,6 +397,7 @@ init_default_parameters()
 	simu_parameters.Cerebron_independantLearning = false;
 	simu_parameters.Cerebron_fastlearning = false;
 	simu_parameters.Cerebron_separateLearning = false;
+	simu_parameters.Cerebron_resetEnergyValues = false;
 	simu_parameters.Cerebron_lowConfidence = false;
 	simu_parameters.Cerebron_RDmodel = false;
 	simu_parameters.Cerebron_decrement_value = 5;

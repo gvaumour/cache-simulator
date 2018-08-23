@@ -8,11 +8,9 @@ print_folder_recurse() {
         elif [[ $i == *"results_1.out"  ]]; then
 		DIR=$(dirname "$i");
 
-		sram=$(grep "AllocateSRAM"  $DIR/results_1.out | awk -F "\t" '{print $2}' )
-		nvm=$(grep "AllocateNVM"  $DIR/results_1.out | awk -F "\t" '{print $2}' )
-		dram_access=$(grep "MainMem"  $DIR/results_1.out | awk -F "\t" '{print $2}' | awk '{sum += $1} END {print sum}')
+		correctAllocation=$(grep "CacheLLC:CerebronPredictor:WrongAlloc"  $DIR/results_1.out | awk -F "\t" '{print $2}' )
 		
-		echo -e $DIR"\t"$sram" "$nvm" "$dram_access >> $2
+		echo -e $DIR"\t"$correctAllocation >> $2
 #		echo -e $PWD"\t"$sram_read" "$sram_write" "$nvm_read" "$nvm_write
         fi        
     done

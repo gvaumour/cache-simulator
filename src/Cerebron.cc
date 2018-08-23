@@ -349,6 +349,20 @@ CerebronPredictor::doLearning(CacheEntry* entry, bool inNVM)
 			else 
 				m_features[i]->increaseConfidence(entry->PHC_allocation_pred[i].first);
 		}
+		
+		for(unsigned i = 0 ; i < m_features.size() ; i++)
+		{
+			pair<int , allocDecision> dummy;
+			dummy.first = hashing_function1(m_features_hash[i] , entry->address , entry->missPC);
+			dummy.second = m_features[i]->getAllocDecision(dummy.first, false);
+			entry->PHC_allocation_pred[i] = dummy;
+		}
+		if(simu_parameters.Cerebron_resetEnergyValues)
+		{
+			entry->e_sram = 0;
+			entry->e_nvm = 0;
+		}
+	
 	}
 	else
 	{	
@@ -508,7 +522,7 @@ CerebronPredictor::convertToAllocDecision(int alloc_counter, bool isWrite)
 		}
 		else
 		{
-			if( alloc_counter < simu_parameters.perceptron_allocation_threshold )
+			if( alloc_counter < 0 )
 				return ALLOCATE_IN_SRAM;
 			else
 				return ALLOCATE_IN_NVM;
