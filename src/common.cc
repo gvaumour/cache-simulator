@@ -395,13 +395,20 @@ init_default_parameters()
 
 	/************ Cerebron Config ************/ 
 	simu_parameters.Cerebron_activation_function = "linear";
-	simu_parameters.Cerebron_independantLearning = false;
-	simu_parameters.Cerebron_fastlearning = false;
-	simu_parameters.Cerebron_separateLearning = false;
 	simu_parameters.Cerebron_resetEnergyValues = false;
-	simu_parameters.Cerebron_enableMigration = false;
+	simu_parameters.Cerebron_separateLearning = false;
 	simu_parameters.Cerebron_lowConfidence = false;
+	simu_parameters.Cerebron_enableMigration = false;
+
+	simu_parameters.Cerebron_fastlearning = true;
+	simu_parameters.Cerebron_independantLearning = true;
+	simu_parameters.Cerebron_RDmodel = true;
+
+	/*
+	simu_parameters.Cerebron_fastlearning = false;
+	simu_parameters.Cerebron_independantLearning = false;
 	simu_parameters.Cerebron_RDmodel = false;
+	*/
 	simu_parameters.Cerebron_decrement_value = 5;
 
 	/************ SimplePerceptron Config *********/ 
