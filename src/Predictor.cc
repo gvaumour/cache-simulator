@@ -373,7 +373,7 @@ void
 Predictor::updateBypassTag(CacheEntry* entry, int set, bool inNVM)
 {
 	uint64_t block_addr = entry->address;
-	DPRINTF(DebugCache, "Predictor::recordAllocationDecision Set %d, block_addr = 0x%lx\n ", set, block_addr);
+	//DPRINTF(DebugCache, "Predictor::recordAllocationDecision Set %d, block_addr = 0x%lx\n ", set, block_addr);
 
 	//Look if the entry already exists, if yes => BP Error, if No insert it
 	for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
@@ -384,7 +384,7 @@ Predictor::updateBypassTag(CacheEntry* entry, int set, bool inNVM)
 			return;		
 		}
 	}
-	DPRINTF(DebugCache, "Predictor::recordAllocationDecision Didn't find the entry in the BP Missing Tags\n");
+	//DPRINTF(DebugCache, "Predictor::recordAllocationDecision Didn't find the entry in the BP Missing Tags\n");
 	int index_oldest =0;
 	uint64_t oldest = BP_missing_tags[set][0]->last_time_touched;
 	for(unsigned i = 0 ; i < BP_missing_tags[set].size() ; i++)
@@ -401,7 +401,7 @@ Predictor::updateBypassTag(CacheEntry* entry, int set, bool inNVM)
 			oldest = BP_missing_tags[set][i]->last_time_touched;
 		}
 	}
-	DPRINTF(DebugCache, "Predictor::Insertion of the new entry at assoc %d\n", index_oldest);
+	//DPRINTF(DebugCache, "Predictor::Insertion of the new entry at assoc %d\n", index_oldest);
 	
 	BP_missing_tags[set][index_oldest]->last_time_touched = m_cpt_bypassTag++;
 	BP_missing_tags[set][index_oldest]->addr = block_addr;
@@ -489,11 +489,11 @@ Predictor::reportMiss(uint64_t block_addr , int id_set)
 	/* Miss classification between cold/conflict/capacity */
 	if(simu_parameters.simulate_conflicts)
 	{
-		DPRINTF(DebugFUcache , "Predictor::reportMiss block %#lx \n" , block_addr);
+		//DPRINTF(DebugFUcache , "Predictor::reportMiss block %#lx \n" , block_addr);
 		if(m_accessedBlocks.count(block_addr) == 0)
 		{
 			stats_cold_miss++;
-			DPRINTF(DebugFUcache , "Predictor::reportMiss block not been accessed \n" );
+			//DPRINTF(DebugFUcache , "Predictor::reportMiss block not been accessed \n" );
 		}
 		else
 		{

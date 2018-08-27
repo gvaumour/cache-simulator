@@ -222,6 +222,8 @@ int main(int argc , char* argv[]){
 			simu_parameters.Cerebron_RDmodel = true;
 		else if(string(argv[i]) == "--Cerebron-resetEnergyValues")
 			simu_parameters.Cerebron_resetEnergyValues = true;
+		else if(string(argv[i]) == "--Cerebron-enableMigration")
+			simu_parameters.Cerebron_enableMigration = true;
 		else if(string(argv[i]) == "--Cerebron-separateLearning")
 			simu_parameters.Cerebron_separateLearning = true;
 		else if(string(argv[i]) == "--Perceptron-Alloc-Features")

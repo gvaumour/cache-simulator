@@ -154,7 +154,7 @@ Hierarchy::signalWB(Access wb_request, bool isKept, int idcore)
 {
 
 	if(idcore == -1)
-	{	
+	{
 		// It is a WB from the LLC to the Main Mem
 		if(wb_request.m_type == MemCmd::DIRTY_WRITEBACK)
 			stats_dirtyWB_MainMem++;		
@@ -163,14 +163,38 @@ Hierarchy::signalWB(Access wb_request, bool isKept, int idcore)
 		else
 			assert(false && "Error on the type of the write back request");
 
-		m_directory->setCoherenceState(wb_request.m_address , NOT_PRESENT);
+		string state = directory_state_str[m_directory->getState(wb_request.m_address)];
+		//cout << "WB Request address = " << std::hex << wb_request.m_address << ", DirectoryState = " << state  << endl;
+
+		uint64_t addr =  wb_request.m_address;
+		DirectoryState dir_state = m_directory->getEntry(addr)->coherence_state;
+		
+		if( dir_state == CLEAN_LLC || dir_state == DIRTY_LLC )
+			m_directory->setCoherenceState(addr , NOT_PRESENT);
+		else if( dir_state == SHARED_L1)
+			m_directory->setCoherenceState(addr , SHARED_L1_NOT_LLC);
+		else if( dir_state == EXCLUSIVE_L1)
+			m_directory->setCoherenceState(addr , EXCLUSIVE_L1_NOT_LLC);
+		else if( dir_state == MODIFIED_L1)
+			m_directory->setCoherenceState(addr , MODIFIED_L1_NOT_LLC);
+		else{
+			cout << "Error dir_state = " << directory_state_str[dir_state] << endl;
+			assert(false);
+		}
+	
+		state = directory_state_str[m_directory->getState(wb_request.m_address)];
+		//cout << "WB Request address = " << std::hex << wb_request.m_address << ", DirectoryState = " << state  << endl;
 			
 //		m_directory->removeEntry(wb_request.m_address);
 	}			
 	else{
+	
+		string dir_state = string( directory_state_str[m_directory->getState(wb_request.m_address)]);
+		DPRINTF( DebugHierarchy , "Write Back Block %#lx , Id Core = %d , Dir State = %s \n" , wb_request.m_address , idcore , dir_state.c_str()); 
 		//Remove the idcore from the tracker list and update the state
 		if(!isKept)
 			m_directory->removeTracker(wb_request.m_address , idcore);
+		
 		if( m_LLC->handleAccess(wb_request) == BYPASS_CACHE)
 		{
 			if(m_directory->getTrackers(wb_request.m_address).size() == 0)
@@ -191,7 +215,9 @@ Hierarchy::signalWB(Access wb_request, bool isKept, int idcore)
 			else
 				m_directory->setCoherenceState(wb_request.m_address , SHARED_L1);
 		}
-		m_directory->updateEntry(wb_request.m_address);
+		dir_state = directory_state_str[m_directory->getState(wb_request.m_address)];
+		DPRINTF( DebugHierarchy , "End Write Back Block %#lx Dir State is now %s \n" , wb_request.m_address , dir_state.c_str()); 
+		//m_directory->updateEntry(wb_request.m_address);
 	}
 }
 
@@ -243,10 +269,11 @@ Hierarchy::prefetchAddress(Access element)
 void
 Hierarchy::handleAccess(Access element)
 {
-	DPRINTF(DebugHierarchy, "HIERARCHY::New Access : Data %#lx Req %s, Id_Thread %d\n", element.m_address , memCmd_str[element.m_type], element.m_idthread);
-	
 	uint64_t addr = element.m_address;
 	uint64_t block_addr = bitRemove(addr , 0 , m_start_index+1);
+	
+	DPRINTF(DebugHierarchy, "HIERARCHY::New Access : Block %#lx Req %s, Id_Thread %d\n", block_addr , memCmd_str[element.m_type], element.m_idthread);
+
 
 	int id_thread = (int) element.m_idthread;
 	int id_core = convertThreadIDtoCore(id_thread);
@@ -271,8 +298,9 @@ Hierarchy::handleAccess(Access element)
 		m_directory->setTrackerToEntry(block_addr, id_core);			
 
 		m_private_caches[id_core]->handleAccess(element);		
-
-		if( m_LLC->handleAccess(element) == ALLOCATE_IN_SRAM)
+		
+		allocDecision des = m_LLC->handleAccess(element);
+		if( des != BYPASS_CACHE)
 			m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);	
 		else
 			m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1_NOT_LLC);			
@@ -285,7 +313,6 @@ Hierarchy::handleAccess(Access element)
 	}
 	else if(dir_state == CLEAN_LLC || dir_state == DIRTY_LLC)
 	{
-		m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);
 		m_directory->setTrackerToEntry(block_addr, id_core);			
 
 		m_private_caches[id_core]->handleAccess(element);
@@ -295,6 +322,7 @@ Hierarchy::handleAccess(Access element)
 		stats_hitsPrefetch += m_LLC->isPrefetchBlock(element.m_address) ? 1 : 0;
 		m_LLC->resetPrefetchFlag(element.m_address);
 		
+		m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);
 		m_directory->updateEntry(block_addr);
 		
 	}
@@ -351,12 +379,12 @@ Hierarchy::handleAccess(Access element)
 
 			m_directory->resetTrackersToEntry(block_addr);
 			m_directory->setTrackerToEntry(block_addr, id_core);
-			m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);
 			
 			//We write the new version to the LLC 
 			m_LLC->handleAccess(element);
 			m_directory->updateEntry(block_addr);
 			m_private_caches[id_core]->handleAccess(element);
+			m_directory->setCoherenceState(block_addr, EXCLUSIVE_L1);
 		}
 		else
 		{

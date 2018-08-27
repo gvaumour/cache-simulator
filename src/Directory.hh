@@ -94,6 +94,7 @@ class Directory
 		void printConfig();
 		void printStats();
 		
+		DirectoryState getState(uint64_t addr);
 	
 	private:
 		std::vector< std::vector<DirectoryEntry*> > m_table;

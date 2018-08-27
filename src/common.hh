@@ -69,6 +69,7 @@ struct SimuParameters
 
 	bool simulate_conflicts;
 	bool traceLLC;
+	bool strongInclusivity;
 
 	bool enablePrefetch;
 	int prefetchDegree;
@@ -138,6 +139,7 @@ struct SimuParameters
 	bool Cerebron_independantLearning; 
 	bool Cerebron_lowConfidence; 
 	bool Cerebron_resetEnergyValues;
+	bool Cerebron_enableMigration;
 	bool Cerebron_separateLearning;
 	bool Cerebron_fastlearning;
 	bool Cerebron_RDmodel;

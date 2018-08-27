@@ -300,7 +300,7 @@ DBAMBPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access el
 		
 			reportAccess(rap_current , element, current, current->isNVM, string("UPDATE"), string(str_RD_status[convertRD(rd)]));
 			dataset_file << "Position is " << rd << endl;
-			if(simu_parameters.enableMigration && element.enableMigration )
+			if(simu_parameters.enableMigration )
 				current = checkLazyMigration(rap_current , current , set , inNVM , index, element.isWrite());
 		}
 	}

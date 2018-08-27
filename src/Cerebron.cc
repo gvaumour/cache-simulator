@@ -82,6 +82,9 @@ CerebronPredictor::CerebronPredictor(int id, int nbAssoc , int nbSet, int nbNVMw
 		stats_variances = vector<double>();
 	}	
 
+
+	stats_nbMigrations = vector<int>(2,0);
+	
 	stats_allocate = 0;
 	stats_nbMiss = 0;
 	stats_nbHits = 0;
@@ -92,7 +95,6 @@ CerebronPredictor::CerebronPredictor(int id, int nbAssoc , int nbSet, int nbNVMw
 	stats_allocate = 0, stats_allocate_learning = 0;
 	stats_prediction_preemptive = 0 , stats_prediction_confident = 0;
 	stats_cptLearningSRAMerror = 0, stats_cptSRAMerror = 0;
-
 }
 
 
@@ -136,7 +138,7 @@ CerebronPredictor::allocateInNVM(uint64_t set, Access element)
 	// All the set is a learning/sampled set independantly of its way or SRAM/NVM alloc
 	//bool isLearning = m_tableSRAM[set][0]->isLearning; 
 		
-	return activationFunction(element);
+	return activationFunction(element.isWrite() , element.block_addr , element.m_pc);
 }
 
 
@@ -230,6 +232,12 @@ CerebronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access
 	stats_update++;
 	stats_nbHits++;
 	miss_counter--;
+
+	if(simu_parameters.Cerebron_enableMigration)
+	{
+		assert(entry->isValid);
+		entry = checkLazyMigration(entry , set , inNVM , index, element.isWrite());		
+	}
 
 	reportAccess( element, entry , set , entry->isNVM, string("UPDATE"), string(str_RD_status[rd]) );
 
@@ -462,7 +470,7 @@ CerebronPredictor::recordAccess(CacheEntry* entry,uint64_t block_addr, uint64_t 
 }
 
 allocDecision
-CerebronPredictor::activationFunction(Access element)
+CerebronPredictor::activationFunction( bool isWrite , uint64_t block_addr , uint64_t missPC)
 {
 
 	if(m_activation_function == "linear")
@@ -471,12 +479,12 @@ CerebronPredictor::activationFunction(Access element)
 		int sum_pred = 0;
 		for(unsigned i = 0 ; i < m_features.size() ; i++)
 		{
-			int hash = hashing_function1 ( m_features_hash[i] , element.block_addr , element.m_pc);
+			int hash = hashing_function1 ( m_features_hash[i] , block_addr , missPC);
 			int confidence = m_features[i]->getConfidence(hash, true);
-			allocDecision des = m_features[i]->getAllocDecision(hash, element.isWrite());
+			allocDecision des = m_features[i]->getAllocDecision(hash, isWrite );
 
 			if(simu_parameters.printDebug)
-				debug_file << "Feature " << i << " -- ID Dataset:" << hash << "\t" << element.m_pc << endl;
+				debug_file << "Feature " << i << " -- ID Dataset:" << hash << "\t" << missPC << endl;
 
 		
 			if( des == ALLOCATE_IN_SRAM )
@@ -484,7 +492,7 @@ CerebronPredictor::activationFunction(Access element)
 			else
 				sum_pred += confidence;
 		}
-		return convertToAllocDecision(sum_pred, element.isWrite());
+		return convertToAllocDecision(sum_pred, isWrite );
 	}
 	else if(m_activation_function == "max")
 	{
@@ -492,13 +500,13 @@ CerebronPredictor::activationFunction(Access element)
 		int max_confidence = 0;
 		for(unsigned i = 0 ; i < m_features.size() ; i++)
 		{
-			int hash = hashing_function1( m_features_hash[i] , element.block_addr , element.m_pc);
+			int hash = hashing_function1( m_features_hash[i] , block_addr , missPC);
 			int confidence = m_features[i]->getConfidence(hash, true);
 			
 			if(max_confidence < confidence)
 			{
 				max_confidence = confidence;
-				des = m_features[i]->getAllocDecision(hash, element.isWrite());
+				des = m_features[i]->getAllocDecision(hash, isWrite );
 			}
 			return des;
 		}
@@ -537,6 +545,79 @@ CerebronPredictor::convertToAllocDecision(int alloc_counter, bool isWrite)
 	
 	}
 	
+}
+
+
+CacheEntry*
+CerebronPredictor::checkLazyMigration(CacheEntry* current ,uint64_t set,bool inNVM, uint64_t index, bool isWrite)
+{
+	allocDecision des = activationFunction(isWrite , current->address , current->missPC);
+
+	if( inNVM == false && des == ALLOCATE_IN_NVM)
+	{
+		//cl is SRAM , check whether we should migrate to NVM 
+		if(simu_parameters.enableDatasetSpilling && m_isNVMbusy[set])
+		{
+			//reportSpilling(rap_current, current->address, false ,  inNVM);
+			//stats_busyness_migrate_change++; //If NVM tab is busy , don't migrate
+		}
+		else
+		{
+			//Trigger Migration
+			int id_assocNVM = evictPolicy(set, true);//Select LRU candidate from NVM cache
+			//DPRINTF("DBAMBPredictor:: Migration Triggered from SRAM, index %ld, id_assoc %d \n" , index, id_assoc);
+
+			CacheEntry* replaced_entry_NVM = m_tableNVM[set][id_assocNVM];
+					
+			/** Migration incurs one read and one extra write */ 
+			replaced_entry_NVM->nbWrite++;
+			current->nbRead++;
+		
+			/* Record the write error migration */ 
+			Predictor::migrationRecording();
+		
+			reportMigration(current, false , isWrite);
+		
+			m_cache->triggerMigration(set, index , id_assocNVM , false);
+			if(!m_isWarmup)
+				stats_nbMigrations[true]++;
+
+
+			current = replaced_entry_NVM;
+		}
+
+	}
+	else if( des == ALLOCATE_IN_SRAM && inNVM == true)
+	{
+		//cl is in NVM , check whether we should migrate to SRAM 
+			
+		//If SRAM tab is busy , don't migrate
+		if(simu_parameters.enableDatasetSpilling && m_isSRAMbusy[set])
+		{
+			//reportSpilling(rap_current, current->address, false ,  inNVM);
+			//stats_busyness_migrate_change++; //If NVM tab is busy , don't migrate
+		}
+		else 
+		{		
+			int id_assocSRAM = evictPolicy(set, false);
+		
+			CacheEntry* replaced_entry_SRAM = m_tableSRAM[set][id_assocSRAM];
+
+			/** Migration incurs one read and one extra write */ 
+			replaced_entry_SRAM->nbWrite++;
+			current->nbRead++;
+			reportMigration( current, true , isWrite);
+	
+			m_cache->triggerMigration(set, id_assocSRAM , index , true);
+		
+			if(!m_isWarmup)
+				stats_nbMigrations[false]++;
+
+			current = replaced_entry_SRAM;		
+		}
+
+	}
+	return current;
 }
 
 
@@ -598,7 +679,10 @@ CerebronPredictor::printStats(std::ostream& out, std::string entete) {
 	out << entete << ":CerebronPredictor:LearningSRAMerror\t" << stats_cptLearningSRAMerror << endl;
 	out << entete << ":CerebronPredictor:WrongAlloc\t" << stats_wrong_alloc << endl;
 	out << entete << ":CerebronPredictor:CorrectAlloc\t" << stats_good_alloc << endl;
-
+	out << entete << ":CerebronPredictor:TotalMigration\t" << stats_nbMigrations[true] + stats_nbMigrations[false] << endl;
+	out << entete << ":CerebronPredictor:MigrationsFromSRAM\t" << stats_nbMigrations[true] << endl;
+	out << entete << ":CerebronPredictor:MigrationsFromNVM\t" << stats_nbMigrations[false] << endl;
+	
 	
 	out << entete << ":CerebronPredictor:AccessClassification" << endl;
 	for(unsigned i = 0 ; i < stats_access_class.size() ; i++)
@@ -621,6 +705,8 @@ void CerebronPredictor::printConfig(std::ostream& out, std::string entete) {
 	
 	string a = m_enableAllocation ? "TRUE" : "FALSE";
 	out << entete << ":Cerebron:EnableAllocation\t" << a << endl;
+	string h = simu_parameters.Cerebron_enableMigration ? "TRUE" : "FALSE";
+	out << entete << ":Cerebron:EnableMigration\t" << h << endl;
 	
 	out << entete << ":Cerebron:CostValueThreshold\t" << simu_parameters.PHC_cost_threshold  << endl;
 	out << entete << ":Cerebron:AllocationThreshold\t" << simu_parameters.perceptron_allocation_threshold  << endl;
@@ -628,6 +714,9 @@ void CerebronPredictor::printConfig(std::ostream& out, std::string entete) {
 	
 	string b = simu_parameters.Cerebron_independantLearning ? "TRUE" : "FALSE";
 	out << entete << ":Cerebron:IndependantLearning\t" << b  << endl;
+
+	string g = simu_parameters.Cerebron_resetEnergyValues ? "TRUE" : "FALSE";
+	out << entete << ":Cerebron:ResetEnergyValeus\t" << g  << endl;
 	
 	string c = simu_parameters.Cerebron_fastlearning ? "TRUE" : "FALSE";
 	out << entete << ":Cerebron:FastLearning\t" << c << endl;
@@ -885,6 +974,33 @@ CerebronPredictor::reportAccess(Access element, CacheEntry* current, int set, bo
 	}
 	
 	debug_file << endl;	
+}
+
+void
+CerebronPredictor::reportMigration(CacheEntry* current, bool fromNVM, bool isWrite)
+{
+	
+	if(!simu_parameters.printDebug)
+		return;	
+
+	string cl_location = fromNVM ? "from NVM" : "from SRAM";
+
+	string des = "[" , confidence = "[", hashes = "[";	
+	for(unsigned i = 0 ; i < m_features.size() ; i++)
+	{
+		int hash = hashing_function1( m_features_hash[i] , current->address , current->missPC);		
+		confidence += to_string(m_features[i]->getConfidence(hash, true)) + " , ";
+		des += string(str_allocDecision[m_features[i]->getAllocDecision(hash, isWrite)]) + " , " ;
+		hashes += to_string(hash) + " , ";
+		
+	}
+	
+	int first_hash = hashing_function1( m_features_hash[0] , current->address , current->missPC);
+	
+	debug_file << "Migration:Dataset n°" << first_hash << ", Migration " << cl_location \
+	<< " Cl 0x" << std::hex << current->address << std::dec << ", Features Hashes=" << hashes \
+	<< "] , Des=" << des << "] , Confidence=["  << confidence << "]" << endl;
+
 }
 
 

@@ -134,7 +134,14 @@ Directory::getTrackers(uint64_t addr)
 	assert(entry != NULL);
 	return entry->nodeTrackers;
 }
-		
+
+DirectoryState	
+Directory::getState(uint64_t addr)
+{
+	DirectoryEntry* entry = getEntry(addr);
+	assert(entry != NULL);
+	return entry->coherence_state;
+}
 
 void 
 Directory::removeTracker(uint64_t addr, int node)

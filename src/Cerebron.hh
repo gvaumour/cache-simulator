@@ -38,21 +38,23 @@ class CerebronPredictor : public Predictor {
 		void drawFeatureMaps();
 		void finishSimu();
 		
+		void doLearning(CacheEntry* entry, bool inNVM);
+
+		allocDecision activationFunction(bool isWrite , uint64_t block_addr , uint64_t missPC );
+		allocDecision convertToAllocDecision(int alloc_counter, bool isLearning);
+		RD_TYPE classifyRD(int set , int index , bool inNVM);
+		allocDecision getDecision(CacheEntry* entry);
+
+
+		CacheEntry* checkLazyMigration(CacheEntry* current ,uint64_t set,bool inNVM, uint64_t index, bool isWrite);
+
 		void recordAccess(CacheEntry* entry,uint64_t block_addr, uint64_t missPC, int set, bool isWrite,\
 					bool inNVM, int index, RD_TYPE rd, bool isUpdate);
 		void reportAccess(Access element, CacheEntry* current,int set , bool inNVM, std::string entete, std::string reuse_class);
 
-
-		void doLearning(CacheEntry* entry, bool inNVM);
-
-		params_hash parseFeatureName(std::string feature_name);
-
-		allocDecision activationFunction(Access element);
-		allocDecision convertToAllocDecision(int alloc_counter, bool isLearning);
+		void reportMigration(CacheEntry* current, bool fromNVM , bool isWrite);
 		
-		RD_TYPE classifyRD(int set , int index , bool inNVM);
-		allocDecision getDecision(CacheEntry* entry);
-
+		params_hash parseFeatureName(std::string feature_name);
 		CacheEntry* get_entry(uint64_t set , uint64_t index , bool inNVM);
 
 		void update_globalPChistory(uint64_t pc);
@@ -101,6 +103,9 @@ class CerebronPredictor : public Predictor {
 		std::vector< std::vector< std::pair<int,int> > > stats_local_error;
 		std::vector< std::vector< std::pair<int,int> > > stats_global_error;
 		std::vector< std::vector<int> > stats_access_class;
+	
+		std::vector<int> stats_nbMigrations;
+
 };
 
 

@@ -111,7 +111,6 @@ class HybridCache {
 		std::string m_policy;
 		bool m_printStats;
 		bool m_isWarmup; //Stats are not recorded during warmup phase
-		bool m_Deallocating;
 		
 		int m_start_index;
 		int m_end_index;

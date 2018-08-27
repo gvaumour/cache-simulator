@@ -65,7 +65,6 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 	m_policy = policy;
 	m_printStats = false;
 	m_isWarmup = false;
-	m_Deallocating = false;
 		
 	m_tableSRAM.resize(m_nb_set);
 	m_tableNVM.resize(m_nb_set);
@@ -267,7 +266,7 @@ HybridCache::lookup(Access element)
 {	
 	entete_debug();
 	DPRINTF(DebugCache , "Lookup of addr %#lx\n" ,  element.m_address);
-	return getEntry(element.m_address) != NULL;
+	return getEntry(element.block_addr) != NULL;
 }
 
 allocDecision
@@ -290,12 +289,12 @@ HybridCache::handleAccess(Access element)
 
 	int stats_index = isWrite ? 1 : 0;
 
-	CacheEntry* current = getEntry(address);
+	CacheEntry* current = getEntry(block_addr);
 	allocDecision des = ALLOCATE_IN_SRAM;
 	
 	if(current == NULL){ // The cache line is not in the hybrid cache, Miss !
 				
-		CacheEntry* replaced_entry = NULL;
+		CacheEntry* destination_entry = NULL;
 		
 		des = m_predictor->allocateInNVM(id_set, element);
 		element.isSRAMerror = m_predictor->reportMiss(block_addr , id_set);
@@ -328,38 +327,37 @@ HybridCache::handleAccess(Access element)
 			id_assoc = m_predictor->evictPolicy(id_set, inNVM);	
 			
 			if(inNVM){//New line allocated in NVM
-				replaced_entry = m_tableNVM[id_set][id_assoc];
+				destination_entry = m_tableNVM[id_set][id_assoc];
 			}
 			else{//Allocated in SRAM 
-				replaced_entry = m_tableSRAM[id_set][id_assoc];
+				destination_entry = m_tableSRAM[id_set][id_assoc];
 			}
 				
 			//Deallocate the cache line in the lower levels (inclusive system)
-			if(replaced_entry->isValid){
+			if(destination_entry->isValid){
 
 
 				if(simu_parameters.traceLLC && m_ID == -1)
 				{
-					string line =  "EVICT " + convert_hex(replaced_entry->address);
+					string line =  "EVICT " + convert_hex(destination_entry->address);
 					//cout << "Writing to LLC_trace.out: " <<  line << endl;
 					gzwrite(LLC_trace, line.c_str() , LLC_TRACE_BUFFER_SIZE);	
 				}
 
 
 				entete_debug();
-				DPRINTF(DebugCache , "Invalidation of the cache line : %#lx , id_assoc %d\n" , replaced_entry->address,id_assoc);
+				DPRINTF(DebugCache , "Invalidation of the cache line : %#lx , id_assoc %d\n" , destination_entry->address,id_assoc);
 				//Prevent the cache line from being migrated du to WBs 
-				m_Deallocating = true;
 				//Inform the higher level of the deallocation
-				m_system->signalDeallocate(replaced_entry->address); 
-				m_Deallocating = false;
+				if(simu_parameters.strongInclusivity)	
+					m_system->signalDeallocate(destination_entry->address); 
 				
 				//WB this cache line to the lower cache 			
 				Access wb_request;
-				wb_request.m_address = replaced_entry->address;
+				wb_request.m_address = destination_entry->address;
 				wb_request.m_size = 4;
-				wb_request.m_pc = replaced_entry->m_pc;
-				if(replaced_entry->isDirty)
+				wb_request.m_pc = destination_entry->m_pc;
+				if(destination_entry->isDirty)
 					wb_request.m_type = MemCmd::DIRTY_WRITEBACK;
 				else
 					wb_request.m_type = MemCmd::CLEAN_WRITEBACK;
@@ -373,7 +371,7 @@ HybridCache::handleAccess(Access element)
 
 
 			
-			deallocate(replaced_entry);
+			deallocate(destination_entry);
 			allocate(address , id_set , id_assoc, inNVM, element.m_pc, element.isPrefetch());			
 			m_predictor->insertionPolicy(id_set , id_assoc , inNVM, element);
 			
@@ -476,17 +474,17 @@ HybridCache::handleAccess(Access element)
 
 
 void 
-HybridCache::deallocate(CacheEntry* replaced_entry)
+HybridCache::deallocate(CacheEntry* destination_entry)
 {
-	uint64_t addr = replaced_entry->address;
-	updateStatsDeallocate(replaced_entry);
+	uint64_t addr = destination_entry->address;
+	updateStatsDeallocate(destination_entry);
 
 	map<uint64_t,HybridLocation>::iterator it = m_tag_index.find(addr);	
 	if(it != m_tag_index.end()){
 		m_tag_index.erase(it);	
 	}	
 
-	replaced_entry->initEntry();
+	destination_entry->initEntry();
 	
 	
 }
@@ -603,89 +601,57 @@ void HybridCache::triggerMigration(int set, int id_assocSRAM, int id_assocNVM , 
 {
 	entete_debug();
 	DPRINTF(DebugCache , "TriggerMigration set %d , id_assocSRAM %d , id_assocNVM %d\n" , set , id_assocSRAM , id_assocNVM);
-	CacheEntry* sram_line = m_tableSRAM[set][id_assocSRAM];
-	CacheEntry* nvm_line = m_tableNVM[set][id_assocNVM];
+	
+	CacheEntry* from_entry = fromNVM ? m_tableNVM[set][id_assocNVM] : m_tableSRAM[set][id_assocSRAM];
+	CacheEntry* destination_entry = fromNVM ? m_tableSRAM[set][id_assocSRAM] : m_tableNVM[set][id_assocNVM];
 	
 	if(!m_isWarmup)
 		stats_migration[fromNVM]++;
-			
+	
+	assert(from_entry->isValid);
+	
+	if(destination_entry->isValid)
+	{
+		//WB this cache line to the lower levels 			
+		Access wb_request;
+		wb_request.m_address = destination_entry->address;
+		wb_request.m_pc = destination_entry->m_pc;
+		wb_request.m_size = 4;
+		if(destination_entry->isDirty)
+			wb_request.m_type = MemCmd::DIRTY_WRITEBACK;
+		else
+			wb_request.m_type = MemCmd::CLEAN_WRITEBACK;
+		signalWB(wb_request, false);
+		stats_evict++;	
+	}
+	
+	deallocate(destination_entry);
+	destination_entry->copyCL(from_entry);
+	destination_entry->justMigrate = true;
+	destination_entry->policyInfo = cpt_time;
+	destination_entry->isValid = true;
+	
+	map<uint64_t,HybridLocation>::iterator p1 = m_tag_index.find(destination_entry->address);
+	if(p1 != m_tag_index.end())
+	{
+ 		p1->second.m_inNVM = !fromNVM;
+		p1->second.m_way = fromNVM ? id_assocSRAM : id_assocNVM;
+	}
+	
+	from_entry->isValid = false;
+	
 	
 	if(fromNVM)
 	{
-		//From NVM to SRAM 
-		if(nvm_line->justMigrate)
-			stats_nbPingMigration++;
-	
-		//NVM cl erase the SRAM cl 
-		if(sram_line->isValid)
-		{
-			//WB this cache line to the lower cache 			
-			Access wb_request;
-			wb_request.m_address = sram_line->address;
-			wb_request.m_pc = sram_line->m_pc;
-			wb_request.m_size = 4;
-			if(sram_line->isDirty)
-				wb_request.m_type = MemCmd::DIRTY_WRITEBACK;
-			else
-				wb_request.m_type = MemCmd::CLEAN_WRITEBACK;
-			signalWB(wb_request, false);
-			stats_evict++;
-		}
-		deallocate(sram_line);
-		
-		sram_line->copyCL(nvm_line);
-		sram_line->justMigrate = true;
-		sram_line->isNVM = false;
-		sram_line->policyInfo = cpt_time;	
-
-		/* Update the tag */
-		map<uint64_t,HybridLocation>::iterator p1 = m_tag_index.find(nvm_line->address);
-		if(p1 != m_tag_index.end())
-		{
-	 		p1->second.m_inNVM = false;
-			p1->second.m_way = id_assocSRAM;
-		}
-		
-		nvm_line->initEntry();
+		//One read NVM , one write SRAM 
+		stats_hitsNVM[0]++;
+		stats_hitsSRAM[1]++;
 	}
 	else
 	{
-	
-		if(sram_line->justMigrate)
-			stats_nbPingMigration++;
-
-		//From SRAM to NVM 
-		//SRAM cl erase the NVM cl 
-		deallocate(nvm_line);
-		if(nvm_line->isValid)
-		{
-			//WB this cache line to the lower cache 			
-			Access wb_request;
-			wb_request.m_address = nvm_line->address;
-			wb_request.m_pc = nvm_line->m_pc;
-			wb_request.m_size = 4;
-			if(nvm_line->isDirty)
-				wb_request.m_type = MemCmd::DIRTY_WRITEBACK;
-			else
-				wb_request.m_type = MemCmd::CLEAN_WRITEBACK;
-			signalWB(wb_request, false);
-			stats_evict++;		
-		}
-	
-		nvm_line->copyCL(sram_line);
-		nvm_line->justMigrate = true;
-		nvm_line->isNVM = true;
-		nvm_line->policyInfo = cpt_time;	
-			
-		/* Update the tag */
-		map<uint64_t,HybridLocation>::iterator p1 = m_tag_index.find(sram_line->address);
-		if(p1 != m_tag_index.end())
-		{
-	 		p1->second.m_inNVM = true;
-			p1->second.m_way = id_assocNVM;
-		}
-		
-		sram_line->initEntry();
+		//One read SRAM , one write NVM  
+		stats_hitsNVM[1]++;
+		stats_hitsSRAM[0]++;
 	}
 }
 
@@ -780,15 +746,15 @@ HybridCache::blockAddressToCacheSet(uint64_t block_addr)
 }
 
 CacheEntry*
-HybridCache::getEntry(uint64_t addr)
+HybridCache::getEntry(uint64_t block_addr)
 {
-	uint64_t block_addr =  bitRemove(addr , 0 , m_start_index+1);
+//	uint64_t block_addr =  bitRemove(addr , 0 , m_start_index+1);
 
 	map<uint64_t,HybridLocation>::iterator p = m_tag_index.find(block_addr);
 	
 	if (p != m_tag_index.end()){
 	
-		int id_set = addressToCacheSet(addr);
+		int id_set = addressToCacheSet(block_addr);
 		HybridLocation loc = p->second;
 		if(loc.m_inNVM)
 			return m_tableNVM[id_set][loc.m_way];

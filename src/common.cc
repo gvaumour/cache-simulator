@@ -25,11 +25,11 @@ const char* memCmd_str[] = { "INST_READ", "INST_PREFETCH", "DATA_READ", "DATA_WR
 const char* str_allocDecision[] = {"ALLOCATE_IN_SRAM", "ALLOCATE_IN_NVM" , "BYPASS_CACHE", "ALLOCATE_PREEMPTIVELY"};
 
 
-const char* directory_state_str[] = {"SHARED_L1" , "MODIFIED_L1", "EXCLUSIVE_L1", "CLEAN_LLC", "DIRTY_LLC" , "NOT_PRESENT"};
+const char* directory_state_str[] = {"SHARED_L1" , "MODIFIED_L1", "EXCLUSIVE_L1", "SHARED_L1_NOT_LLC" ,\
+			 "MODIFIED_L1_NOT_LLC" , "EXCLUSIVE_L1_NOT_LLC" , "CLEAN_LLC", "DIRTY_LLC" , "NOT_PRESENT"};
 
-set<string> simulation_debugflags = {"DebugCache", "DebugDBAMB", "DebugHierarchy", "DebugFUcache" , "all"};
-
-
+set<string> simulation_debugflags = {"DebugCache", "DebugDBAMB", "DebugHierarchy", "DebugFUcache" , "all"};	
+	
 const char* str_RW_status[] = {"DEAD" , "WO", "RO" , "RW", "RW_NOTACC"};
 const char* str_RD_status[] = {"RD_SHORT" , "RD_MEDIUM", "RD_NOTACC", "UNKOWN"};
 
@@ -317,7 +317,8 @@ init_default_parameters()
 	simu_parameters.prefetchDegree = 2;
 	simu_parameters.prefetchStreams = 16; 
 	simu_parameters.enablePrefetch = false;
-
+	simu_parameters.strongInclusivity = false;
+	
 	simu_parameters.sram_assoc = 4;
 	simu_parameters.nvm_assoc = 12;
 	simu_parameters.nb_sets = 2048;
@@ -398,6 +399,7 @@ init_default_parameters()
 	simu_parameters.Cerebron_fastlearning = false;
 	simu_parameters.Cerebron_separateLearning = false;
 	simu_parameters.Cerebron_resetEnergyValues = false;
+	simu_parameters.Cerebron_enableMigration = false;
 	simu_parameters.Cerebron_lowConfidence = false;
 	simu_parameters.Cerebron_RDmodel = false;
 	simu_parameters.Cerebron_decrement_value = 5;
