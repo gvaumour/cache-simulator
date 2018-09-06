@@ -999,7 +999,7 @@ CerebronPredictor::reportMigration(CacheEntry* current, bool fromNVM, bool isWri
 	
 	debug_file << "Migration:Dataset n°" << first_hash << ", Migration " << cl_location \
 	<< " Cl 0x" << std::hex << current->address << std::dec << ", Features Hashes=" << hashes \
-	<< "] , Des=" << des << "] , Confidence=["  << confidence << "]" << endl;
+	<< "] , Des=" << des << "] , Confidence="  << confidence << "]" << endl;
 
 }
 

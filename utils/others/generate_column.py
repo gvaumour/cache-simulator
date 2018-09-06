@@ -18,8 +18,8 @@ with open(sys.argv[1]) as f:
 
 		if len(split_line) !=2:
 			continue;
-		print line;
-		print "x = " + str(x) + " y = " + str(y);	
+#		print line;
+#		print "x = " + str(x) + " y = " + str(y);	
 		Matrix[x][y] = float(split_line[1]);
 		y+=1
 		
