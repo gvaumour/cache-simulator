@@ -263,9 +263,9 @@ class CostFunctionParameters
 {
 	public:
 		CostFunctionParameters(){};
-		std::vector<double> costNVM; 
-		std::vector<double> costSRAM;
-		std::vector<double> costDRAM;
+		std::vector<int> costNVM; 
+		std::vector<int> costSRAM;
+		std::vector<int> costDRAM;
 };
 
 class EnergyParameters: public CostFunctionParameters
@@ -273,17 +273,17 @@ class EnergyParameters: public CostFunctionParameters
 	public: 
 		EnergyParameters() {
 
-			costSRAM = std::vector<double>(2 ,0);
-			costSRAM[READ_ACCESS] = 271.678E-12;
-			costSRAM[WRITE_ACCESS] = 257.436E-12;
+			costSRAM = std::vector<int>(2 ,0);
+			costSRAM[READ_ACCESS] = 271;
+			costSRAM[WRITE_ACCESS] = 257;
 
-			costNVM = std::vector<double>(2 ,0);
-			costNVM[READ_ACCESS] = 236.828E-12;
-			costNVM[WRITE_ACCESS] = 652.278E-12;
+			costNVM = std::vector<int>(2 ,0);
+			costNVM[READ_ACCESS] = 236;
+			costNVM[WRITE_ACCESS] = 652;
 
-			costDRAM = std::vector<double>(2 ,0);
-			costDRAM[READ_ACCESS] = 4.08893E-9;
-			costDRAM[WRITE_ACCESS] = 4.10241E-9;
+			costDRAM = std::vector<int>(2 ,0);
+			costDRAM[READ_ACCESS] = 4088;
+			costDRAM[WRITE_ACCESS] = 4102;
 
 		};
 };
@@ -293,15 +293,15 @@ class PerfParameters: public CostFunctionParameters
 	public: 
 		PerfParameters() {
 
-			costSRAM = std::vector<double>(2 ,0);
+			costSRAM = std::vector<int>(2 ,0);
 			costSRAM[READ_ACCESS] = 10;
 			costSRAM[WRITE_ACCESS] = 10;
 
-			costNVM = std::vector<double>(2 ,0);
+			costNVM = std::vector<int>(2 ,0);
 			costNVM[READ_ACCESS] = 10;
 			costNVM[WRITE_ACCESS] = 37;
 
-			costDRAM = std::vector<double>(2 ,0);
+			costDRAM = std::vector<int>(2 ,0);
 			costDRAM[READ_ACCESS] = 100;
 			costDRAM[WRITE_ACCESS] = 100;
 		};

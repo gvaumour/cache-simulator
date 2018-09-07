@@ -15,7 +15,7 @@ FeatureEntry::updateDatasetState()
 {
 	
 	CostFunctionParameters params = simu_parameters.optTarget;
-	double E_SRAM = 0 , E_NVM = 0;
+	int E_SRAM = 0 , E_NVM = 0;
 	
 	if(simu_parameters.Cerebron_RDmodel)
 	{
