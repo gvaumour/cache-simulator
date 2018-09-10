@@ -53,11 +53,11 @@ InstructionPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Acc
 
 	if(inNVM){
 		current = m_tableNVM[set][index];
-		m_replacementPolicyNVM_ptr->updatePolicy(set, index , 0);
+		m_replacementPolicyNVM_ptr->updatePolicy(set, index , element);
 	}		
 	else{
 		current = m_tableSRAM[set][index];
-		m_replacementPolicySRAM_ptr->updatePolicy(set, index , 0);
+		m_replacementPolicySRAM_ptr->updatePolicy(set, index , element);
 	}
 		
 	current->policyInfo = m_cpt;

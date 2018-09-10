@@ -730,6 +730,8 @@ void CerebronPredictor::printConfig(std::ostream& out, std::string entete) {
 	string d = simu_parameters.Cerebron_RDmodel ? "TRUE" : "FALSE";
 	out << entete << ":Cerebron:UsingRDModel\t" << d << endl;
 
+	out << entete << ":Cerebron:decrementValue\t" << simu_parameters.Cerebron_decrement_value << endl;
+
 //	out << entete << ":Cerebron:CostLearning\t" << simu_parameters.perceptron_allocation_learning << endl; 
 	out << entete << ":Cerebron:AllocFeatures\t"; 
 	for(auto p : m_criterias_names)
@@ -792,6 +794,30 @@ CerebronPredictor::finishSimu()
 	{
 		drawFeatureMaps();
 	}
+
+	CacheEntry* entry = NULL;
+	for(int i = 0 ; i < m_nb_set ; i++)
+	{
+		for(int j = 0 ; j < m_nbNVMways ; j++)
+		{
+			entry = m_tableNVM[i][j];		
+			allocDecision des = getDecision(entry);
+			if(des != ALLOCATE_IN_NVM)				
+				stats_wrong_alloc++;
+			else
+				stats_good_alloc++;
+		}
+		for(int j = 0 ; j < m_nbSRAMways ; j++)
+		{
+			entry = m_tableSRAM[i][j];		
+			allocDecision des = getDecision(entry);
+			if(des != ALLOCATE_IN_SRAM)				
+				stats_wrong_alloc++;
+			else
+				stats_good_alloc++;
+		}
+	}
+	
 	
 	for(auto feature : m_features)
 		feature->finishSimu();

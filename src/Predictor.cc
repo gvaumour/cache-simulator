@@ -829,9 +829,9 @@ void
 LRUPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM, Access element , bool isWBrequest = false)
 {
 	if(inNVM)
-		m_replacementPolicyNVM_ptr->updatePolicy(set, index , 0);
+		m_replacementPolicyNVM_ptr->updatePolicy(set, index , element);
 	else
-		m_replacementPolicySRAM_ptr->updatePolicy(set, index , 0);
+		m_replacementPolicySRAM_ptr->updatePolicy(set, index , element);
 
 	Predictor::updatePolicy(set , index , inNVM , element);
 	m_cpt++;
@@ -841,9 +841,9 @@ void
 LRUPredictor::insertionPolicy(uint64_t set, uint64_t index, bool inNVM, Access element)
 {	
 	if(inNVM)
-		m_replacementPolicyNVM_ptr->insertionPolicy(set, index , 0);
+		m_replacementPolicyNVM_ptr->insertionPolicy(set, index , element);
 	else
-		m_replacementPolicySRAM_ptr->insertionPolicy(set, index , 0);
+		m_replacementPolicySRAM_ptr->insertionPolicy(set, index , element);
 	
 	
 	Predictor::insertionPolicy(set, index , inNVM , element);
