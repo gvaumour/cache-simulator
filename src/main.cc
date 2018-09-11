@@ -241,6 +241,20 @@ int main(int argc , char* argv[]){
 		{	i++;
 			simu_parameters.perceptron_bypass_threshold = atoi(argv[i]);		
 		}
+		else if(string(argv[i]) == "--SimplePerceptron-learningTH")
+			simu_parameters.simple_perceptron_learningTreshold = atoi(argv[i++]);
+		else if(string(argv[i]) == "--SimplePerceptron-Features")
+		{
+			i++;
+			simu_parameters.simple_perceptron_features.clear();		
+			simu_parameters.simple_perceptron_features = split(string(argv[i]) , ',');
+		}
+		else if(string(argv[i]) == "--SimplePerceptron-independantLearning")
+			simu_parameters.simple_perceptron_independantLearning = true;
+		else if(string(argv[i]) == "--SimplePerceptron-fastLearning")
+			simu_parameters.simple_perceptron_fastLearning = true;
+		else if(string(argv[i]) == "--SimplePerceptron-enableMigration")
+			simu_parameters.simple_perceptron_enableMigration = true;
 		else if(string(argv[i]) == "--Perceptron-BPLearning")
 		{	i++;
 			simu_parameters.perceptron_bypass_learning = atoi(argv[i]);		

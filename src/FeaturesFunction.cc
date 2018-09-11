@@ -1,6 +1,7 @@
+#include <deque>
+
 #include "common.hh"
-#include "Perceptron.hh"
-#include "Cerebron.hh"
+#include "Predictor.hh"
 #include "FeaturesFunction.hh"
 
 
@@ -22,29 +23,25 @@ int hashing_function1(params_hash a , uint64_t addr , uint64_t missPC)
 	else if( index == "Addr")
 		tag = bitSelect( addr , 8*block , 8*block+7);
 	else if( index == "currentPC")
-		tag = bitSelect( CerebronPredictor::m_global_PChistory[0] , 8*block , 8*block+7);
+		tag = bitSelect( Predictor::m_global_PChistory[0] , 8*block , 8*block+7);
 	else if( index == "currentPC1")
-		tag = bitSelect( CerebronPredictor::m_global_PChistory[1] , 8*block , 8*block+7);
+		tag = bitSelect( Predictor::m_global_PChistory[1] , 8*block , 8*block+7);
 	else if( index == "currentPC2")
-		tag = bitSelect( CerebronPredictor::m_global_PChistory[2] , 8*block , 8*block+7);
+		tag = bitSelect( Predictor::m_global_PChistory[2] , 8*block , 8*block+7);
 	else if( index == "currentPC3")
-		tag = bitSelect( CerebronPredictor::m_global_PChistory[3] , 8*block , 8*block+7);
-	/*else if( index == "MissCounter")
-	{
-	
-	}*/
+		tag = bitSelect( Predictor::m_global_PChistory[3] , 8*block , 8*block+7);
 	else
 		assert(false && "Hashing Function failed");
 	
 	if( hash_with_PC)
-		tag = (tag ^ CerebronPredictor::m_global_PChistory[0])%256;
+		tag = (tag ^ Predictor::m_global_PChistory[0])%256;
 
 	return tag;
 }
 
 int hashingAddr_LSB1(uint64_t addr , uint64_t missPC )
 {
-	return ( bitSelect(addr , 18 , 25)^PerceptronPredictor::m_global_PChistory[0]) % 256;
+	return ( bitSelect(addr , 18 , 25)^Predictor::m_global_PChistory[0]) % 256;
 }
 
 int hashingAddr_LSB(uint64_t addr , uint64_t missPC )
@@ -54,24 +51,24 @@ int hashingAddr_LSB(uint64_t addr , uint64_t missPC )
 
 int hashingcurrentPC_1(uint64_t addr , uint64_t missPC )
 {
-	return ((PerceptronPredictor::m_global_PChistory[1]>>1)^PerceptronPredictor::m_global_PChistory[0])%256;
+	return ((Predictor::m_global_PChistory[1]>>1)^Predictor::m_global_PChistory[0])%256;
 }
 
 int hashingcurrentPC_2(uint64_t addr , uint64_t missPC )
 {
-	return ((PerceptronPredictor::m_global_PChistory[2]>>2)^PerceptronPredictor::m_global_PChistory[0])%256;
+	return ((Predictor::m_global_PChistory[2]>>2)^Predictor::m_global_PChistory[0])%256;
 }
 
 int hashingcurrentPC_3(uint64_t addr , uint64_t missPC )
 {
-	return ((PerceptronPredictor::m_global_PChistory[3]>>3)^PerceptronPredictor::m_global_PChistory[0])%256;
+	return ((Predictor::m_global_PChistory[3]>>3)^Predictor::m_global_PChistory[0])%256;
 }
 
 
 int hashingTag_block(uint64_t addr , uint64_t missPC )
 {
 	uint64_t tag = bitSelect(addr , 16 , 23);
-//	return ((tag >> 4)^PerceptronPredictor::m_global_PChistory[0])%256;
+//	return ((tag >> 4)^Predictor::m_global_PChistory[0])%256;
 //	return ((tag >> 4)%256);
 	return tag;
 }
@@ -82,7 +79,7 @@ int hashingTag_page(uint64_t addr , uint64_t missPC )
 
 //	cout << "Addr = " << std::hex << addr << " hash = " << tag << endl;
 
-//	return ((tag >> 7)^PerceptronPredictor::m_global_PChistory[0])%256;
+//	return ((tag >> 7)^Predictor::m_global_PChistory[0])%256;
 //	return ((tag >> 7)%256);
 	return tag;
 }
@@ -95,7 +92,7 @@ hashingMissPC(uint64_t addr , uint64_t missPC, int block, bool hash_with_PC)
 	
 	uint64_t tag = bitSelect( missPC , 8*block , 8*block+7);
 	if( hash_with_PC)
-		tag = (tag ^ PerceptronPredictor::m_global_PChistory[0])%256;
+		tag = (tag ^ Predictor::m_global_PChistory[0])%256;
 
 	return tag;
 }
@@ -107,7 +104,7 @@ hashingAddr(uint64_t addr , uint64_t missPC, int block, bool hash_with_PC)
 	
 	uint64_t tag = bitSelect( addr , 8*block , 8*block+7);
 	if( hash_with_PC)
-		tag = (tag ^ PerceptronPredictor::m_global_PChistory[0])%256;
+		tag = (tag ^ Predictor::m_global_PChistory[0])%256;
 
 	return tag;
 }
@@ -122,7 +119,7 @@ hashingMissPC_LSB(uint64_t addr , uint64_t missPC )
 int
 hashingMissPC_LSB1(uint64_t addr , uint64_t missPC )
 {
-	return ( bitSelect(missPC , 0 , 7)^PerceptronPredictor::m_global_PChistory[0])%256;
+	return ( bitSelect(missPC , 0 , 7)^Predictor::m_global_PChistory[0])%256;
 }
 
 
@@ -141,29 +138,29 @@ hashing_MissCounter(uint64_t addr, uint64_t missPC)
 int 
 hashing_MissCounter1(uint64_t addr, uint64_t missPC)
 {
-	return (miss_counter^PerceptronPredictor::m_global_PChistory[0])%256;
+	return (miss_counter^Predictor::m_global_PChistory[0])%256;
 }
 
 int 
 hashing_currentPC(uint64_t addr, uint64_t missPC)
 {
-	return (PerceptronPredictor::m_global_PChistory[0])%256;
+	return (Predictor::m_global_PChistory[0])%256;
 }
 
 int 
 hashing_currentPC1(uint64_t addr, uint64_t missPC)
 {
-	return ( (PerceptronPredictor::m_global_PChistory[0]>>2)^PerceptronPredictor::m_global_PChistory[0])%256;
+	return ( (Predictor::m_global_PChistory[0]>>2)^Predictor::m_global_PChistory[0])%256;
 }
 
 int hashing_CallStack(uint64_t addr, uint64_t missPC )
 {
-	return (PerceptronPredictor::m_callee_PChistory[0])%256;
+	return (Predictor::m_callee_PChistory[0])%256;
 }
 
 int hashing_CallStack1(uint64_t addr, uint64_t missP )
 {
-	return ((PerceptronPredictor::m_callee_PChistory[0])^PerceptronPredictor::m_global_PChistory[0])%256;
+	return ((Predictor::m_callee_PChistory[0])^Predictor::m_global_PChistory[0])%256;
 }
 
 

@@ -6,6 +6,10 @@
 using namespace std;
 
 
+deque<uint64_t> Predictor::m_global_PChistory;
+deque<uint64_t> Predictor::m_callee_PChistory;
+
+
 Predictor::Predictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable , DataArray& NVMtable, HybridCache* cache) :\
 	m_tableSRAM(SRAMtable), m_tableNVM(NVMtable)
 {
@@ -33,6 +37,9 @@ Predictor::Predictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& 
 	stats_WBerrors = 0;
 	
 	stats_beginTimeFrame = 0;
+	
+	m_global_PChistory = deque<uint64_t>();
+	m_callee_PChistory = deque<uint64_t>();
 	
 	if(simu_parameters.printDebug && simu_parameters.enableDatasetSpilling)
 	{
@@ -684,6 +691,19 @@ Predictor::printBParray(int set , ofstream& out)
 	}
 	
 }
+
+
+void
+Predictor::update_globalPChistory(uint64_t pc)
+{	
+ 	m_global_PChistory.push_front(pc);
+	if( m_global_PChistory.size() == 11)
+		m_global_PChistory.pop_back();
+}
+
+
+
+
 bool
 Predictor::getHitPerDataArray(uint64_t block_addr, int set , bool inNVM)
 {

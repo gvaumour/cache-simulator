@@ -240,6 +240,14 @@ resize_image(vector< vector<int> >& img)
 	return result;
 }
 
+string
+convertBool(bool a)
+{
+	if(a)
+		return "TRUE";
+	else
+		return "FALSE";
+}
 
 
 void writeBMPimage(std::string image_name , int width , int height , vector< vector<int> > red, vector< vector<int> > blue, vector< vector<int> > green )
@@ -412,12 +420,15 @@ init_default_parameters()
 	simu_parameters.Cerebron_decrement_value = 1;
 
 	/************ SimplePerceptron Config *********/ 
-	simu_parameters.SimplePerceptron_reuse_features = {"MissPC_0" , "Addr_3"};
-	simu_parameters.SimplePerceptron_write_features = {"MissPC_0" , "Addr_3"};
-	simu_parameters.SimplePerceptron_write_threshold = 10;
+	simu_parameters.simple_perceptron_features =  {"MissPC_0" , "Addr_3"};
+	simu_parameters.simple_perceptron_learningTreshold = 5;
+	simu_parameters.simple_perceptron_fastLearning = false;
+	simu_parameters.simple_perceptron_independantLearning = false;
+	simu_parameters.simple_perceptron_enableMigration = false;
+
 
 	simu_parameters.nbCores = 1;
-	simu_parameters.policy = "Cerebron";
+	simu_parameters.policy = "SimplePerceptron";
 
 }
 

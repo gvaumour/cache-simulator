@@ -57,13 +57,14 @@ class CerebronPredictor : public Predictor {
 		params_hash parseFeatureName(std::string feature_name);
 		CacheEntry* get_entry(uint64_t set , uint64_t index , bool inNVM);
 
-		void update_globalPChistory(uint64_t pc);
+		//void update_globalPChistory(uint64_t pc);
 		void load_callee_file();
 		void initFeatures();
 	
+		/*
 		static std::deque<uint64_t> m_global_PChistory;
 		static std::deque<uint64_t> m_callee_PChistory;
-
+		*/
 				
 	protected : 
 		

@@ -146,9 +146,12 @@ struct SimuParameters
 	int Cerebron_decrement_value;
 	
 	/****************/ 
-	std::vector<std::string> SimplePerceptron_write_features;
-	std::vector<std::string> SimplePerceptron_reuse_features;
-	int SimplePerceptron_write_threshold;
+	std::vector<std::string> simple_perceptron_features;
+	int simple_perceptron_learningTreshold;
+	bool simple_perceptron_fastLearning;
+	bool simple_perceptron_independantLearning;
+	bool simple_perceptron_enableMigration;
+	
 	
 };
 
@@ -169,6 +172,7 @@ std::vector<std::string> splitAddr_Bytes(uint64_t a);
 
 
 std::vector< std::vector<int> > resize_image(std::vector< std::vector<int> >& img);
+std::string convertBool(bool a);
 
 void writeBMPimage(std::string image_name , int width , int height , std::vector< std::vector<int> > red,\
 				 std::vector< std::vector<int> > blue, std::vector< std::vector<int> > green );

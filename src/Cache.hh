@@ -210,10 +210,8 @@ class CacheEntry{
 		std::vector<bool> predictedReused;
 		std::vector< std::pair<int,allocDecision> > PHC_allocation_pred;
 
-		bool simple_perceptron_writepred;
-		std::vector<int> simple_perceptron_writeHash;
-		bool simple_perceptron_mediumReuse;
-		std::vector<int> simple_perceptron_reuseHash;
+		std::vector<allocDecision> simple_perceptron_pred;
+		std::vector<int> simple_perceptron_hash;
 		int write_counter;
 		
 		int nbWrite;

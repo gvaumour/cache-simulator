@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "SaturationPredictor.hh"
 #include "InstructionPredictor.hh"
 #include "Cerebron.hh"
+#include "SimplePerceptron.hh"
 #include "PHC.hh"
 #include "DBAMBPredictor.hh"
 #include "Perceptron.hh"
@@ -100,6 +101,8 @@ HybridCache::HybridCache(int id, bool isInstructionCache, int size , int assoc ,
 		 m_predictor = new monitorPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);*/
 	else if(m_policy == "Perceptron")
 		 m_predictor = new PerceptronPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
+	else if(m_policy == "SimplePerceptron")
+		 m_predictor = new SimplePerceptronPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	//else if(m_policy == "SimplePerceptron")
 	//	 m_predictor = new SimplePerceptronPredictor(m_ID, m_assoc, m_nb_set, m_nbNVMways, m_tableSRAM, m_tableNVM , this);	
 	else if(m_policy == "DBAMB" || m_policy == "DBA" || m_policy == "DBAM" || m_policy == "DBAMBS")
@@ -216,11 +219,8 @@ HybridCache::initializeLearningCl(CacheEntry* entry)
 	
 	if( m_policy == "SimplePerceptron")
 	{
-		entry->simple_perceptron_writepred =  false;
-		entry->simple_perceptron_writeHash = vector<int>(simu_parameters.SimplePerceptron_write_features.size() , 0);
-
-		entry->simple_perceptron_mediumReuse = false;
-		entry->simple_perceptron_reuseHash = vector<int>(simu_parameters.SimplePerceptron_reuse_features.size() , 0);
+		entry->simple_perceptron_pred =  vector<allocDecision>(simu_parameters.simple_perceptron_features.size() , ALLOCATE_IN_NVM);
+		entry->simple_perceptron_hash = vector<int>(simu_parameters.simple_perceptron_features.size() , 0);
 	}
 }
 

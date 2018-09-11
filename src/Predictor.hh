@@ -82,6 +82,10 @@ class Predictor{
 
 		void printBParray(int set , std::ofstream& out);
 
+		static std::deque<uint64_t> m_global_PChistory;
+		static std::deque<uint64_t> m_callee_PChistory;
+		void update_globalPChistory(uint64_t pc);
+
 	protected : 		
 		DataArray& m_tableSRAM;
 		DataArray& m_tableNVM;

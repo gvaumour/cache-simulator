@@ -7,10 +7,6 @@
 
 using namespace std;
 
-
-deque<uint64_t> CerebronPredictor::m_global_PChistory;
-deque<uint64_t> CerebronPredictor::m_callee_PChistory;
-
 ofstream debug_file;
 
 CerebronPredictor::CerebronPredictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& SRAMtable, DataArray& NVMtable, HybridCache* cache) :\
@@ -57,8 +53,7 @@ CerebronPredictor::CerebronPredictor(int id, int nbAssoc , int nbSet, int nbNVMw
 	miss_counter = 0;
 	m_cpt = 0;
 
-	m_global_PChistory = deque<uint64_t>();
-	m_callee_PChistory = deque<uint64_t>();
+
 	if(simu_parameters.printDebug)
 		debug_file.open(CEREBRON_DEBUG_FILE);
 		
@@ -130,13 +125,8 @@ CerebronPredictor::allocateInNVM(uint64_t set, Access element)
 //		return ALLOCATE_IN_NVM;
 	
 	update_globalPChistory(element.m_pc);
-	stats_nbMiss++;
-	miss_counter++;
-	if(miss_counter > 255)
-		miss_counter = 255;
-	
-	// All the set is a learning/sampled set independantly of its way or SRAM/NVM alloc
-	//bool isLearning = m_tableSRAM[set][0]->isLearning; 
+	if( hitInSRAMMissingTags( element.block_addr, set) )
+		element.m_pc = missingTagMissPC( element.block_addr , set);
 		
 	return activationFunction(element.isWrite() , element.block_addr , element.m_pc);
 }
@@ -621,6 +611,7 @@ CerebronPredictor::checkLazyMigration(CacheEntry* current ,uint64_t set,bool inN
 }
 
 
+/*
 void
 CerebronPredictor::update_globalPChistory(uint64_t pc)
 {	
@@ -639,7 +630,7 @@ CerebronPredictor::update_globalPChistory(uint64_t pc)
 			m_callee_PChistory.pop_back();
 	}
 }
-
+*/
 
 
 void 
