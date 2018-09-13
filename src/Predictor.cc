@@ -101,8 +101,8 @@ Predictor::Predictor(int id, int nbAssoc , int nbSet, int nbNVMways, DataArray& 
 			for(int j = 0 ; j < m_SRAMassoc_MT_size; j++)
 			{
 				m_SRAM_missing_tags[i][j] = new MissingTagEntry();
-				if(m_policy == "Cerebron")
-					m_SRAM_missing_tags[i][j]->initFeaturesHash();
+				if(m_policy == "Cerebron" || m_policy == "SimplePerceptron")
+					m_SRAM_missing_tags[i][j]->initFeaturesHash(m_policy);
 			}
 			/*
 			for(int j = 0 ; j < m_NVMassoc_MT_size; j++)
@@ -235,6 +235,13 @@ Predictor::evictRecording(int set, int assoc_victim , bool inNVM)
 		
 				m_SRAM_missing_tags[set][index_victim]->missPC = current->missPC;
 			}		
+			else if(m_policy == "SimplePerceptron")
+			{
+				//for(unsigned i = 0 ; i < simu_parameters.simple_perceptron_features.size() ; i++)
+				//	m_SRAM_missing_tags[set][index_victim]->features_hash[i] = current->simple_perceptron_hash[i];
+				
+				m_SRAM_missing_tags[set][index_victim]->missPC = current->missPC;
+			}		
 		}
 	}
 }
@@ -339,6 +346,8 @@ Predictor::missingTagCostValue(uint64_t block_addr, int set)
 uint64_t 
 Predictor::missingTagMissPC(uint64_t block_addr, int set)
 {
+	assert( m_policy == "Cerebron" || m_policy == "SimplePerceptron");
+	
 	for(unsigned i = 0 ; i < m_SRAM_missing_tags[set].size() ; i++)
 	{
 		if(m_SRAM_missing_tags[set][i]->addr == block_addr && m_SRAM_missing_tags[set][i]->isValid)
@@ -346,6 +355,10 @@ Predictor::missingTagMissPC(uint64_t block_addr, int set)
 			return m_SRAM_missing_tags[set][i]->missPC;
 		}
 	}
+	
+	//Sanity check , shouldn't go there 
+	assert(false);
+
 	return 0;
 }
 
@@ -414,6 +427,8 @@ Predictor::updateBypassTag(CacheEntry* entry, int set, bool inNVM)
 	BP_missing_tags[set][index_oldest]->addr = block_addr;
 	BP_missing_tags[set][index_oldest]->isValid = true;		
 	BP_missing_tags[set][index_oldest]->allocSite = inNVM;
+	BP_missing_tags[set][index_oldest]->missPC = entry->missPC;
+	
 	
 	/*
 	if(m_policy == "Cerebron")
@@ -702,6 +717,41 @@ Predictor::update_globalPChistory(uint64_t pc)
 }
 
 
+bool 
+Predictor::isHitInBPtags(uint64_t block_addr , int set)
+{
+	for(unsigned i = 0 ; i < BP_missing_tags[set].size(); i++)
+	{
+		if( block_addr == BP_missing_tags[set][i]->addr && BP_missing_tags[set][i]->isValid)
+			return true;
+	}
+	return false;
+}
+
+uint64_t 
+Predictor::getMissPCfromBPtags(uint64_t block_addr , int set)
+{
+	for(unsigned i = 0 ; i < BP_missing_tags[set].size(); i++)
+	{
+		if( block_addr == BP_missing_tags[set][i]->addr && BP_missing_tags[set][i]->isValid)
+			return BP_missing_tags[set][i]->missPC;
+	}
+	assert(false);
+	return 0;
+}
+
+bool 
+Predictor::getAllocSitefromBPtags( uint64_t addr , int set)
+{
+	for(unsigned i = 0 ; i < BP_missing_tags[set].size(); i++)
+	{
+		if( addr == BP_missing_tags[set][i]->addr && BP_missing_tags[set][i]->isValid)
+			return BP_missing_tags[set][i]->allocSite;
+	}
+	assert(false);
+	return false;
+}
+
 
 
 bool
@@ -711,7 +761,7 @@ Predictor::getHitPerDataArray(uint64_t block_addr, int set , bool inNVM)
 	bool find = false;
 	for(unsigned i = 0 ; i < BP_missing_tags[set].size() && !find; i++)
 	{
-		if( block_addr == BP_missing_tags[set][i]->addr)
+		if( block_addr == BP_missing_tags[set][i]->addr && BP_missing_tags[set][i]->isValid)
 		{
 			ref_time = BP_missing_tags[set][i]->last_time_touched;
 			find = true;		

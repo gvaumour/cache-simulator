@@ -38,8 +38,9 @@ class SimplePerceptronPredictor : public Predictor {
 		void drawFeatureMaps();
 		void finishSimu();
 		
-		void reportAccess(Access element, CacheEntry* current, bool inNVM, std::string entete);
+		void reportAccess(Access element, CacheEntry* current, int set , bool inNVM, std::string entete);
 		void reportEviction(CacheEntry* entry, bool inNVM);
+		void reportMigration(CacheEntry* current, bool fromNVM, bool isWrite);
 
 		allocDecision activationFunction(Access element);
 		allocDecision getDecision(int counter, bool isWrite);
@@ -47,6 +48,9 @@ class SimplePerceptronPredictor : public Predictor {
 		void updateCostModel(CacheEntry* entry , uint64_t block_addr , int set, bool isWrite);
 		void doLearning(CacheEntry* entry);
 		void setPrediction(CacheEntry* entry, Access element);
+		void correctBPerror(CacheEntry* entry , Access element , int set );
+		
+		CacheEntry* checkLazyMigration(CacheEntry* current ,uint64_t set,bool inNVM, uint64_t index, bool isWrite);
 
 		params_hash parseFeatureName(std::string feature_name);
 		
@@ -67,7 +71,8 @@ class SimplePerceptronPredictor : public Predictor {
 		/* Stats */ 
 		uint64_t stats_nbMiss, stats_nbHits;
 		uint64_t stats_cptSRAMerror;
-		std::vector< std::vector<int> > stats_access_class;		
+		std::vector< std::vector<int> > stats_access_class;	
+		std::vector<int> stats_nbMigrations;	
 
 };
 

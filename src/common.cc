@@ -394,7 +394,7 @@ init_default_parameters()
 	/***************************************/ 
 	
 	/*********** PHC Config ******************/ 
-	simu_parameters.PHC_features = {"MissPC_0" , "Addr_3"};
+	simu_parameters.PHC_features = {"Addr_3"};
 	simu_parameters.PHC_cost_threshold = 0;
 	simu_parameters.PHC_cost_mediumRead = -4124;
 	simu_parameters.PHC_cost_mediumWrite = -3702;
@@ -420,7 +420,7 @@ init_default_parameters()
 	simu_parameters.Cerebron_decrement_value = 1;
 
 	/************ SimplePerceptron Config *********/ 
-	simu_parameters.simple_perceptron_features =  {"MissPC_0" , "Addr_3"};
+	simu_parameters.simple_perceptron_features =  {"Addr_3"};
 	simu_parameters.simple_perceptron_learningTreshold = 5;
 	simu_parameters.simple_perceptron_fastLearning = false;
 	simu_parameters.simple_perceptron_independantLearning = false;

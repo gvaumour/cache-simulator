@@ -31,7 +31,7 @@ SimplePerceptronPredictor::SimplePerceptronPredictor(int id, int nbAssoc , int n
 		debug_file_simple_perceptron.open(SIMPLE_PERCEPTRON_DEBUG_FILE);	
 	
 	stats_access_class = vector<vector<int> >(NUM_RD_TYPE ,  vector<int>(2, 0));
-
+	stats_nbMigrations = vector<int>(2,0);
 }
 
 
@@ -61,9 +61,14 @@ SimplePerceptronPredictor::allocateInNVM(uint64_t set, Access element)
 {	
 	Predictor::update_globalPChistory(element.m_pc);
 	
+	if(isHitInBPtags(element.block_addr , set))
+		element.m_pc = getMissPCfromBPtags(element.block_addr , set);
+	
+	/*
 	if( hitInSRAMMissingTags( element.block_addr, set) )
 		element.m_pc = missingTagMissPC( element.block_addr , set);
-
+	*/
+	
 	// All the set is a learning/sampled set independantly of its way or SRAM/NVM alloc
 	//bool isLearning = m_tableSRAM[set][0]->isLearning; 
 	allocDecision des =  activationFunction(element);
@@ -77,8 +82,15 @@ SimplePerceptronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool in
 	CacheEntry* entry = inNVM ? m_tableNVM[set][index] : m_tableSRAM[set][index];
 	entry->missPC = element.m_pc;
 		
-	if( element.isSRAMerror)
-		entry->missPC = missingTagMissPC(element.block_addr , set);
+	if(isHitInBPtags(element.block_addr , set))
+	{
+		entry->missPC = getMissPCfromBPtags(element.block_addr , set);
+		correctBPerror(entry , element , set );
+			/*
+		debug_file_simple_perceptron << "Insertion + detected SRAM error on line 0x" << std::hex << element.block_addr \
+			 << " , Retified MissPC from 0x" << element.m_pc << " to " << entry->missPC << endl;
+		*/
+	}
 
 	entry->policyInfo = m_cpt++;
 
@@ -91,7 +103,7 @@ SimplePerceptronPredictor::insertionPolicy(uint64_t set, uint64_t index, bool in
 
 		setPrediction(entry , element);	
 	}	
-	reportAccess( element, entry , inNVM, string("INSERTION") );
+	reportAccess( element, entry , set , inNVM, string("INSERTION") );
 	
 //	stats_access_class[rd][element.isWrite()]++;
 	Predictor::insertionPolicy(set , index , inNVM , element);
@@ -117,8 +129,15 @@ SimplePerceptronPredictor::updatePolicy(uint64_t set, uint64_t index, bool inNVM
 			setPrediction(entry, element); //Set the prediction ready for the next access
 		}
 	}
-	
-	reportAccess( element, entry , inNVM, string("UPDATE") );
+
+	if(simu_parameters.simple_perceptron_enableMigration)
+	{
+		assert(entry->isValid);
+		entry = checkLazyMigration(entry , set , inNVM , index, element.isWrite());		
+	}
+
+
+	reportAccess( element, entry , set , inNVM, string("UPDATE") );
 
 	Predictor::updatePolicy(set , index , inNVM , element , isWBrequest);
 }
@@ -269,6 +288,90 @@ SimplePerceptronPredictor::setPrediction(CacheEntry* entry, Access element)
 		entry->simple_perceptron_pred[0] = getDecision(sum_pred , element.isWrite());
 
 }
+
+CacheEntry*
+SimplePerceptronPredictor::checkLazyMigration(CacheEntry* current ,uint64_t set,bool inNVM, uint64_t index, bool isWrite)
+{
+
+	int yout = 0;
+	for(unsigned i = 0 ; i < m_features.size() ; i++)
+	{
+		int hash = hashing_function1( m_features_hash[i] , current->address , current->missPC );
+		int pred = m_features[i]->getCounter(hash);
+		yout += pred;
+	}
+	
+	if ( abs(yout) < simu_parameters.simple_perceptron_learningTreshold)
+		return current;
+
+	allocDecision des = yout > 0 ? ALLOCATE_IN_NVM : ALLOCATE_IN_SRAM;
+
+	if( inNVM == false && des == ALLOCATE_IN_NVM)
+	{
+		//cl is SRAM , check whether we should migrate to NVM 
+		if(simu_parameters.enableDatasetSpilling && m_isNVMbusy[set])
+		{
+			//reportSpilling(rap_current, current->address, false ,  inNVM);
+			//stats_busyness_migrate_change++; //If NVM tab is busy , don't migrate
+		}
+		else
+		{
+			//Trigger Migration
+			int id_assocNVM = evictPolicy(set, true);//Select LRU candidate from NVM cache
+			//DPRINTF("DBAMBPredictor:: Migration Triggered from SRAM, index %ld, id_assoc %d \n" , index, id_assoc);
+
+			CacheEntry* replaced_entry_NVM = m_tableNVM[set][id_assocNVM];
+					
+			/** Migration incurs one read and one extra write */ 
+			replaced_entry_NVM->nbWrite++;
+			current->nbRead++;
+		
+			/* Record the write error migration */ 
+			Predictor::migrationRecording();
+		
+			reportMigration(current, false , isWrite);
+		
+			m_cache->triggerMigration(set, index , id_assocNVM , false);
+			if(!m_isWarmup)
+				stats_nbMigrations[true]++;
+
+
+			current = replaced_entry_NVM;
+		}
+
+	}
+	else if( des == ALLOCATE_IN_SRAM && inNVM == true)
+	{
+		//cl is in NVM , check whether we should migrate to SRAM 
+			
+		//If SRAM tab is busy , don't migrate
+		if(simu_parameters.enableDatasetSpilling && m_isSRAMbusy[set])
+		{
+			//reportSpilling(rap_current, current->address, false ,  inNVM);
+			//stats_busyness_migrate_change++; //If NVM tab is busy , don't migrate
+		}
+		else 
+		{		
+			int id_assocSRAM = evictPolicy(set, false);
+		
+			CacheEntry* replaced_entry_SRAM = m_tableSRAM[set][id_assocSRAM];
+
+			/** Migration incurs one read and one extra write */ 
+			replaced_entry_SRAM->nbWrite++;
+			current->nbRead++;
+			reportMigration( current, true , isWrite);
+	
+			m_cache->triggerMigration(set, id_assocSRAM , index , true);
+		
+			if(!m_isWarmup)
+				stats_nbMigrations[false]++;
+
+			current = replaced_entry_SRAM;		
+		}
+
+	}
+	return current;
+}
 		
 void 
 SimplePerceptronPredictor::updateCostModel(CacheEntry* entry , uint64_t block_addr , int set, bool isWrite)
@@ -284,6 +387,27 @@ SimplePerceptronPredictor::updateCostModel(CacheEntry* entry , uint64_t block_ad
 	entry->e_nvm += !hitNVM ? m_costParameters.costDRAM[isWrite] : 0;
 }
 
+void
+SimplePerceptronPredictor::correctBPerror(CacheEntry* entry , Access element , int set)
+{
+	bool wasInNVM = getAllocSitefromBPtags(element.block_addr, set);
+
+	for(unsigned i = 0 ; i < m_features.size() ; i++)
+	{
+		int hash = hashing_function1( m_features_hash[i] , entry->address , entry->missPC);		
+		
+		if( wasInNVM )
+		{
+			m_features[i]->decreaseCounter(hash);		
+			m_features[i]->decreaseCounter(hash);		
+		}
+		else
+		{
+			m_features[i]->increaseCounter(hash);		
+			m_features[i]->increaseCounter(hash);		
+		}
+	}
+}
 
 
 /*
@@ -301,6 +425,12 @@ void
 SimplePerceptronPredictor::printStats(std::ostream& out, std::string entete) 
 { 
 	out << entete << ":SimplePerceptronPredictor:SRAMerror\t" << stats_cptSRAMerror << endl;
+	if(simu_parameters.simple_perceptron_enableMigration)
+	{
+		out << entete << ":SimplePerceptronPredictor:TotalMigration\t" << stats_nbMigrations[true] + stats_nbMigrations[false] << endl;
+		out << entete << ":SimplePerceptronPredictor:MigrationsFromSRAM\t" << stats_nbMigrations[true] << endl;
+		out << entete << ":SimplePerceptronPredictor:MigrationsFromNVM\t" << stats_nbMigrations[false] << endl;	
+	}
 	
 	out << entete << ":SimplePerceptronPredictor:AccessClassification" << endl;
 	for(unsigned i = 0 ; i < stats_access_class.size() ; i++)
@@ -396,7 +526,7 @@ SimplePerceptronPredictor::classifyRD(int set , int index, bool inNVM)
 */
 
 void
-SimplePerceptronPredictor::reportAccess(Access element, CacheEntry* current, bool inNVM, string entete)
+SimplePerceptronPredictor::reportAccess(Access element, CacheEntry* current, int set , bool inNVM, string entete)
 {
 	if(!simu_parameters.printDebug)
 		return;
@@ -405,8 +535,12 @@ SimplePerceptronPredictor::reportAccess(Access element, CacheEntry* current, boo
 	string access_type = element.isWrite() ? "WRITE" : "READ";
 	
 	string is_error= "";
-	if(element.isSRAMerror)
-		is_error = "is an SRAM error, ";
+	if( isHitInBPtags(element.block_addr , set) && entete == "INSERTION")
+	{
+		is_error == "is a BP error";
+	}
+	//if(element.isSRAMerror)
+	//	is_error = "is an SRAM error, ";
 
 	string counters = "[";
 	string hashes = "[";	
@@ -456,6 +590,32 @@ SimplePerceptronPredictor::reportEviction(CacheEntry* entry, bool inNVM)
 	debug_file_simple_perceptron << "EVICTION:Dataset n°" << first_hash << ": Cl 0x" << std::hex << entry->address \
 	<< std::dec << ", E_SRAM =" << entry->e_sram << " , E_NVM =" << entry->e_nvm << " allocated in " << cl_location << ", Hashes=" << hashes \
         << ", Counters=" << counters << endl;
+}
+
+void
+SimplePerceptronPredictor::reportMigration(CacheEntry* current, bool fromNVM, bool isWrite)
+{
+	
+	if(!simu_parameters.printDebug)
+		return;	
+
+	string cl_location = fromNVM ? "from NVM" : "from SRAM";
+
+	string confidence = "[", hashes = "[";	
+	for(unsigned i = 0 ; i < m_features.size() ; i++)
+	{
+		int hash = hashing_function1( m_features_hash[i] , current->address , current->missPC);		
+		confidence += to_string(m_features[i]->getCounter(hash)) + " , ";
+		hashes += to_string(hash) + " , ";
+		
+	}
+	
+	int first_hash = hashing_function1( m_features_hash[0] , current->address , current->missPC);
+	
+	debug_file_simple_perceptron << "Migration:Dataset n°" << first_hash << ", Migration " << cl_location \
+	<< " Cl 0x" << std::hex << current->address << std::dec << ", Features Hashes=" << hashes \
+	<< "] , Counters="  << confidence << "]" << endl;
+
 }
 
 

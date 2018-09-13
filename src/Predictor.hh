@@ -36,9 +36,12 @@ class MissingTagEntry{
 			 isBypassed(false), allocSite(false), missPC(0) {};		
 		MissingTagEntry(uint64_t a , uint64_t t, bool v) : addr(a) , last_time_touched(t), isValid(v), isBypassed(false), allocSite(false) {};
 	
-		void initFeaturesHash()
+		void initFeaturesHash(std::string policy)
 		{
-			features_hash = std::vector<int>( simu_parameters.PHC_features.size() , 0);
+			if( policy == "Cerebron")	
+				features_hash = std::vector<int>( simu_parameters.PHC_features.size() , 0);
+			//else if (policy == "SimplePerceptron")
+			//	features_hash = std::vector<int>( simu_parameters.simple_perceptron_features.size() , 0);
 		};
 };
 
@@ -69,18 +72,22 @@ class Predictor{
 		void updateCachePressure();
 
 		bool reportMiss(uint64_t block_addr , int id_set);
-		bool checkBypassTag(uint64_t block_addr , int set);
-		void updateBypassTag(CacheEntry* entry , int set, bool inNVM);
-		bool getHitPerDataArray(uint64_t block_addr, int set , bool inNVM);
 
 		bool hitInSRAMMissingTags(uint64_t block_addr, int set);
 		bool hitInNVMMissingTags(uint64_t block_addr, int set);
 		void updateFUcaches(uint64_t block_addr, bool inNVM);
+		
 		int missingTagCostValue(uint64_t block_addr, int set);
 		std::vector<int> missingTagFeaturesHash(uint64_t block_addr, int set);
 		uint64_t missingTagMissPC(uint64_t block_addr, int set);
-
+		
+		bool isHitInBPtags(uint64_t block_addr , int set);
+		uint64_t getMissPCfromBPtags(uint64_t block_addr , int set);
+		bool getAllocSitefromBPtags( uint64_t addr , int set);
 		void printBParray(int set , std::ofstream& out);
+		bool checkBypassTag(uint64_t block_addr , int set);
+		void updateBypassTag(CacheEntry* entry , int set, bool inNVM);
+		bool getHitPerDataArray(uint64_t block_addr, int set , bool inNVM);
 
 		static std::deque<uint64_t> m_global_PChistory;
 		static std::deque<uint64_t> m_callee_PChistory;
