@@ -140,14 +140,14 @@ SimpleFeatureTable::finishSimu()
 			if(value >= 0)
 			{
 				red[j][i] = 255;
-				blue[j][i] = 255 - 255 * value / 32;			
-				green[j][i] =  255 - 255 * value / 32; 
+				blue[j][i] = 255 - 255 * value / simu_parameters.perceptron_counter_size;			
+				green[j][i] =  255 - 255 * value / simu_parameters.perceptron_counter_size; 
 			}
 			else
 			{
 				blue[j][i] = 255;
-				red[j][i] = 255 - 255 * -value / 32;
-				green[j][i] = 255 - 255 * -value / 32; 
+				red[j][i] = 255 - 255 * -value / simu_parameters.perceptron_counter_size;
+				green[j][i] = 255 - 255 * -value / simu_parameters.perceptron_counter_size; 
 			}
 		}
 	}

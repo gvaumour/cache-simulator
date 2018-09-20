@@ -221,8 +221,8 @@ class CacheEntry{
 		//field used only by the SaturationCounter Predictor
 		int saturation_counter; 
 		double cost_value;
-		double e_sram;
-		double e_nvm;
+		uint64_t e_sram;
+		uint64_t e_nvm;
 		
 		//field used only by the RAP predictor
 		bool isLearning;
