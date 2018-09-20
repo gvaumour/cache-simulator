@@ -450,6 +450,7 @@ SimplePerceptronPredictor::printStats(std::ostream& out, std::string entete)
 void SimplePerceptronPredictor::printConfig(std::ostream& out, std::string entete) { 
 
 	out << entete << ":SimplePerceptron:TableSize\t" << m_tableSize << endl; 
+	out << entete << ":SimplePerceptron:CounterRange\t" << simu_parameters.perceptron_counter_size << endl; 
 		
 	
 	out << entete << ":SimplePerceptron:Features\t"; 
