@@ -792,6 +792,10 @@ CerebronPredictor::finishSimu()
 		for(int j = 0 ; j < m_nbNVMways ; j++)
 		{
 			entry = m_tableNVM[i][j];		
+
+			if(!entry->isValid)
+				continue;
+				
 			allocDecision des = getDecision(entry);
 			if(des != ALLOCATE_IN_NVM)				
 				stats_wrong_alloc++;
@@ -801,6 +805,10 @@ CerebronPredictor::finishSimu()
 		for(int j = 0 ; j < m_nbSRAMways ; j++)
 		{
 			entry = m_tableSRAM[i][j];		
+
+			if(!entry->isValid)
+				continue;
+
 			allocDecision des = getDecision(entry);
 			if(des != ALLOCATE_IN_SRAM)				
 				stats_wrong_alloc++;

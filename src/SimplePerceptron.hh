@@ -71,6 +71,7 @@ class SimplePerceptronPredictor : public Predictor {
 		/* Stats */ 
 		uint64_t stats_nbMiss, stats_nbHits;
 		uint64_t stats_cptSRAMerror;
+		uint64_t stats_good_alloc, stats_wrong_alloc;
 		std::vector< std::vector<int> > stats_access_class;	
 		std::vector<int> stats_nbMigrations;	
 

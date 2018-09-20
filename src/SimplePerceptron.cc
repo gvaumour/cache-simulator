@@ -32,6 +32,9 @@ SimplePerceptronPredictor::SimplePerceptronPredictor(int id, int nbAssoc , int n
 	
 	stats_access_class = vector<vector<int> >(NUM_RD_TYPE ,  vector<int>(2, 0));
 	stats_nbMigrations = vector<int>(2,0);
+
+	stats_good_alloc = 0, stats_wrong_alloc = 0;
+
 }
 
 
@@ -159,6 +162,11 @@ int SimplePerceptronPredictor::evictPolicy(int set, bool inNVM)
 			
 		if(entry->isLearning && !simu_parameters.simple_perceptron_fastLearning)
 			doLearning(entry);
+	
+		if( (entry->e_sram > entry->e_nvm && inNVM) || (entry->e_nvm > entry->e_sram && !inNVM) )
+			stats_good_alloc++;
+		else
+			stats_wrong_alloc++;		
 	}
 	evictRecording(set , assoc_victim , inNVM);	
 	return assoc_victim;
@@ -431,16 +439,9 @@ SimplePerceptronPredictor::printStats(std::ostream& out, std::string entete)
 		out << entete << ":SimplePerceptronPredictor:MigrationsFromSRAM\t" << stats_nbMigrations[true] << endl;
 		out << entete << ":SimplePerceptronPredictor:MigrationsFromNVM\t" << stats_nbMigrations[false] << endl;	
 	}
+	out << entete << ":SimplePerceptronPredictor:WrongAlloc\t" << stats_wrong_alloc << endl;
+	out << entete << ":SimplePerceptronPredictor:CorrectAlloc\t" << stats_good_alloc << endl;
 	
-	out << entete << ":SimplePerceptronPredictor:AccessClassification" << endl;
-	for(unsigned i = 0 ; i < stats_access_class.size() ; i++)
-	{
-		if(stats_access_class[i][0] != 0 || stats_access_class[i][1] != 1)
-		{
-			out << entete << ":SimplePerceptronPredictor:Read" <<  str_RD_status[i]	<< "\t" << stats_access_class[i][false] << endl;	
-			out << entete << ":SimplePerceptronPredictor:Write" << str_RD_status[i] << "\t" << stats_access_class[i][true] << endl; 		
-		}
-	}
 	Predictor::printStats(out, entete);
 }
 
@@ -476,9 +477,40 @@ SimplePerceptronPredictor::openNewTimeFrame()
 void 
 SimplePerceptronPredictor::finishSimu()
 {
+
+	CacheEntry* entry = NULL;
+	for(int i = 0 ; i < m_nb_set ; i++)
+	{
+		for(int j = 0 ; j < m_nbNVMways ; j++)
+		{
+			entry = m_tableNVM[i][j];	
+			if(!entry->isValid)	
+				continue;
+				
+			if( entry->e_sram > entry->e_nvm)
+				stats_good_alloc++;
+			else
+				stats_wrong_alloc++;		
+
+		}
+		for(int j = 0 ; j < m_nbSRAMways ; j++)
+		{
+			entry = m_tableSRAM[i][j];		
+			if(!entry->isValid)	
+				continue;
+
+			if( entry->e_sram < entry->e_nvm)
+				stats_good_alloc++;
+			else
+				stats_wrong_alloc++;		
+		}
+	}
+	
 	for(auto feature : m_features)
 		feature->finishSimu();
 	Predictor::finishSimu();
+
+
 }
 
 /*
